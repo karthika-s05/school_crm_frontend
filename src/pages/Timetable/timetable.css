@@ -1,0 +1,45 @@
+                .table-time{
+    border-collapse: collapse;
+    width: 100%;
+}
+.table-time th{
+color: rgb(160, 49, 49);
+font-size: 20px;
+}
+.table-time th,td{
+    border: 2px solid black;
+    color: black;
+    text-align: center;
+}
+
+.table-cap{
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+
+}
+
+
+.table td,
+th {
+    border: 1px solid rgb(235, 235, 235);
+    text-align: left;
+    /* padding: 15px; */
+    font-size: 12px;
+    font-family: sans-serif;
+
+}
+/* .table td{
+    color: #646464;
+} */
+
+tr:nth-child(even) {
+    background-color: #F9F9F9;
+}
+
+tr:nth-child(odd) {
+    background-color: #FFFFFF;
+}
+.table .weeks{
+    text-align: center;
+}

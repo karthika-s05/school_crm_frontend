@@ -1,0 +1,36 @@
+.input-container-registers .input-container input:focus {
+    /* Add your styles for the focused input here */
+    border-color: #007bff; /* Example border color for focus */
+    /* Add any other styles you want to apply when the input is focused */
+}
+.modal-overlays {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+  }
+  .modal-content-popups {
+    background-color: white;
+    width: 180px;
+    height: 200px;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  
+  .modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+  }
+  .admission th{
+    font-family: sans-serif;
+    font-size: 12px;
+    font-weight: 300;
+  }

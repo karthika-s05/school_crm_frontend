@@ -1,0 +1,106 @@
+img {
+    max-width: 100%;
+    height: 150px;
+    object-fit:cover;
+    border-radius: 50%;
+    width: 150px;
+    float: right;
+    margin-bottom: 20px;
+}
+.Profile .container{
+    display: flex;
+}
+.Profile .container .left{
+    padding: 20px;
+    flex: 3;
+}
+.Profile .container .left p{
+    margin-bottom: 10px;
+    /* font-family: 'Poppins', sans-serif; */
+
+}
+
+.Profile .container .left p span{
+    font-size: 15px;
+    color: #051F3E;
+    margin-right: 15px;
+}
+.Profile .container .right{
+    flex:3 ;
+}
+
+.Profile .container .right{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+   
+}
+
+.Profile .container .right .img-con{
+        padding: 10px;
+        background-color:#FFA602 ;
+        border-radius: 50%;
+        border: 5px solid #051F3E;
+}
+/* .Profile .container .right .img-con img{
+        
+} */
+
+
+
+.Profile{
+    margin-top: 25px;
+    padding: 15px 30px 30px;
+    background-color: #ffffff;
+    border-radius: 4px;
+    width: 85%;
+    margin-left: 100px;
+}
+
+.studentData td{
+    border: 1px solid white;
+    background:white;
+    padding: 10px;
+    color: rgb(167, 167, 167);
+}
+.studentData .Names{
+    border: 0;
+    background:white;
+    padding: 10px;
+    color: black;
+}
+/* Table CSS */
+
+.table {
+    /* margin-top: 30px; */
+    /* font-family: 'Poppins', sans-serif; */
+    font-family: Roboto, sans-serif;
+    border-collapse: collapse;
+    /* width: 100%; */
+}
+
+.table td,
+th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 2px;
+    font-size: 12px;
+    font-family: sans-serif;
+    color: #111111;
+}
+.table td{
+    color: #646464;
+}
+
+tr:nth-child(even) {
+    background-color: #F9F9F9;
+}
+
+tr:nth-child(odd) {
+    background-color: #FFFFFF;
+}
+
+.download-icon{
+    background: rgb(241,242,244);
+    padding: 8px;
+}

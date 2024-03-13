@@ -1,0 +1,47 @@
+/* Reset some default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+   
+    /* font-family: Roboto, sans-serif; */
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Style the dropdown container */
+.dropdown {
+    width: 200px;
+    margin: 20px auto;
+}
+
+/* Style the select element */
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    outline: none; 
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+/* Style the select dropdown arrow */
+select::-ms-expand {
+    display: none; /* Hide the default arrow in IE10 and IE11 */
+}
+
+/* Style select options */
+option {
+    padding: 10px;
+    background-color: #f8f8f8;
+    color: #333;
+}
+
+/* Hover effect for options */
+option:hover {
+    background-color: #ddd;
+}

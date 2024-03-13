@@ -1,0 +1,376 @@
+/* .table-container {
+    max-height: 430px;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+}
+
+table {
+    width: 80%;
+    border-collapse: collapse;
+}
+
+thead {
+    position: sticky;
+    top: 0;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    font-size: 13px;
+    background-color: #fff;
+}
+
+th {
+    background-color: #052955;
+    color: #fff;
+    font-weight: 400;
+}
+.image {
+    height: 50px;
+    width: 50px;
+    border-radius: 50%;
+}
+
+.table-container::-webkit-scrollbar {
+    width: 0.5em;
+
+}
+
+.table-container::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 0.25em;
+}
+
+.edit-button {
+    background-color: #247ff7;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.edit-button:hover {
+    background-color: #2980b9;
+}
+
+.delete-button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.delete-button:hover {
+    background-color: #c0392b;
+} */
+/* Previous styles for pagination buttons */
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pagination-button {
+  margin: 0 5px;
+  background-color: rgb(223, 218, 218);
+  border-radius: 5px;
+  padding: 8px 15px;
+}
+
+.active-page {
+  background-color: #3498db;
+  color: #fff;
+}
+
+.pagination-button:disabled {
+  color: #e01c1c;
+  cursor: not-allowed;
+}
+
+.pagination-button:disabled:before,
+.pagination-button:disabled:after {
+  content: "...";
+  color: #777;
+}
+
+.active-page {
+  background-color: #ffa301;
+  color: white;
+  border-radius: 5px;
+}
+.table-container {
+  /* margin-top: 25px; */
+  padding: 15px 20px 9px;
+  background-color: #ffffffc9;
+  border-radius: 7px;
+  border: 1px solid rgb(207, 207, 207);
+  height: 539px;
+  /* -webkit-box-shadow: 0px 10px 20px 0px rgba(229, 229, 229, 0.75);
+    box-shadow: 0px 10px 20px 0px rgba(229, 229, 229, 0.75); */
+}
+@media(min-width:1430px) {
+  .table-container {
+    /* margin-top: 25px; */
+    padding: 15px 30px 30px;
+    background-color: #ffffffc9;
+    border-radius: 7px;
+    border: 1px solid rgb(207, 207, 207);
+    height: 600px;
+  }
+}
+.form-group {
+  display: flex;
+  justify-content: flex-end;
+  width: calc(100% - 2px);
+  margin-top: -18px;
+}
+
+.search-input {
+  border: 1px solid rgb(207, 206, 206);
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 28px;
+  width: 234px;
+  margin-left: 10px;
+  font-size: 13px;
+  font-family:  sans-serif;
+  font-weight: initial;
+  line-height: normal;
+  -webkit-font-smoothing: antialiased;
+}
+.filter-input {
+  border: 2px solid gray;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  height: 45px;
+  width: 275px;
+  margin-left: 10px;
+}
+.form-group i {
+  font-size: 18px;
+}
+.form-group button:hover{
+  background-color: #052955;
+}
+.form-group button {
+  display: flex;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 300;
+  background-color: #174277;
+  color: #ffff;
+  text-align: center;
+  letter-spacing: 1px;
+  border-radius: 4px;
+  margin-left: 15px;
+  height: 28px;
+  align-items: center;
+  font-family: sans-serif;
+  padding: 10px;
+}
+
+.form-group .form-control {
+  background-color: #fff0;
+  font-size: 13px;
+  color: #111111;
+  border: none;
+  font-family: sans-serif;
+  font-weight: initial;
+  line-height: normal;
+  -webkit-font-smoothing: antialiased;
+  /* margin-right: 25px; */
+}
+.form-group .className {
+  background-color: #ffff;
+  font-size: 14px;
+  color: #111111;
+  border: none;
+}
+
+:focus {
+  outline: none;
+}
+.filter-group .form-control:focus {
+  outline: none;
+}
+
+.image {
+  height: 50px;
+  width: 50px;
+  border-radius: 50%;
+}
+
+.edit-button,
+.view-button {
+  /* background-color: #052955; */
+  color: green;
+  border: none;
+  padding: 4px 7px;
+  border-radius: 10px;
+  cursor: pointer;
+  background: no-repeat;
+}
+
+/* .edit-button,.view-button:hover {
+    background-color: #052955;
+} */
+
+.delete-button {
+  /* background-color: #e74c3c; */
+  color: #e74c3c;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  background: no-repeat;
+}
+
+/* .delete-button:hover {
+    background-color: #c0392b;
+} */
+
+.table {
+  /* margin-top: 30px; */
+  /* font-family: 'Poppins', sans-serif; */
+  font-family: Roboto, sans-serif;
+  border-collapse: collapse;
+  width: auto;
+  min-width: 40%; 
+  max-width: 100%; 
+  /* width: 100%; */
+}
+
+.table td,
+th {
+  border: 1px solid rgb(163, 161, 161);
+  text-align: left ;
+  /* padding: 8px; */
+  font-family: sans-serif;
+  font-size: 12px;
+  color: #111111;
+}
+.table td {
+  color: #646464;
+}
+table th:last-child {
+  text-align: center !important;
+}
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+tr:nth-child(odd) {
+  background-color: #051f3e;
+}
+
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.pagination a {
+  color: black;
+  float: left;
+  padding: 7px 16px;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+}
+
+.pagination a.active {
+  background-color: #ffa301;
+  color: white;
+  border-radius: 5px;
+}
+
+.pagination a:hover:not(.active) {
+  background-color: #ddd;
+  border-radius: 5px;
+}
+
+/* .modal-overlay1 {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #11111131 ;
+}
+
+.modal-overlay1 .modal-content1 {
+  background: #fff;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  width: 100%;
+} */
+
+.modal-close {
+  cursor: pointer;
+}
+
+.modal-dialog-scrollable {
+  max-height: 70vh; /* Adjust the max height as needed */
+  overflow-y: auto;
+}
+
+.table {
+  /* width: 100%; */
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.table th,
+.table td {
+  /* border: 1px solid #ddd; */
+  /* padding: 8px; */
+  text-align: left;
+}
+
+.table th {
+  text-align: left ;
+  padding: 10px 2px;
+  background-color: rgba(69, 43, 144, 0.1);
+  color: #452b90;
+  border-right: 1px solid rgb(235, 235, 235);
+  font-weight: 600;
+}
+
+.btn-style {
+  margin-top: 20px;
+  text-align: right;
+}
+
+.cancel-button {
+  padding: 10px 20px;
+  background-color: #ccc;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.view-delete{
+  display: flex;
+  justify-content: center;
+}
+/* Add more styles as needed */
