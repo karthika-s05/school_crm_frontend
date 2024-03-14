@@ -2156,6 +2156,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
+                          style={{
+                            border: `1px solid ${formik.touched.fatherName &&
+                              !formik.values.fatherName
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.fatherName &&
                             formik.errors.fatherName
                             ? "is-invalid"
@@ -2178,7 +2186,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter father name.
+                            Please enter father name
                           </div>
                         ) : null}
                       </div>
@@ -2198,6 +2206,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
+                          style={{
+                            border: `1px solid ${formik.touched.fatherQualification &&
+                              !formik.values.fatherQualification
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.fatherQualification &&
                             formik.errors.fatherQualification
                             ? "is-invalid"
@@ -2220,7 +2236,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter father qualification.
+                            Please enter father qualification
                           </div>
                         ) : null}
                       </div>
@@ -2240,6 +2256,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
+                          style={{
+                            border: `1px solid ${formik.touched.fatherOccupation &&
+                              !formik.values.fatherOccupation
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.fatherOccupation &&
                             formik.errors.fatherOccupation
                             ? "is-invalid"
@@ -2262,7 +2286,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter father occupation.
+                            Please enter father occupation
                           </div>
                         ) : null}
                       </div>
@@ -2282,6 +2306,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
+                          style={{
+                            border: `1px solid ${formik.touched.fatherAnnualIncome &&
+                              !formik.values.fatherAnnualIncome
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.fatherAnnualIncome &&
                             formik.errors.fatherAnnualIncome
                             ? "is-invalid"
@@ -2304,7 +2336,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter father annual income.
+                            Please enter father annual income
                           </div>
                         ) : null}
                       </div>
@@ -2334,7 +2366,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
-                          style={{ width: "248px" }}
+                          style={{
+                            border: `1px solid ${formik.touched.fatherMobileNo &&
+                              !formik.values.fatherMobileNo
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.fatherMobileNo &&
                             formik.errors.fatherMobileNo
                             ? "is-invalid"
@@ -2360,7 +2399,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter valid father mobile No .
+                            Please enter valid father mobile No
                           </div>
                         ) : null}
                       </div>
@@ -2384,7 +2423,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
-                          style={{ width: "243px" }}
+                          style={{
+                            border: `1px solid ${formik.touched.fatherEmailId &&
+                              !formik.values.fatherEmailId
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.fatherEmailId &&
                             formik.errors.fatherEmailId
                             ? "is-invalid"
@@ -2411,7 +2457,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter valid father e-mail .
+                            Please enter valid father e-mail
                           </div>
                         ) : null}
                       </div>
@@ -2436,6 +2482,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
+                          style={{
+                            border: `1px solid ${formik.touched.motherName &&
+                              !formik.values.motherName
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.motherName &&
                             formik.errors.motherName
                             ? "is-invalid"
@@ -2478,6 +2532,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
+                          style={{
+                            border: `1px solid ${formik.touched.motherQualification &&
+                              !formik.values.motherQualification
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.motherQualification &&
                             formik.errors.motherQualification
                             ? "is-invalid"
@@ -2500,7 +2562,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter mother qualification.
+                            Please enter mother qualification
                           </div>
                         ) : null}
                       </div>
@@ -2520,6 +2582,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
+                          style={{
+                            border: `1px solid ${formik.touched.motherOccupation &&
+                              !formik.values.motherOccupation
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.motherOccupation &&
                             formik.errors.motherOccupation
                             ? "is-invalid"
@@ -2542,7 +2612,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter mother occupation.
+                            Please enter mother occupation
                           </div>
                         ) : null}
                       </div>
@@ -2562,6 +2632,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
+                          style={{
+                            border: `1px solid ${formik.touched.motherAnnualIncome &&
+                              !formik.values.motherAnnualIncome
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.motherAnnualIncome &&
                             formik.errors.motherAnnualIncome
                             ? "is-invalid"
@@ -2584,7 +2662,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter mother annual income.
+                            Please enter mother annual income
                           </div>
                         ) : null}
                       </div>
@@ -2614,7 +2692,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
-                          style={{ width: "248px" }}
+                          style={{
+                            border: `1px solid ${formik.touched.motherMobileNo &&
+                              !formik.values.motherMobileNo
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.motherMobileNo &&
                             formik.errors.motherMobileNo
                             ? "is-invalid"
@@ -2639,7 +2724,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter valid mother Mobile No.
+                            Please enter valid mother Mobile No
                           </div>
                         ) : null}
                       </div>
@@ -2662,7 +2747,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
-                          style={{ width: "248px" }}
+                          style={{
+                            border: `1px solid ${formik.touched.motherEmailId &&
+                              !formik.values.motherEmailId
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.motherEmailId &&
                             formik.errors.motherEmailId
                             ? "is-invalid"
@@ -2689,7 +2781,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter valid mother e-mail .
+                            Please enter valid mother e-mail
                           </div>
                         ) : null}
                       </div>
@@ -2763,6 +2855,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
+                          style={{
+                            border: `1px solid ${formik.touched.guardianName &&
+                              !formik.values.guardianName
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.guardianName &&
                             formik.errors.guardianName
                             ? "is-invalid"
@@ -2806,6 +2906,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
+                          style={{
+                            border: `1px solid ${formik.touched.guardianQualification &&
+                              !formik.values.guardianQualification
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.guardianQualification &&
                             formik.errors.guardianQualification
                             ? "is-invalid"
@@ -2828,7 +2936,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter guardian qualification.
+                            Please enter guardian qualification
                           </div>
                         ) : null}
                       </div>
@@ -2848,6 +2956,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
+                          style={{
+                            border: `1px solid ${formik.touched.guardianOccupation &&
+                              !formik.values.guardianOccupation
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.guardianOccupation &&
                             formik.errors.guardianOccupation
                             ? "is-invalid"
@@ -2870,7 +2986,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter guardian occupation.
+                            Please enter guardian occupation
                           </div>
                         ) : null}
                       </div>
@@ -2890,6 +3006,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
+                          style={{
+                            border: `1px solid ${formik.touched.guardianAnnualincome &&
+                              !formik.values.guardianAnnualincome
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "240px"
+                          }}
                           className={`effect-3 size ${formik.touched.guardianAnnualincome &&
                             formik.errors.guardianAnnualincome
                             ? "is-invalid"
@@ -2912,7 +3036,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter guardian annual income.
+                            Please enter guardian annual income
                           </div>
                         ) : null}
                       </div>
@@ -2941,7 +3065,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
-                          style={{ width: "248px" }}
+                          style={{
+                            border: `1px solid ${formik.touched.guardianMobileNo &&
+                              !formik.values.guardianMobileNo
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "248px"
+                          }}
                           className={`effect-3 size ${formik.touched.guardianMobileNo &&
                             formik.errors.guardianMobileNo
                             ? "is-invalid"
@@ -2967,7 +3098,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter guardian mobile no .
+                            Please enter guardian mobile no
                           </div>
                         ) : null}
                       </div>
@@ -2990,7 +3121,14 @@ export default function Studendlist() {
                           </span>
                         </label>
                         <input
-                          style={{ width: "248px" }}
+                          style={{
+                            border: `1px solid ${formik.touched.guardianEmail &&
+                              !formik.values.guardianEmail
+                              ? "red"
+                              : "#cdcbcb"
+                              }`,
+                            width: "248px"
+                          }}
                           className={`effect-3 size ${formik.touched.guardianEmail &&
                             formik.errors.guardianEmail
                             ? "is-invalid"
@@ -3017,7 +3155,7 @@ export default function Studendlist() {
                               marginTop: "1px",
                             }}
                           >
-                            Please enter guardian valid e-mail .
+                            Please enter guardian valid e-mail
                           </div>
                         ) : null}
                       </div>
@@ -3094,10 +3232,11 @@ export default function Studendlist() {
                       <input
                         style={{
                           border: `1px solid ${formik.touched.siblingsId1 &&
-                            formik.errors.siblingsId1
+                            !formik.values.siblingsId1
                             ? "red"
                             : "#cdcbcb"
                             }`,
+                          width: "240px"
                         }}
                         className={`effect-3 size ${formik.touched.siblingsId1 &&
                           formik.errors.siblingsId1
@@ -3130,7 +3269,7 @@ export default function Studendlist() {
                             marginBottom: "-12px",
                           }}
                         >
-                          Sibling1 admissionNo wrong.
+                          Sibling1 admissionNo wrong
                         </div>
                       ) : (
                         formik.touched.siblingsId1 &&
@@ -3143,7 +3282,7 @@ export default function Studendlist() {
                               marginBottom: "-12px",
                             }}
                           >
-                            Admission no is required.
+                            Admission no is required
                           </div>
                         )
                       )}
@@ -3162,7 +3301,7 @@ export default function Studendlist() {
                             Already SiblingsID is entered.
                           </div>
                         )} */}
-                      {modalOpen &&view && (
+                      {modalOpen && view && (
                         <div className="modal-overlay admission">
                           <div
                             className=" modal-content"
@@ -4264,13 +4403,6 @@ export default function Studendlist() {
                     <div>
                       <div style={{ display: "flex" }}>
                         <input
-                          style={{
-                            border: `1px solid ${formik.touched.siblingsId2 &&
-                              formik.errors.siblingsId2
-                              ? "red"
-                              : "#cdcbcb"
-                              }`,
-                          }}
                           className={`effect-3 size ${formik.touched.siblingsId2 &&
                             formik.errors.siblingsId2
                             ? "is-invalid"
@@ -4314,20 +4446,13 @@ export default function Studendlist() {
                               marginBottom: "-12px",
                             }}
                           >
-                            Sibling2 admissionNo wrong.
+                            Sibling2 admissionNo wrong
                           </div>
                         )}
                     </div>
                     <div>
                       <div style={{ display: "flex" }}>
                         <input
-                          style={{
-                            border: `1px solid ${formik.touched.siblingsId3 &&
-                              formik.errors.siblingsId3
-                              ? "red"
-                              : "#cdcbcb"
-                              }`,
-                          }}
                           className={`effect-3 size ${formik.touched.siblingsId3 &&
                             formik.errors.siblingsId3
                             ? "is-invalid"
@@ -4366,7 +4491,7 @@ export default function Studendlist() {
                               marginBottom: "-12px",
                             }}
                           >
-                            Sibling3 admissionNo wrong.
+                            Sibling3 admissionNo wrong
                           </div>
                         )}
                     </div>
@@ -4433,6 +4558,14 @@ export default function Studendlist() {
                   <>
                     <div style={{ display: "block" }}>
                       <input
+                        style={{
+                          border: `1px solid ${formik.touched.parentId1 &&
+                            !formik.values.parentId1
+                            ? "red"
+                            : "#cdcbcb"
+                            }`,
+                          width: "240px"
+                        }}
                         className={`effect-3 size ${formik.touched.parentId1 && formik.errors.parentId1
                           ? "is-invalid"
                           : ""
@@ -4478,7 +4611,7 @@ export default function Studendlist() {
                           staffId2 is  wrong.
                         </div>
                       )}
-                      {modalOpen && viewStaff &&(
+                      {modalOpen && viewStaff && (
                         <div className="modal-overlay admission">
                           <div
                             className=" modal-content"
@@ -4840,7 +4973,7 @@ export default function Studendlist() {
                                   {staffData.parent1.map((student) => (
                                     <img
                                       style={{ borderRadius: "0" }}
-                                      src={student.image?student.image:student.photoUrl}
+                                      src={student.image ? student.image : student.photoUrl}
                                       alt="student"
                                     />
                                   ))}
@@ -5029,7 +5162,7 @@ export default function Studendlist() {
                                               textAlign: "start",
                                             }}
                                           >
-                                           {student.city}
+                                            {student.city}
                                           </td>
                                         </tr>
                                         <tr>
@@ -5201,7 +5334,7 @@ export default function Studendlist() {
                                     {staffData.parent2.map((student) => (
                                       <img
                                         style={{ borderRadius: "0" }}
-                                        src={student.image?student.image:student.photoUrl}
+                                        src={student.image ? student.image : student.photoUrl}
                                         alt="student"
                                       />
                                     ))}
@@ -5330,7 +5463,14 @@ export default function Studendlist() {
                   <>
                     <div style={{ display: "block" }}>
                       <input
-                        style={{ width: "300px" }}
+                        style={{
+                          border: `1px solid ${formik.touched.schoolName &&
+                            !formik.values.schoolName
+                            ? "red"
+                            : "#cdcbcb"
+                            }`,
+                          width: "300px"
+                        }}
                         className={`effect-3 size ${formik.touched.schoolName && formik.errors.schoolName
                           ? "is-invalid"
                           : ""
@@ -5357,8 +5497,8 @@ export default function Studendlist() {
                         )}
                     </div>
 
-                    <textarea
-                      style={{ height: "60px", width: "200px" }}
+                    <input
+                      style={{ width: "200px" }}
                       className={`effect-3 size ${formik.touched.reasonForReleaving &&
                         formik.errors.reasonForReleaving
                         ? "is-invalid"
