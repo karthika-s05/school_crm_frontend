@@ -1390,6 +1390,7 @@ export default function Studendlist() {
                     <textarea
                       style={{
                         height: "100px",
+                        resize: "none",
                         border: `1px solid ${formik.touched.address1 && formik.errors.address1
                           ? "red"
                           : "#cdcbcb"
@@ -3236,7 +3237,7 @@ export default function Studendlist() {
                             ? "red"
                             : "#cdcbcb"
                             }`,
-                          width: "240px"
+                          width: "150px"
                         }}
                         className={`effect-3 size ${formik.touched.siblingsId1 &&
                           formik.errors.siblingsId1
@@ -3304,8 +3305,8 @@ export default function Studendlist() {
                       {modalOpen && view && (
                         <div className="modal-overlay admission">
                           <div
-                            className=" modal-content"
-                            style={{ width: "500px" }}
+                            className="modal-contents"
+                            style={{ width: "550px" }}
                           >
                             <span className="modal-close " onClick={closeModal}>
                               <i
@@ -3315,23 +3316,12 @@ export default function Studendlist() {
                             </span>
                             {view == 1 ? <>{studentData.sibling1.length > 0 ? (
                               <div style={{ display: "flex" }}>
-                                <div>
+                                <div className="modals">
                                   {studentData.sibling1.map((student) => (
                                     <>
                                       <tr key={student.id}>
-                                        <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            color: "black",
-                                            padding: "5px",
-                                          }}
-                                        >
+                                        <td>
                                           <h2
-                                            style={{
-                                              display: "flex",
-                                              width: "230px",
-                                            }}
                                           >
                                             Admission no: {student.admissionNo}
                                           </h2>
@@ -3339,312 +3329,172 @@ export default function Studendlist() {
                                       </tr>
                                       <tr key={student.id}>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
                                         >
                                           Student Name
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            padding: "3px",
-                                          }}
                                         >
-                                          :{" "}
+                                          :
                                         </td>
                                         <td
                                           className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            width: "300px",
-                                          }}
+
                                         >
-                                          {" "}
+                                          
                                           {student.studentName}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
-                                          Registration No{" "}
+                                          Registration No
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+
                                         >
-                                          :{" "}
+                                          :
                                         </td>
                                         <td
                                           className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           {student.registrationNo}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
-                                          Class & Section{" "}
+                                          Class & Section
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+
                                         >
-                                          :{" "}
+                                          :
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           {student.class} - {student.section}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           Gender
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+
                                         >
-                                          :{" "}
+                                          :
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           {student.gender}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            width: "400",
-                                          }}
+
                                         >
                                           Address
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+
                                         >
-                                          :{" "}
+                                          :
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
+
                                         >
                                           {student.address1}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           Pin Code
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+
                                         >
-                                          :{" "}
+                                          :
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           {student.pincode}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
-                                          Mobile{" "}
+                                          Mobile
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+
                                         >
-                                          :{" "}
+                                          :
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           {student.mobile}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           Emis No
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+
                                         >
-                                          :{" "}
+                                          :
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           {student.emisNo}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           BloodGroup
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+
                                         >
-                                          :{" "}
+                                          :
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           {student.bloodgroup}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           Date of Birth
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "",
-                                            padding: "3px",
-                                          }}
+
                                         >
-                                          :{" "}
+                                          :
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+
                                         >
                                           {student.dateOfBirth}
                                         </td>
@@ -3676,23 +3526,15 @@ export default function Studendlist() {
                             )}</>
                               : view == 2 ? <>{studentData.sibling2.length > 0 ? (
                                 <div style={{ display: "flex" }}>
-                                  <div>
+                                  <div className="modals">
                                     {studentData.sibling2.map((student) => (
                                       <>
                                         <tr key={student.id}>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              color: "black",
-                                              padding: "5px",
-                                            }}
+
                                           >
                                             <h2
-                                              style={{
-                                                display: "flex",
-                                                width: "230px",
-                                              }}
+
                                             >
                                               Admission no: {student.admissionNo}
                                             </h2>
@@ -3700,312 +3542,173 @@ export default function Studendlist() {
                                         </tr>
                                         <tr key={student.id}>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             Student Name
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              width: "300px",
-                                            }}
+
+
                                           >
-                                            {" "}
+                                            
                                             {student.studentName}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
-                                            Registration No{" "}
+                                            Registration No
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
+
                                           >
                                             {student.registrationNo}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
-                                            Class & Section{" "}
+                                            Class & Section
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.class} - {student.section}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             Gender
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.gender}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              width: "400",
-                                            }}
+
                                           >
                                             Address
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.address1}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             Pin Code
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.pincode}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
-                                            Mobile{" "}
+                                            Mobile
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.mobile}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             Emis No
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.emisNo}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             BloodGroup
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.bloodgroup}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             Date of Birth
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.dateOfBirth}
                                           </td>
@@ -4036,23 +3739,15 @@ export default function Studendlist() {
                                 </div>
                               )}</> : <>{studentData.sibling3.length > 0 ? (
                                 <div style={{ display: "flex" }}>
-                                  <div>
+                                  <div className="modals">
                                     {studentData.sibling3.map((student) => (
                                       <>
                                         <tr key={student.id}>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              color: "black",
-                                              padding: "5px",
-                                            }}
+
                                           >
                                             <h2
-                                              style={{
-                                                display: "flex",
-                                                width: "230px",
-                                              }}
+
                                             >
                                               Admission no: {student.admissionNo}
                                             </h2>
@@ -4060,312 +3755,171 @@ export default function Studendlist() {
                                         </tr>
                                         <tr key={student.id}>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             Student Name
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              width: "300px",
-                                            }}
+
                                           >
-                                            {" "}
+                                            
                                             {student.studentName}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
-                                            Registration No{" "}
+                                            Registration No
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.registrationNo}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
-                                            Class & Section{" "}
+                                            Class & Section
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.class} - {student.section}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             Gender
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.gender}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              width: "400",
-                                            }}
+
                                           >
                                             Address
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.address1}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             Pin Code
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.pincode}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
-                                            Mobile{" "}
+                                            Mobile
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.mobile}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             Emis No
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.emisNo}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             BloodGroup
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.bloodgroup}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             Date of Birth
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "",
-                                              padding: "3px",
-                                            }}
+
                                           >
-                                            :{" "}
+                                            :
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+
                                           >
                                             {student.dateOfBirth}
                                           </td>
@@ -4424,7 +3978,7 @@ export default function Studendlist() {
                               onClick={() => handleFile(2)}
                               style={{ display: "flex", alignItems: "center" }}
                             >
-                              {" "}
+                              
                               <i
                                 className="bx  bx-show-alt"
                                 style={{
@@ -4508,7 +4062,7 @@ export default function Studendlist() {
                 }}
               >
                 <p>
-                  Do any of the parent work at this school :{" "}
+                  Do any of the parent work at this school :
                   <span
                     style={{
                       color: "red",
@@ -4517,7 +4071,7 @@ export default function Studendlist() {
                     }}
                   >
                     *
-                  </span>{" "}
+                  </span>
                 </p>
                 <div style={{ display: "flex", gap: "3px" }}>
                   <input
@@ -4614,8 +4168,8 @@ export default function Studendlist() {
                       {modalOpen && viewStaff && (
                         <div className="modal-overlay admission">
                           <div
-                            className=" modal-content"
-                            style={{ width: "500px" }}
+                            className=" modal-contents"
+                            style={{ width: "550px" }}
                           >
                             <span className="modal-close " onClick={closeModal}>
                               <i
@@ -4625,23 +4179,14 @@ export default function Studendlist() {
                             </span>
                             {viewStaff == 1 ? <>{staffData.parent1.length > 0 ? (
                               <div style={{ display: "flex" }}>
-                                <div>
+                                <div className="modals">
                                   {staffData.parent1.map((student) => (
                                     <>
                                       <tr key={student.staffId ? student.staffId : student.adminUserId}>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            color: "black",
-                                            padding: "5px",
-                                          }}
+                                         
                                         >
-                                          <h2
-                                            style={{
-                                              display: "flex",
-                                              width: "230px",
-                                            }}
+                                          <h2 
                                           >
                                             Staff Id: {student.staffId ? student.staffId : student.adminUserId}
                                           </h2>
@@ -4649,31 +4194,17 @@ export default function Studendlist() {
                                       </tr>
                                       <tr key={student.staffId}>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                        
                                         >
                                           Staff Name
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            padding: "3px",
-                                          }}
+                                         
                                         >
                                           :{" "}
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            width: "300px",
-                                          }}
+                                         
                                         >
                                           {" "}
                                           {student.staffName ? student.staffName : student.adminName}
@@ -4681,280 +4212,151 @@ export default function Studendlist() {
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                         
                                         >
                                           Qualification{" "}
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+                                         
                                         >
                                           :{" "}
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                         
                                         >
                                           {student.qualification}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                        
                                         >
                                           Department{" "}
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+                                         
                                         >
                                           :{" "}
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                         
                                         >
                                           {student.department}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                         
                                         >
                                           Gender
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+                                         
                                         >
                                           :{" "}
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                         
                                         >
                                           {student.gender}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            width: "400",
-                                          }}
+                                         
                                         >
                                           Address
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+                                         
                                         >
                                           :{" "}
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                         
                                         >
                                           {student.city}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                          
                                         >
                                           Pin Code
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+                                         
                                         >
                                           :{" "}
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                         
                                         >
                                           {student.pincode}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                         
                                         >
                                           Mobile{" "}
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+                                         
                                         >
                                           :{" "}
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                         
                                         >
                                           {student.contact_number ? student.contact_number : student.phoneNumber}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                         
                                         >
                                           Role Of Staff
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
+                                         
                                         >
                                           :{" "}
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                         
                                         >
                                           {student.roleOfStaff ? student.roleOfStaff : "Admin"}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                         
                                         >
                                           BloodGroup
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                            padding: "3px",
-                                          }}
-                                        >
+                                         >
                                           :{" "}
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                          
                                         >
                                           {student.bloodGroup}
                                         </td>
                                       </tr>
                                       <tr>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
                                         >
                                           Date of Birth
                                         </td>
                                         <td
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "",
-                                            padding: "3px",
-                                          }}
+                                        
                                         >
                                           :{" "}
                                         </td>
                                         <td
-                                          className="Names"
-                                          style={{
-                                            border: "0",
-                                            background: "white",
-                                            textAlign: "start",
-                                          }}
+                                        
                                         >
                                           {student.date_of_birth ? student.date_of_birth : student.dateOfBirth}
                                         </td>
@@ -4986,23 +4388,15 @@ export default function Studendlist() {
                             )}</>
                               : <>{staffData.parent2.length > 0 ? (
                                 <div style={{ display: "flex" }}>
-                                  <div>
+                                  <div className="modals">
                                     {staffData.parent2.map((student) => (
                                       <>
                                         <tr key={student.staffId}>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              color: "black",
-                                              padding: "5px",
-                                            }}
+                                           
                                           >
-                                            <h2
-                                              style={{
-                                                display: "flex",
-                                                width: "230px",
-                                              }}
+                                            <h2 
+                                              
                                             >
                                               Staff Id: {student.staffId ? student.staffId : student.adminUserId}
                                             </h2>
@@ -5010,31 +4404,17 @@ export default function Studendlist() {
                                         </tr>
                                         <tr key={student.staffId}>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                           
                                           >
                                             Staff Name
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              padding: "3px",
-                                            }}
+                                            
                                           >
                                             :{" "}
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              width: "300px",
-                                            }}
+                                           
                                           >
                                             {" "}
                                             {student.staffName ? student.staffName : student.adminName}
@@ -5042,280 +4422,153 @@ export default function Studendlist() {
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                           
                                           >
                                             Qualification{" "}
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+                                          
                                           >
                                             :{" "}
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                         
                                           >
                                             {student.qualification}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                          
                                           >
                                             Department{" "}
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+                                            
                                           >
                                             :{" "}
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                           
                                           >
                                             {student.department}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                           
                                           >
                                             Gender
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+                                           
                                           >
                                             :{" "}
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                           
                                           >
                                             {student.gender}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              width: "400",
-                                            }}
+                                           
                                           >
                                             Address
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+                                            
                                           >
                                             :{" "}
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                           
                                           >
                                             {student.city}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                           
                                           >
                                             Pin Code
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+                                            
                                           >
                                             :{" "}
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                           
                                           >
                                             {student.pincode}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                            
                                           >
                                             Mobile{" "}
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+                                            
                                           >
                                             :{" "}
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                           
                                           >
                                             {student.contact_number ? student.contact_number : student.phoneNumber}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                           
                                           >
                                             Role Of Staff
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+                                            
                                           >
                                             :{" "}
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                            
                                           >
                                             {student.roleOfStaff ? student.roleOfStaff : "Admin"}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                          
                                           >
                                             BloodGroup
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                              padding: "3px",
-                                            }}
+                                            
                                           >
                                             :{" "}
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                         
                                           >
                                             {student.bloodGroup}
                                           </td>
                                         </tr>
                                         <tr>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                           
                                           >
                                             Date of Birth
                                           </td>
                                           <td
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "",
-                                              padding: "3px",
-                                            }}
+                                           
                                           >
                                             :{" "}
                                           </td>
                                           <td
-                                            className="Names"
-                                            style={{
-                                              border: "0",
-                                              background: "white",
-                                              textAlign: "start",
-                                            }}
+                                           
                                           >
                                             {student.date_of_birth ? student.date_of_birth : student.dateOfBirth}
                                           </td>
@@ -5426,24 +4679,24 @@ export default function Studendlist() {
                 <div style={{ display: "flex", gap: "3px" }}>
                   <input
                     type="radio"
-                    id="yesSibling"
+                    id="yesPreviousSchool"
                     name="isPreviousSchool"
                     value="yes"
                     checked={values.isPreviousSchool === "yes"}
                     onChange={handleRadioChange}
                   />
-                  <label htmlFor="yesSibling">Yes </label>
+                  <label htmlFor="yesPreviousSchool">Yes </label>
                 </div>
                 <div style={{ display: "flex", gap: "3px" }}>
                   <input
                     type="radio"
-                    id="noSibling"
+                    id="noPreviousSchool"
                     name="isPreviousSchool"
                     value="no"
                     checked={values.isPreviousSchool === "no"}
                     onChange={handleRadioChange}
                   />
-                  <label htmlFor="noSibling">No</label>
+                  <label htmlFor="noPreviousSchool">No</label>
                 </div>
                 {formik.touched.isPreviousSchool &&
                   formik.errors.isPreviousSchool ? (

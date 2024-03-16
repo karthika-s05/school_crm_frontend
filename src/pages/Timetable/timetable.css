@@ -1,4 +1,4 @@
-                .table-time{
+                /* .table-time{
     border-collapse: collapse;
     width: 100%;
 }
@@ -17,7 +17,7 @@ font-size: 20px;
     font-weight: bold;
     font-size: 16px;
 
-}
+} */
 
 
 .table td,
@@ -27,7 +27,7 @@ th {
     /* padding: 15px; */
     font-size: 12px;
     font-family: sans-serif;
-
+background-color: #FFFFFF;
 }
 /* .table td{
     color: #646464;

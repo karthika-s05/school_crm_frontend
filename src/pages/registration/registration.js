@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import "./registration.css";
 import "../../App.css";
 import {
@@ -33,7 +33,10 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const Registration = () => {
+  const ids = useParams();
+  console.log(ids.id, "love");
   const location = useLocation();
+  const navigate = useNavigate();
   const propsData = location.state;
   const [formData, setFormData] = useState({});
   const [dropDown, SetDropDown] = useState({
@@ -139,6 +142,59 @@ const Registration = () => {
   function findMissingKeys(array, object) {
     return array.filter((key) => !object.hasOwnProperty(key));
   }
+  function identifyCase(str) {
+    // Check if string contains underscores or hyphens
+    if (str.includes('_')) {
+      return 'snake_case';
+    } else if (str.includes('-')) {
+      return 'kebab-case';
+    }
+  
+    // Check if string contains uppercase letters other than the first character
+    if (str !== str.toLowerCase()) {
+      // Check if string starts with a lowercase letter
+      if (str.charAt(0) === str.charAt(0).toLowerCase()) {
+        return 'camelCase';
+      } else {
+        return 'PascalCase';
+      }
+    }
+  
+    // If none of the above conditions are met, it's likely in lowercase
+    return 'lowercase';
+  }
+  function convertToTitleCase(inputString) {
+    const words = inputString.split('_');
+
+    let titleCaseString = words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase();
+  
+    for (let i = 1; i < words.length; i++) {
+      titleCaseString += ' ' + words[i].charAt(0).toLowerCase() + words[i].slice(1).toLowerCase();
+      console.log(words[i].charAt(0).toUpperCase())
+    }
+  
+    return titleCaseString;
+  }
+  function camelCaseToWords(str) {
+    const words = str.split(/(?=[A-Z])/);
+    const result = words.map(word => word.charAt(0).toLowerCase() + word.slice(1)).join(' ');
+    return result.charAt(0).toUpperCase() + result.slice(1);
+  }
+
+  function handleValidationErrors(missingKeys) {
+    const newValidationErrors = {};
+    Object.assign(newValidationErrors, validationErrors);
+    missingKeys.forEach(key => {
+      let title;
+      if(identifyCase(key)==='snake_case'){
+        title = convertToTitleCase(key)
+     }else{
+       title=camelCaseToWords(key)
+     }
+      newValidationErrors[key] = `${title} is required.`;
+    });
+    setValidationErrors(newValidationErrors);
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -153,7 +209,13 @@ const Registration = () => {
     let errorMessage = "";
 
     if (name && value.trim() === "") {
-      errorMessage = `${name} is required.`;
+      let title;
+      if(identifyCase(name)==='snake_case'){
+         title = convertToTitleCase(name)
+      }else{
+        title=camelCaseToWords(name)
+      }
+      errorMessage = `${title} is required.`;
     }
     setValidationErrors({ ...validationErrors, [name]: errorMessage });
 
@@ -165,10 +227,11 @@ const Registration = () => {
   };
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(propsData);
     const hasErrors = Object.values(validationErrors).some(
       (error) => error !== ""
     );
+    console.log(validationErrors,"love")
+  
     console.log(validationErrors);
     if (hasErrors) {
       console.log("Form has validation errors. Please correct them.");
@@ -218,18 +281,36 @@ const Registration = () => {
         const releivestud = async () => {
           try {
             let data = StudentRelieving.map((value) => value.name);
+            formData.studentID=ids.id
             const missingKeys = findMissingKeys(data, formData);
+            handleValidationErrors(missingKeys)
             if (missingKeys.length === 0) {
               const response = await relieveStud(formData, TOKEN_KEY);
+              console.log(response,"love")
               if (response.status === "success") {
                 setFormData({});
-                showMessage(response);
+                toast.success(response.message, {
+                  onClose: () => {
+                    navigate("/list", { state: "Student List" });
+                  },
+                });
+              }else{
+                throw response.data
               }
             } else {
-              showMessage(missingKeys);
+              console.log(missingKeys,"love")
+              // toast.error("Fields are mandatory", {
+              //   onClose: () => {
+              //   },
+              // });
             }
           } catch (err) {
-            console.log(err);
+            toast.error(err, {
+              onClose: () => {
+                // navigate("/studentinfo");
+              },
+            });
+            console.log(err,"love");
           }
         };
         releivestud();
@@ -238,29 +319,38 @@ const Registration = () => {
         const releivestaff = async () => {
           try {
             let data = StaffRelieving.map((value) => value.name);
+            formData.staffId=ids.id
             const missingKeys = findMissingKeys(data, formData);
+            handleValidationErrors(missingKeys)
             if (missingKeys.length === 0) {
               const response = await relieveStaff(formData, TOKEN_KEY);
               if (response.status === "success") {
                 setFormData({});
-                showMessage(response);
+                toast.success(response.message, {
+                  onClose: () => {
+                    navigate("/list", { state: "Staff List" });
+                  },
+                });
               } else {
-                showMessage(missingKeys);
+                throw response.data
               }
             }
           } catch (err) {
-            console.log(err);
+            toast.error(err, {
+              onClose: () => {
+                // navigate("/studentinfo");
+              },
+            });
           }
         };
         releivestaff();
         break;
-
       default:
         console.log("No matching data scenario");
     }
     console.log(formData);
   };
-
+  console.log("love",validationErrors)
   // const arrayOfPairs =propsData==='Admin Registration'?splitArrayIntoPairs(AdminRegistration):propsData==='Staff Registration'?splitArrayIntoPairs(StaffRegistration):splitArrayIntoPairs(StudentRegistration);
   let arrayOfPairs;
 
@@ -294,12 +384,19 @@ const Registration = () => {
     return (
       <>
         <div className="input-container">
-          <label className="input-label">{data.label}</label>
+          <label className="input-label">{data.label} &nbsp; <span style={{color:'red'}}>*</span></label>
           <input
+           style={{
+            border: `1px solid ${validationErrors[data.name]
+              ? "red"
+              : "#cdcbcb"
+              }`
+          }}
             className="effect-1"
             type={data.type}
             name={data.name}
-            value={formData[data.name] || ""}
+            value={data.name=='studentID'||data.name=='staffId'?ids.id:formData[data.name] || ""}
+            disabled={data.name=='studentID'||data.name=='staffId'?true:false}
             onChange={handleInputChange}
           />
         </div>
@@ -355,11 +452,11 @@ const Registration = () => {
           style={{ display: "flex", alignItems: "center" }}
         >
           <li>
-            <Link to={"/dashboard"}>
-              <a style={{ color: "#051F3E" }}>
-                <h4>Home</h4>
-              </a>
-            </Link>
+          <Link to={"/list"} state={propsData=='Student details'?"Student List":"Staff List"}>
+                <a style={{ color: "#051F3E" }}>
+                  <h4>{propsData=='Student details'?"Student":"Staff"}</h4>
+                </a>
+              </Link>
           </li>
           <li>
             <a>{propsData}</a>

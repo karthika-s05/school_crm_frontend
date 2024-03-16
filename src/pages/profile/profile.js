@@ -120,7 +120,27 @@ const Profile = () => {
 
   return (
     <div>
-    
+      <div>
+          <ul
+            class="breadcrumb"
+            style={{ display: "flex", alignItems: "center" }}
+          >
+            <li>
+              <Link to={"/list"} state={props=='Student details'?"Student List":"Staff List"}>
+                <a style={{ color: "#051F3E" }}>
+                  <h4>{props=='Student details'?"Student":"Staff"}</h4>
+                </a>
+              </Link>
+            </li>
+            <li>
+              <a>{props=='Student details'?"Student Details":"Staff Details"}</a>
+            </li>
+          </ul>
+          <span
+            className="horizontal-line"
+            style={{ background: "#F0F1F3", marginTop: "20px" }}
+          ></span>
+        </div>
       {studentData[0] || staffData[0] ? (
         <div>
           <div style={{ display: "flex", gap: "18px", marginTop: "5px" }}>

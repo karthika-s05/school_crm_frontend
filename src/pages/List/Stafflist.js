@@ -272,9 +272,9 @@ export default function Stafflist() {
       <div className="table-container">
       <ul class="breadcrumb" style={{ display: "flex",alignItems:"center" }}>
           <li>
-            <Link to={"/dashboard"}>
+            <Link to={"/list"} state={"Staff List"}>
               <a style={{ color: "#051F3E" }}>
-                <h4>Home</h4>
+                <h4>Staff</h4>
               </a>
             </Link>
           </li>

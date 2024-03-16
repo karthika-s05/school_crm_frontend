@@ -89,6 +89,10 @@ const Table = (props) => {
     setTotalPages(Math.ceil(data.length / pageSize));
   }, [data, pageSize]);
 
+  useEffect(() => {
+    setDeleteConfirmation(false)
+  }, [props.data]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === "classId") {
@@ -260,12 +264,14 @@ const Table = (props) => {
                       >
                         <i className="bx bxs-edit"></i>
                       </button>
-                      {/* <button
+                      <button
                         className="view-button"
-                        onClick={() => handleFileClicks(item[profileKey])}
+                        style={{color:"red"}}
+                        onClick={() => navigate(`/releiving/${item[profileKey]}`, { state: props.propsData=='Student List'?"Student Relieving":"Staff Relieving"})}
+
                       >
-                        <i class='bx bxs-file-png'></i>
-                      </button> */}
+                       <i class='bx bx-user-x'></i>
+                      </button>
                     </>
                   ) : (
                     <>
@@ -289,7 +295,7 @@ const Table = (props) => {
                 </div>
                 {deleteConfirmation && (
                   <div className="modal-overlays">
-                    <div className="modal-contents" style={{ width: "280px" }}>
+                    <div className="modal-content" style={{ width: "280px" }}>
                       <div
                         className="app-container"
                         style={{ marginRight: "-7px" }}

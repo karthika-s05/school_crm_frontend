@@ -1116,10 +1116,16 @@ export const relieveStud = async (body, token) => {
   }
 };
 export const relieveStaff = async (body, token) => {
+  const data={
+    staffId:body.staffId,
+    date_of_releaving:body.date_of_releaving,
+    reason_for_releaving:body.reason_for_releaving
+  }
+  console.log("love",body)
   try {
     const response = await axios.post(
       `${ADMIN_URL}/admin/releaving/staff`,
-      body,
+      data,
       {
         headers: {
           Authorization: `Bearer ${token}`,

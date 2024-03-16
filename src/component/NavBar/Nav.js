@@ -229,14 +229,14 @@ const Nav = () => {
                         </Link>
                       </a>
                     </li>
-                    <li>
+                    {/* <li>
                       <a>
                         <i class="bx bxs-pencil"></i>
                         <Link to={"/releiving"} state={"Student Relieving"}>
                          Relieving
                         </Link>
                       </a>
-                    </li>
+                    </li> */}
                   </ul>
                 </li>
                 <span class="horizontal-line"></span>
@@ -272,18 +272,18 @@ const Nav = () => {
                         </Link>
                       </a>
                     </li>
-                    <li>
+                    {/* <li>
                       <a>
                         <i class="bx bxs-pencil"></i>
                         <Link to={"/releiving"} state={"Staff Relieving"}>
                            Relieving
                         </Link>
                       </a>
-                    </li>
+                    </li> */}
                   </ul>
                 </li>
                 <span class="horizontal-line"></span>
-                <li>
+                {/* <li>
                   <div
                     className="iocn-link"
                     style={{ cursor: "pointer" }}
@@ -309,7 +309,7 @@ const Nav = () => {
                     </li>
                   </ul>
                 </li>
-                <span class="horizontal-line"></span>
+                <span class="horizontal-line"></span> */}
                 <li>
                   <div
                     className="iocn-link"
@@ -905,7 +905,7 @@ const Nav = () => {
                     <Route path="/master" element={<Master />} />
                     <Route path="/nationality" element={<Nationality />} />
                     <Route path="/registration" element={<Registration />} />
-                    <Route path="/releiving" element={<Registration />} />
+                    <Route path="/releiving/:id" element={<Registration />} />
                     <Route path="/list" element={<List />} />
                     <Route path="/timetable" element={<Timetable />} />
                     <Route path="/profile/:id" element={<Profile />} />
