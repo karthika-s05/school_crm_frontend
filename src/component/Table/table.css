@@ -355,6 +355,7 @@ tr:nth-child(odd) {
   color: #452b90;
   border-right: 1px solid rgb(235, 235, 235);
   font-weight: 600;
+  /* width: 120px; */
 }
 
 .btn-style {

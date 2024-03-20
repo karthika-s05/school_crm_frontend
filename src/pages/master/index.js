@@ -769,10 +769,12 @@ const Master = () => {
               id: response[0].id,
               classId: response[0].classId,
               sectionId: response[0].sectionId,
+              totalCount: response[0].totalCount,
             });
             setEditData([
               { name: "classId", data: response[0].className },
               { name: "sectionId", data: response[0].sectionName },
+              { name: "totalCount", data: response[0].totalCount },
             ]);
             // showMessage(response)
           } catch (err) {
@@ -1525,6 +1527,7 @@ const Master = () => {
               id: item.id,
               "class Name": item.className,
               "section Name": item.sectionName,
+              "total Count":item.totalCount
             }));
             setData(resultData);
           } catch (err) {
@@ -1716,8 +1719,7 @@ const Master = () => {
             const resultData = response.map((item) => ({
               id: item.id,
               day: item.day,
-              class: item.class,
-              section: item.section,
+              "class section": `${item.class}-${item.section}`,
               subject: item.subject,
               "start Time": item.startTime,
               "end Time": item.endTime,

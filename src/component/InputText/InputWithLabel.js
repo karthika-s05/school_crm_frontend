@@ -150,7 +150,7 @@ const InputWithLabel = ({
     var key = event.which || event.keyCode || 0;
     return ((key >= 65 && key <= 90) || (key >= 97 && key <= 122) || key === 32 || event.key === '+' || event.key === '-');
 }
-
+console.log(inputRef,"987654321")
 
   const isDateInput = type === "date";
   return (
@@ -219,7 +219,7 @@ const InputWithLabel = ({
                   name={name}
                   defaultValue={value}
                   onChange={onChange}
-                  onKeyPress={(event) => { if (!validate(event)) event.preventDefault(); }}
+                  // onKeyPress={(event) => { if (!validate(event)) event.preventDefault(); }}
                 />
                 {validationErrors[name] && (
                   <p className="error-message1">{validationErrors[name]}</p>

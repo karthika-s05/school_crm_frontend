@@ -558,6 +558,11 @@ export const classSection = [
     type: "select",
     name: "sectionId",
   },
+  {
+    label: "Total Count",
+    type: "number",
+    name: "totalCount",
+  },
 ];
 
 export const classTeacher = [

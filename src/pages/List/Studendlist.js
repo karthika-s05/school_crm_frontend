@@ -127,7 +127,9 @@ export default function Studendlist() {
     qualificationId: [],
   });
   const [state, setState] = useState();
+  const [admissionValidate, setAdmissionValidate] = useState();
   const [city, setCity] = useState();
+  const [viewAdminNo, SetviewAdminNo] = useState(0);
   const [classs, setClasss] = useState();
   const [sections, setSections] = useState(0);
   const formatAadharCardNo = (value) => {
@@ -149,8 +151,15 @@ export default function Studendlist() {
     formik.setFieldValue("pincode", formattedValue);
   };
   const formatMobile = (value) => {
-    const cleanedValue = value.replace(/\D/g, "");
-    return cleanedValue.replace(/(\d{10})/, "$1 ").trim();
+      const cleanedValue = value.replace(/\D/g, "");
+      return cleanedValue.replace(/(\d{10})/, "$1 ").trim();
+  };
+  const handleKeyPress = (event) => {
+    const keyCode = event.keyCode || event.which;
+
+    if (keyCode < 48 || keyCode > 57) {
+      event.preventDefault(); 
+    }
   };
 
   const handleMobileChange = (event) => {
@@ -532,10 +541,27 @@ export default function Studendlist() {
     },
   });
 
+  useEffect(()=>{
+    console.log("11111")
+    if (ids.id == ":id") {
+      const fetchData = async () => {
+        try {
+          const response = await getStudentlist({ userName: formik.values.admissionNo }, TOKEN_KEY);
+          console.log(response.data, "11111")
+          setAdmissionValidate(response.data)    
+        } catch (error) {
+          console.error("Error fetching student data:", error);
+        }
+      };
+      fetchData()
+    }
+  },[ids,formik.values.admissionNo])
+
   useEffect(() => {
     if (ids.id === ":id") {
       formik.resetForm();
     }
+
   }, [ids]);
   const handleReset = () => {
     formik.resetForm();
@@ -1000,10 +1026,14 @@ export default function Studendlist() {
                       type="text"
                       name="admissionNo"
                       onChange={formik.handleChange}
+                      // onBlur={(e) => {
+                      //   formik.handleBlur(e)
+                      //   SetviewAdminNo(!viewAdminNo)
+                      // }}
                       onBlur={formik.handleBlur}
                       value={formik.values.admissionNo}
                     />
-                    {formik.touched.admissionNo && formik.errors.admissionNo ? (
+                    {formik.touched.admissionNo && formik.errors.admissionNo  ? (
                       <div
                         className="text-danger"
                         style={{
@@ -1013,7 +1043,20 @@ export default function Studendlist() {
                           marginTop: "1px",
                         }}
                       >
-                        {formik.errors.admissionNo}
+                        {formik.errors.admissionNo}.
+                      </div>
+                    ) : null}
+                       {admissionValidate?.length>0 ? (
+                      <div
+                        className="text-danger"
+                        style={{
+                          color: "red",
+                          fontSize: "12px",
+                          marginBottom: "-10px",
+                          marginTop: "1px",
+                        }}
+                      >
+                        Admission no. already exists.
                       </div>
                     ) : null}
                   </div>
@@ -2320,11 +2363,12 @@ export default function Studendlist() {
                             ? "is-invalid"
                             : ""
                             }`}
-                          type="number"
+                          type="text"
                           name="fatherAnnualIncome"
                           onChange={formik.handleChange}
                           onBlur={formik.handleBlur}
                           value={formik.values.fatherAnnualIncome}
+                          onKeyPress={handleKeyPress}
                         />
                         {formik.touched.fatherAnnualIncome &&
                           !formik.values.fatherAnnualIncome ? (
@@ -2646,11 +2690,12 @@ export default function Studendlist() {
                             ? "is-invalid"
                             : ""
                             }`}
-                          type="number"
+                          type="text"
                           name="motherAnnualIncome"
                           onChange={formik.handleChange}
                           onBlur={formik.handleBlur}
                           value={formik.values.motherAnnualIncome}
+                          onKeyPress={handleKeyPress}
                         />
                         {formik.touched.motherAnnualIncome &&
                           !formik.values.motherAnnualIncome ? (
@@ -3025,6 +3070,7 @@ export default function Studendlist() {
                           onChange={formik.handleChange}
                           onBlur={formik.handleBlur}
                           value={formik.values.guardianAnnualincome}
+                          onKeyPress={handleKeyPress}
                         />
                         {formik.touched.guardianAnnualincome &&
                           !formik.values.guardianAnnualincome ? (
@@ -3270,7 +3316,7 @@ export default function Studendlist() {
                             marginBottom: "-12px",
                           }}
                         >
-                          Sibling1 admissionNo wrong
+                          Sibling1 admission no. wrong
                         </div>
                       ) : (
                         formik.touched.siblingsId1 &&
@@ -3283,7 +3329,7 @@ export default function Studendlist() {
                               marginBottom: "-12px",
                             }}
                           >
-                            Admission no is required
+                            Admission no. is required
                           </div>
                         )
                       )}
@@ -4000,7 +4046,7 @@ export default function Studendlist() {
                               marginBottom: "-12px",
                             }}
                           >
-                            Sibling2 admissionNo wrong
+                            Sibling2 admission no. wrong
                           </div>
                         )}
                     </div>
@@ -4045,7 +4091,7 @@ export default function Studendlist() {
                               marginBottom: "-12px",
                             }}
                           >
-                            Sibling3 admissionNo wrong
+                            Sibling3 admission no. wrong
                           </div>
                         )}
                     </div>
@@ -4150,7 +4196,7 @@ export default function Studendlist() {
                             marginBottom: "-12px",
                           }}
                         >
-                          Staff Id is required.
+                          Staff id is required.
                         </div>
                       )}
                       {formik.values.parentId1 && staffData.parent1.length === 0 && (
@@ -4162,7 +4208,7 @@ export default function Studendlist() {
                             marginBottom: "-12px",
                           }}
                         >
-                          staffId2 is  wrong.
+                          staff id is  wrong.
                         </div>
                       )}
                       {modalOpen && viewStaff && (

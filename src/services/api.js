@@ -2,10 +2,10 @@ import axios from "axios";
 
 const MASTER_URL = "http://49.207.183.18:8089";
 const DAILY_URL = "http://49.207.183.18:8090";
-const DAILY_URL_LOCAL = "http://192.168.0.119:6010";
+// const DAILY_URL = "http://192.168.0.119:6010";
 const LOGIN_URL = "http://49.207.183.18:8084";
-// const ADMIN_URL = 'http://192.168.0.25:1010';
-const ADMIN_URL = "http://49.207.183.18:8086";
+ const ADMIN_URL = 'http://192.168.0.11:1010';
+// const ADMIN_URL = "http://49.207.183.18:8086";
 const STATIONERY_URL = "http://49.207.183.18:8092";
 const STAFF_URL = "http://49.207.183.18:8090";
 const EXAM_URL = "http://49.207.183.18:8091";
@@ -249,7 +249,7 @@ export const getPeriodSlot = async (token) => {
 export const getPeriodSlotbyID = async (id, token) => {
   try {
     const response = await axios.post(
-      `${DAILY_URL_LOCAL}/timetable/get_period_slot/${id}`,
+      `${DAILY_URL}/timetable/get_period_slot/${id}`,
       {},
       {
         headers: {
@@ -268,7 +268,7 @@ export const getPeriodSlotbyID = async (id, token) => {
 export const getTimeTable = async (body, token) => {
   try {
     const response = await axios.post(
-      `${DAILY_URL_LOCAL}/timetable/get_class_timetable`,
+      `${DAILY_URL}/timetable/get_class_timetable`,
       body,
       {
         headers: {
@@ -288,7 +288,7 @@ export const getTimeTableByID = async (id, body, token) => {
   console.log(body);
   try {
     const response = await axios.post(
-      `${DAILY_URL_LOCAL}/timetable/get_class_timetable/${id}`,
+      `${DAILY_URL}/timetable/get_class_timetable/${id}`,
       body,
       {
         headers: {
@@ -306,7 +306,7 @@ export const getTimeTableByID = async (id, body, token) => {
 };
 export const getDay = async (token) => {
   try {
-    const response = await axios.get(`${DAILY_URL_LOCAL}/timetable/getDay`, {
+    const response = await axios.get(`${DAILY_URL}/timetable/getDay`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -511,10 +511,17 @@ export const postSection = async (body, token) => {
   }
 };
 export const postClassSection = async (body, token) => {
+  const data={
+    id:body.id,
+    classId: body.classId,
+    sectionId:body.sectionId,
+    totalCount:parseInt(body.totalCount)
+  }
+  console.log(body,"0000")
   try {
     const response = await axios.post(
       `${MASTER_URL}/academic/post_classSectionMap`,
-      body,
+      data,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -590,7 +597,7 @@ export const postTimeSlot = async (body, token) => {
   console.log("CLass", body);
   try {
     const response = await axios.post(
-      `${DAILY_URL_LOCAL}/timetable/create_period_slot`,
+      `${DAILY_URL}/timetable/create_period_slot`,
       body,
       {
         headers: {
@@ -609,7 +616,7 @@ export const postTimeSlot = async (body, token) => {
 export const postTimeTable = async (body, token) => {
   try {
     const response = await axios.post(
-      `${DAILY_URL_LOCAL}/timetable/create_class_timetable`,
+      `${DAILY_URL}/timetable/create_class_timetable`,
       body,
       {
         headers: {
@@ -915,7 +922,7 @@ export const deleteStationery = async (id, token) => {
 export const deletePeriodSlot = async (id, token) => {
   try {
     const response = await axios.post(
-      `${DAILY_URL_LOCAL}/timetable/delete_period_slot/${id}`,
+      `${DAILY_URL}/timetable/delete_period_slot/${id}`,
       {},
       {
         headers: {
@@ -934,7 +941,7 @@ export const deletePeriodSlot = async (id, token) => {
 export const deletetimetableApi = async (id, token) => {
   try {
     const response = await axios.post(
-      `${DAILY_URL_LOCAL}/timetable/delete_class_timetable/${id}`,
+      `${DAILY_URL}/timetable/delete_class_timetable/${id}`,
       {},
       {
         headers: {
@@ -1097,10 +1104,16 @@ export const getStationery = async (body, token) => {
   }
 };
 export const relieveStud = async (body, token) => {
+  const data={
+    studentID:body.studentID,
+    studentReleavingDate:body.studentReleavingDate,
+    studentReleavingReason:body.studentReleavingReason,
+    transferCertificateNo:body.transferCertificateNo,
+  }
   try {
     const response = await axios.post(
       `${ADMIN_URL}/admin/releaving/student`,
-      body,
+      data,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1952,9 +1965,10 @@ export const getsectionList = async (body, token) => {
   }
 };
 export const createStudent = async (body, token) => {
+  console.log(body)
   try {
     const response = await axios.post(
-      `${ADMIN_URL}/admin/registration/studentRegistration`,
+      `http://192.168.0.11:1010/admin/registration/studentRegistration`,
       body,
       {
         headers: {

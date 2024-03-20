@@ -441,7 +441,7 @@ const Registration = () => {
     );
   }
 
-  console.log(dropDown);
+  console.log(propsData,"898989");
 
   return (
     <>
@@ -452,9 +452,9 @@ const Registration = () => {
           style={{ display: "flex", alignItems: "center" }}
         >
           <li>
-          <Link to={"/list"} state={propsData=='Student details'?"Student List":"Staff List"}>
+          <Link to={"/list"} state={propsData=='Student Relieving'?"Student List":"Staff List"}>
                 <a style={{ color: "#051F3E" }}>
-                  <h4>{propsData=='Student details'?"Student":"Staff"}</h4>
+                  <h4>{propsData=='Student Relieving'?"Student":"Staff"}</h4>
                 </a>
               </Link>
           </li>
