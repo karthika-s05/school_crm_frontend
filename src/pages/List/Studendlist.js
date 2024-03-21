@@ -21,6 +21,7 @@ import {
   getsectionList,
   studentStaff,
   updateStudent,
+  getStudentToCheck
 } from "../../services/api";
 import { STAFF_KEY, TOKEN_KEY, getToken } from "../../services/auth";
 import "./list.css";
@@ -546,8 +547,7 @@ export default function Studendlist() {
     if (ids.id == ":id") {
       const fetchData = async () => {
         try {
-          const response = await getStudentlist({ userName: formik.values.admissionNo }, TOKEN_KEY);
-          console.log(response.data, "11111")
+          const response = await getStudentToCheck({ userName: formik.values.admissionNo }, TOKEN_KEY);
           setAdmissionValidate(response.data)    
         } catch (error) {
           console.error("Error fetching student data:", error);
@@ -1011,8 +1011,8 @@ export default function Studendlist() {
                     <input
                       ref={inputRef}
                       style={{
-                        border: `1px solid ${formik.touched.admissionNo &&
-                          formik.errors.admissionNo
+                        border: `1px solid ${(formik.touched.admissionNo &&
+                          formik.errors.admissionNo) ||(admissionValidate?.length>0 && formik.values.admissionNo)
                           ? "red"
                           : "#cdcbcb"
                           }`,
@@ -1046,7 +1046,7 @@ export default function Studendlist() {
                         {formik.errors.admissionNo}.
                       </div>
                     ) : null}
-                       {admissionValidate?.length>0 ? (
+                       {admissionValidate?.length>0 && formik.values.admissionNo ? (
                       <div
                         className="text-danger"
                         style={{

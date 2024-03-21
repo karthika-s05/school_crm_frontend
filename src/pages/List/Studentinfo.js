@@ -254,7 +254,7 @@ export default function Studentinfo() {
         });
 
         // If all requests succeed
-        toast.success("All requests succeeded!");
+        toast.success("Student details saved");
         setTimeout(() => {
           navigate("/list", { state: "Student List" });
         }, 1500);

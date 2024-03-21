@@ -4,7 +4,7 @@ const MASTER_URL = "http://49.207.183.18:8089";
 const DAILY_URL = "http://49.207.183.18:8090";
 // const DAILY_URL = "http://192.168.0.119:6010";
 const LOGIN_URL = "http://49.207.183.18:8084";
- const ADMIN_URL = 'http://192.168.0.11:1010';
+const ADMIN_URL = 'http://192.168.0.11:1010';
 // const ADMIN_URL = "http://49.207.183.18:8086";
 const STATIONERY_URL = "http://49.207.183.18:8092";
 const STAFF_URL = "http://49.207.183.18:8090";
@@ -511,13 +511,13 @@ export const postSection = async (body, token) => {
   }
 };
 export const postClassSection = async (body, token) => {
-  const data={
-    id:body.id,
+  const data = {
+    id: body.id,
     classId: body.classId,
-    sectionId:body.sectionId,
-    totalCount:parseInt(body.totalCount)
+    sectionId: body.sectionId,
+    totalCount: parseInt(body.totalCount)
   }
-  console.log(body,"0000")
+  console.log(body, "0000")
   try {
     const response = await axios.post(
       `${MASTER_URL}/academic/post_classSectionMap`,
@@ -1039,6 +1039,26 @@ export const getStudentlist = async (data, token) => {
     throw error;
   }
 };
+export const getStudentToCheck = async (data, token) => {
+  try {
+    const response = await axios.post(
+      `${ADMIN_URL}/admin/registration/get_studentToCheck`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    console.log(response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    throw error;
+  }
+};
+
 export const getStafflist = async (id, token) => {
   try {
     let body = {
@@ -1104,11 +1124,11 @@ export const getStationery = async (body, token) => {
   }
 };
 export const relieveStud = async (body, token) => {
-  const data={
-    studentID:body.studentID,
-    studentReleavingDate:body.studentReleavingDate,
-    studentReleavingReason:body.studentReleavingReason,
-    transferCertificateNo:body.transferCertificateNo,
+  const data = {
+    studentID: body.studentID,
+    studentReleavingDate: body.studentReleavingDate,
+    studentReleavingReason: body.studentReleavingReason,
+    transferCertificateNo: body.transferCertificateNo,
   }
   try {
     const response = await axios.post(
@@ -1129,12 +1149,12 @@ export const relieveStud = async (body, token) => {
   }
 };
 export const relieveStaff = async (body, token) => {
-  const data={
-    staffId:body.staffId,
-    date_of_releaving:body.date_of_releaving,
-    reason_for_releaving:body.reason_for_releaving
+  const data = {
+    staffId: body.staffId,
+    date_of_releaving: body.date_of_releaving,
+    reason_for_releaving: body.reason_for_releaving
   }
-  console.log("love",body)
+  console.log("love", body)
   try {
     const response = await axios.post(
       `${ADMIN_URL}/admin/releaving/staff`,
