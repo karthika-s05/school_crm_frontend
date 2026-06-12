@@ -1,148 +1,160 @@
-/* Modal.css */
-.btn {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  cursor: pointer;
+/* ── Modal Overlay ── */
+.modal-overlay,
+.modal-overlays {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
 }
-/* .modal-scroll-content::-webkit-scrollbar {
-    display: none;
-  } */
 
+/* ── Modal Box ── */
+.modal-content,
+.modal-contents {
+  background: #ffffff;
+  padding: 28px 24px 22px;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(28, 54, 89, 0.18);
+  position: relative;
+  width: 380px;
+  max-width: 95vw;
+  color: #1a1d2e;
+  border: 1px solid #e4e7f0;
+}
+
+.modal-content-popups {
+  background: #ffffff;
+  width: 200px;
+  border-radius: 12px;
+  font-size: 12px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(28, 54, 89, 0.14);
+  border: 1px solid #e4e7f0;
+}
+
+/* ── Scrollable content ── */
 .modal-scroll-content {
   max-height: 60vh;
   overflow-y: auto;
-  /* scrollbar-width: none;  */
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 500;
+.modal-scroll-content::-webkit-scrollbar { width: 4px; }
+.modal-scroll-content::-webkit-scrollbar-thumb {
+  background: #c5cde0;
+  border-radius: 4px;
 }
 
-.modal-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
-  position: relative;
-  width: 350px;
-}
-
-.modal-overlays {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  /* background-color: rgba(0, 0, 0, 0.5); */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 100;
-}
-
-.modal-contents {
-  background-color: #222B40;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
-  position: relative;
-  width: 350px;
-  color: white;
-}
+/* ── Close ── */
 .modal-close {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 14px;
   cursor: pointer;
-}
-/* Reset default button styles */
-button {
+  font-size: 20px;
+  color: #7b8099;
+  background: none;
   border: none;
-  padding: 10px 20px;
-  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.modal-close:hover { color: #FF5630; }
+
+/* ── Header ── */
+.header-model {
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1C3659;
 }
 
-/* Custom button styles */
+/* ── Buttons ── */
+button { border: none; cursor: pointer; }
+
 .custom-button {
-  background-color: #174277; /* Blue color */
-  color: white;
-  border-radius: 5px;
+  background: #1C3659;
+  color: #fff;
+  border-radius: 8px;
   font-size: 13px;
-  font-weight: 300;
-  font-family: sans-serif;
+  font-weight: 600;
+  padding: 9px 20px;
+  transition: background 0.18s;
+  font-family: 'Poppins', sans-serif;
 }
-
-/* Hover effect */
-.custom-button:hover {
-  background-color: #052955; /* Darker shade of blue on hover */
-}
+.custom-button:hover { background: #274a77; }
 
 .cancel-button {
-  background-color: #e65343; /* Red color */
-  color: white;
-  border-radius: 5px;
+  background: #f0f2f8;
+  color: #374151;
+  border-radius: 8px;
   font-size: 13px;
-  font-weight: 300;
-  font-family: sans-serif;
+  font-weight: 500;
+  padding: 9px 20px;
+  transition: background 0.18s;
+  font-family: 'Poppins', sans-serif;
 }
+.cancel-button:hover { background: #e4e7f0; }
 
-/* Hover effect for cancel button */
-.cancel-button:hover {
-  background-color: #e73b27; /* Darker shade of red on hover */
+.btn {
+  background: #FF5630;
+  color: #fff;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: background 0.18s;
 }
-.header-model {
-  margin-bottom: 10px;
-  text-align: center;
-}
+.btn:hover { background: #e04520; }
+
+/* ── Button row ── */
 .btn-style {
   display: flex;
   justify-content: center;
-  margin-top: 10px;
+  gap: 10px;
+  margin-top: 16px;
 }
+
+/* ── Row layout inside modal ── */
 .row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10px; /* Adjust as needed for spacing between rows */
+  margin-bottom: 10px;
+  gap: 10px;
 }
-.modals th,td{
-  background-color: #222B40;
-  padding: 3px;
-  /* text-align: center; */
-}
-.img-con img{
+
+/* ── Modal table ── */
+.modals th, .modals td { padding: 6px 8px; }
+
+/* ── Image inside modal ── */
+.img-con img {
   max-width: 100%;
-  height: 150px;
-  object-fit:cover;
+  height: 120px;
+  object-fit: cover;
   border-radius: 50%;
-  width: 150px;
-  margin-bottom: -35px;
-  margin-left: 35px;
+  width: 120px;
+  display: block;
+  margin: 0 auto 10px;
+  border: 3px solid #FF5630;
 }
 
-
-
-
+/* ── Card used in modals ── */
 .card {
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-  max-width: 300px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(28, 54, 89, 0.10);
+  max-width: 320px;
   margin: auto;
   text-align: center;
-  font-family: arial;
+  padding: 16px;
 }
 
 .title {
-  color: grey;
-  font-size: 18px;
+  color: #7b8099;
+  font-size: 15px;
+  font-weight: 600;
 }
-

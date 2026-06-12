@@ -96,7 +96,6 @@ export default function Assignment() {
   };
 
   const handleView = async (item) => {
-    console.log(item);
 
     try {
       const studentDetailsResponse = await studentReport(
@@ -148,7 +147,6 @@ export default function Assignment() {
         }));
         setData(resultData);
       } catch (err) {
-        console.log(err);
       }
     };
     studentreport();
@@ -176,7 +174,7 @@ export default function Assignment() {
             <div className="search-input">
               <i
                 className="bx bx-search"
-                style={{ padding: "10px", color: "gray",marginLeft:'-30px' }}
+                style={{ color: "gray"}}
               ></i>
               <input
                 type="text"

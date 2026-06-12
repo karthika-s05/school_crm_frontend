@@ -9,18 +9,17 @@ import Adlogin from './pages/Login/Adlogin';
 // import Modal from './component/modals/Modal';
 
 function App() {
-  const token = getToken()
+  const token = getToken();
   return (
     <Router>
-
       <div className="App">
-        {!token ?
+        {!token ? (
           <Routes>
-            {/* <Route path='/' element={<Login />} /> */}
             <Route path="/" element={<Adlogin />} />
           </Routes>
-          :
-          <Navbar></Navbar>}
+        ) : (
+          <Navbar />
+        )}
       </div>
     </Router>
   );

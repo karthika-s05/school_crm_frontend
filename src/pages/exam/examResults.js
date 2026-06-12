@@ -251,7 +251,7 @@ const Examresult = () => {
             <div class="search-input">
               <i
                 class="bx bx-search"
-                style={{ padding: "10px", color: "gray",marginLeft:'-30px' }}
+                style={{ padding: "10px", color: "gray" }}
               ></i>
               <input
                 type="text"

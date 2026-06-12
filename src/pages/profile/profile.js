@@ -91,6 +91,7 @@ const Profile = () => {
   //     console.log("Component unmounted or effect is being cleaned up");
   //   };
   // }, []);
+  
   useEffect(() => {
     switch (propsData) {
       case "Student List":
@@ -114,6 +115,9 @@ const Profile = () => {
           }
         };
         fetchDatas();
+        break;
+      default:
+        console.warn("No matching data scenario for propsData:", propsData);
         break;
     }
   }, []);
@@ -164,10 +168,6 @@ const Profile = () => {
                 >
                   {props}
                 </h2>
-                <span
-                  class="horizontal-line"
-                  style={{ background: "#F0F1F3", marginTop: "-15px" }}
-                ></span>
               </div>
               <div style={{ display: "flex", padding: "20px", gap: "25px" }}>
                 <div

@@ -163,7 +163,7 @@ export default function ExamTable() {
             <div className="search-input">
               <i
                 className="bx bx-search"
-                style={{ padding: "10px", color: "gray",marginLeft:'-30px' }}
+                style={{ padding: "10px", color: "gray" }}
               ></i>
               <input
                 type="text"

@@ -336,10 +336,6 @@ export default function Studentinfo() {
             </span>{" "}
             {studentName}
           </h3>
-          <span
-            class="horizontal-line"
-            style={{ background: "#F0F1F3", marginTop: "20px" }}
-          ></span>
         </div>
         <form
           className="ng-untouched ng-pristine ng-invalid"

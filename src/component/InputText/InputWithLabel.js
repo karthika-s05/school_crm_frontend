@@ -11,10 +11,11 @@ const InputWithLabel = ({
   propsData,
   dateValue,
 }) => {
-  const [dropdownValue, SetDropdownValue] = useState([]);
+  const [dropdownValue, SetDropdownValue] = useState({});
   const currentDate = new Date();
   const [validationErrors, setValidationErrors] = useState({});
-  console.log(data);
+  console.log("PropsData: ", propsData);
+  console.log("Data: ", data);
   useEffect(() => {
     if (data) {
       switch (propsData) {
@@ -23,11 +24,11 @@ const InputWithLabel = ({
             id: value.id,
             value: value.name,
           }));
+          console.log("State dropdown:", state);
           SetDropdownValue((prevData) => ({
             ...prevData,
             nationId: state,
           }));
-          console.log(state);
           // dropdown.push({ id: value.id, value: value.name })
           break;
         case "City":
@@ -47,7 +48,6 @@ const InputWithLabel = ({
           const resultObjectCS = data.reduce((accumulator, currentObject) => {
             return { ...accumulator, ...currentObject };
           }, {});
-          console.log("g", resultObjectCS);
           SetDropdownValue(resultObjectCS);
           break;
         case "Class Teacher":
@@ -102,7 +102,7 @@ const InputWithLabel = ({
           console.log("No matching data scenario");
       }
     }
-  }, []);
+  }, [data, propsData]);
   const inputRef = useRef(null);
   const selectRef = useRef(null);
   useEffect(() => {
@@ -122,7 +122,7 @@ const InputWithLabel = ({
          ref={inputRef}
           className="effect-1"
           name={name}
-          defaultValue={value}
+          defaultValue={value || ""}
           onChange={onChange}
         >
           {value ? (
@@ -150,7 +150,6 @@ const InputWithLabel = ({
     var key = event.which || event.keyCode || 0;
     return ((key >= 65 && key <= 90) || (key >= 97 && key <= 122) || key === 32 || event.key === '+' || event.key === '-');
 }
-console.log(inputRef,"987654321")
 
   const isDateInput = type === "date";
   return (

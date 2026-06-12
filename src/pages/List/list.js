@@ -35,7 +35,6 @@ const List = () => {
         const postSectionDetails = async () => {
           try {
             const response = await (formData, TOKEN_KEY);
-            console.log(response.data);
             setMessage(response.data);
           } catch (err) {
             console.log(err);

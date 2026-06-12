@@ -975,10 +975,6 @@ export default function Studendlist() {
               <a>Basic Info</a>
             </li>
           </ul>
-          <span
-            className="horizontal-line"
-            style={{ background: "#F0F1F3", marginTop: "20px" }}
-          ></span>
         </div>
         {loading ? (
           <div className="mt-5 mb-5">
@@ -2132,10 +2128,6 @@ export default function Studendlist() {
                 >
                   Contact Info{" "}
                 </a>
-                <span
-                  class="horizontal-line"
-                  style={{ background: "#F0F1F3" }}
-                ></span>
               </div>
               <div style={{ display: "flex", marginTop: "10px" }}>
                 <div>
@@ -3210,14 +3202,6 @@ export default function Studendlist() {
                   </div>
                 </>
               )}
-              <span
-                class="horizontal-line"
-                style={{
-                  background: "#F0F1F3",
-                  marginTop: "7px",
-                  marginBottom: "15px",
-                }}
-              ></span>
               <div
                 style={{
                   display: "flex",

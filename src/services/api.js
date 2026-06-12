@@ -1,15 +1,15 @@
 import axios from "axios";
 
-const MASTER_URL = "http://49.207.183.18:8089";
-const DAILY_URL = "http://49.207.183.18:8090";
+const MASTER_URL = "http://192.168.2.114:8086";
+const DAILY_URL = "http://192.168.2.114:8090";
 // const DAILY_URL = "http://192.168.0.119:6010";
-const LOGIN_URL = "http://49.207.183.18:8084";
-const ADMIN_URL = 'http://192.168.0.11:1010';
+const LOGIN_URL = "http://192.168.2.114:8084";
+const ADMIN_URL = "http://192.168.2.114:8096";
 // const ADMIN_URL = "http://49.207.183.18:8086";
-const STATIONERY_URL = "http://49.207.183.18:8092";
-const STAFF_URL = "http://49.207.183.18:8090";
-const EXAM_URL = "http://49.207.183.18:8091";
-const GRADE_URL = "http://49.207.183.18:8089";
+const STATIONERY_URL = "http://192.168.2.114:8091";
+const STAFF_URL = "http://192.168.2.114:8091";
+const EXAM_URL = "http://192.168.2.114:8090";
+const GRADE_URL = "http://192.168.2.114:8084";
 
 export const getClassSectionMap = async (id, token) => {
   try {
@@ -88,6 +88,7 @@ export const getSection = async (id, token) => {
   }
 };
 export const getState = async (body, token) => {
+  console.log("State API called with body:", body);
   try {
     const response = await axios.post(
       `${MASTER_URL}/state_master/get_state`,
@@ -99,7 +100,7 @@ export const getState = async (body, token) => {
         },
       }
     );
-    console.log(response.data);
+    console.log("State API response:", response.data);
     return response.data.data;
   } catch (error) {
     console.error("Error fetching data:", error);
@@ -187,7 +188,7 @@ export const getNationality = async (id, token) => {
         },
       }
     );
-    console.log(response.data.data);
+    console.log("Nationality API response:", response.data.data);
     return response.data.data;
   } catch (error) {
     console.error("Error fetching data:", error);
@@ -515,9 +516,9 @@ export const postClassSection = async (body, token) => {
     id: body.id,
     classId: body.classId,
     sectionId: body.sectionId,
-    totalCount: parseInt(body.totalCount)
-  }
-  console.log(body, "0000")
+    totalCount: parseInt(body.totalCount),
+  };
+  console.log(body, "0000");
   try {
     const response = await axios.post(
       `${MASTER_URL}/academic/post_classSectionMap`,
@@ -1017,9 +1018,9 @@ export const studentStaff = async (body, token) => {
 export const getStudentlist = async (data, token) => {
   try {
     let body = {
-      userName: data.userName,
-      classId: data.classId ? data.classId : 0,
-      sectionId: data.sectionId ? data.sectionId : 0,
+      userName: data.userName? data.userName : "",
+      classId: data.classId ? data.classId : 1,
+      sectionId: data.sectionId ? data.sectionId : 1,
     };
     console.log(body);
     const response = await axios.post(
@@ -1129,7 +1130,7 @@ export const relieveStud = async (body, token) => {
     studentReleavingDate: body.studentReleavingDate,
     studentReleavingReason: body.studentReleavingReason,
     transferCertificateNo: body.transferCertificateNo,
-  }
+  };
   try {
     const response = await axios.post(
       `${ADMIN_URL}/admin/releaving/student`,
@@ -1152,9 +1153,9 @@ export const relieveStaff = async (body, token) => {
   const data = {
     staffId: body.staffId,
     date_of_releaving: body.date_of_releaving,
-    reason_for_releaving: body.reason_for_releaving
-  }
-  console.log("love", body)
+    reason_for_releaving: body.reason_for_releaving,
+  };
+  console.log("love", body);
   try {
     const response = await axios.post(
       `${ADMIN_URL}/admin/releaving/staff`,
@@ -1985,7 +1986,7 @@ export const getsectionList = async (body, token) => {
   }
 };
 export const createStudent = async (body, token) => {
-  console.log(body)
+  console.log(body);
   try {
     const response = await axios.post(
       `http://192.168.0.11:1010/admin/registration/studentRegistration`,
@@ -2137,7 +2138,7 @@ export const createStudenttc = async (body, token) => {
 export const getQualification = async (body, token) => {
   try {
     const response = await axios.post(
-      "http://49.207.183.18:8089/religion_master/get_qualification",
+      "http://localhost:8089/religion_master/get_qualification",
       body,
       {
         headers: {

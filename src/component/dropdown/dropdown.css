@@ -1,47 +1,37 @@
-/* Reset some default styles */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 
-body {
-   
-    /* font-family: Roboto, sans-serif; */
-    font-family: 'Poppins', sans-serif;
-}
-
-/* Style the dropdown container */
 .dropdown {
-    width: 200px;
-    margin: 20px auto;
+  width: 100%;
+  max-width: 220px;
 }
 
-/* Style the select element */
 select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    outline: none; 
-    font-family: inherit;
-    font-size: inherit;
-    line-height: inherit;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid #e4e7f0;
+  border-radius: 8px;
+  outline: none;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: #1a1d2e;
+  background: #f8f9ff;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  appearance: auto;
 }
 
-/* Style the select dropdown arrow */
-select::-ms-expand {
-    display: none; /* Hide the default arrow in IE10 and IE11 */
+select:focus {
+  border-color: #1C3659;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(28, 54, 89, 0.08);
 }
 
-/* Style select options */
 option {
-    padding: 10px;
-    background-color: #f8f8f8;
-    color: #333;
+  padding: 8px;
+  background: #fff;
+  color: #1a1d2e;
+  font-family: 'Poppins', sans-serif;
 }
 
-/* Hover effect for options */
-option:hover {
-    background-color: #ddd;
-}
+option:hover { background: #f0f2f8; }

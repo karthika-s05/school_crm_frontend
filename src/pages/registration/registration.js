@@ -90,7 +90,7 @@ const Registration = () => {
     const getCitydata = async () => {
       try {
         const response = await getCity({ id: 0, stateId: city }, TOKEN_KEY);
-        console.log("Citydropdownedsgedesaegfdasggasgedswretgsdg ", response);
+        console.log("Citydropdown ", response);
         const data = response.map((value, index) => ({
           id: value.id,
           value: value.name,
@@ -462,10 +462,6 @@ const Registration = () => {
             <a>{propsData}</a>
           </li>
         </ul>
-        <span
-            class="horizontal-line"
-            style={{ background: "#F0F1F3", marginTop: "20px",marginBottom:"20px" }}
-          ></span>
         {/* {isSuccessVisible && <h1 className="success-message">{message}</h1>} */}
         <div style={{border:'1px solid rgb(207, 207, 207)',borderRadius:'7px',width:'50%',marginLeft:'250px'}}>
         {arrayOfPairs.map((value, index) => (

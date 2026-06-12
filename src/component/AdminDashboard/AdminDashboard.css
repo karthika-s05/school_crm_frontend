@@ -1,0 +1,387 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+.kst-dash {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-family: 'Inter', 'Poppins', sans-serif;
+}
+
+/* ══ 8 Stat Cards ══ */
+.kst-stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.kst-stat-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 16px 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  border: 1px solid #e8eaf0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: default;
+}
+
+.kst-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+}
+
+.kst-sc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.kst-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.kst-sc-trend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 20px;
+}
+
+.kst-sc-trend.up   { background: #dcfce7; color: #16a34a; }
+.kst-sc-trend.down { background: #fef2f2; color: #ef4444; }
+.kst-sc-trend i    { font-size: 13px; }
+
+.kst-sc-body { display: flex; flex-direction: column; gap: 2px; }
+
+.kst-stat-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1c1c2e;
+  line-height: 1.1;
+}
+
+.kst-stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.kst-stat-sub {
+  font-size: 11px;
+  color: #8a94a6;
+}
+
+/* ══ Shared Card ══ */
+.kst-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  border: 1px solid #e8eaf0;
+}
+
+.kst-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kst-card-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1c1c2e;
+  margin: 0 0 2px;
+}
+
+.kst-chart-sub {
+  font-size: 12px;
+  color: #8a94a6;
+  margin: 0;
+}
+
+.kst-badge-pill {
+  background: #e8f0fe;
+  color: #1a6af4;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* ══ Chart Row ══ */
+.kst-chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* Tabs */
+.kst-tabs { display: flex; gap: 5px; }
+
+.kst-tab {
+  padding: 4px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #e8eaf0;
+  background: #fff;
+  color: #8a94a6;
+  cursor: pointer;
+  font-family: 'Inter', 'Poppins', sans-serif;
+  transition: all 0.15s;
+}
+
+.kst-tab.active {
+  background: #1a6af4;
+  color: #fff;
+  border-color: #1a6af4;
+}
+
+/* Attendance quick stats */
+.kst-att-stats {
+  display: flex;
+  gap: 0;
+  margin-top: 12px;
+  border-top: 1px solid #f0f2f6;
+  padding-top: 12px;
+}
+
+.kst-att-stat {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 0;
+}
+
+.kst-att-stat:not(:last-child) {
+  border-right: 1px solid #f0f2f6;
+  margin-right: 10px;
+}
+
+.kst-att-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.kst-att-val {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.kst-att-label {
+  font-size: 11px;
+  color: #8a94a6;
+  margin-top: 2px;
+}
+
+/* Fee legend */
+.kst-fee-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 10px;
+  border-top: 1px solid #f0f2f6;
+  padding-top: 10px;
+}
+
+.kst-fee-leg-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.kst-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.kst-fee-leg-name { flex: 1; color: #374151; font-weight: 500; }
+.kst-fee-leg-val  { font-weight: 600; color: #1c1c2e; }
+.kst-fee-leg-pct  { font-weight: 700; min-width: 32px; text-align: right; font-size: 11px; }
+
+/* ══ Bottom Row ══ */
+.kst-bot-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+}
+
+/* Upcoming Exams */
+.kst-exam-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kst-exam-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f2f6;
+}
+
+.kst-exam-item:last-child { border-bottom: none; }
+
+.kst-exam-date-box {
+  padding: 4px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  min-width: 52px;
+  text-align: center;
+}
+
+.kst-exam-date {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1c1c2e;
+}
+
+.kst-exam-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kst-exam-subject {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1c1c2e;
+}
+
+.kst-exam-cls {
+  font-size: 11px;
+  color: #8a94a6;
+}
+
+.kst-exam-type {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* Recent Activity */
+.kst-activity-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.kst-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f0f2f6;
+}
+
+.kst-activity-item:last-child { border-bottom: none; }
+
+.kst-act-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.kst-act-info { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.kst-act-name   { font-size: 13px; font-weight: 600; color: #1c1c2e; }
+.kst-act-action { font-size: 11px; color: #8a94a6; }
+
+.kst-act-time {
+  font-size: 11px;
+  color: #1a6af4;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Class-wise Attendance */
+.kst-class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kst-class-item { display: flex; flex-direction: column; gap: 4px; }
+
+.kst-class-name-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kst-class-name  { font-size: 13px; font-weight: 600; color: #1c1c2e; }
+.kst-class-count { font-size: 11px; color: #8a94a6; }
+
+.kst-class-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kst-class-bar {
+  flex: 1;
+  height: 6px;
+  background: #f0f2f6;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.kst-class-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.6s ease;
+}
+
+.kst-class-pct {
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 34px;
+  text-align: right;
+}
+
+/* ══ Responsive ══ */
+@media (max-width: 1100px) {
+  .kst-stat-row  { grid-template-columns: repeat(2, 1fr); }
+  .kst-chart-row { grid-template-columns: 1fr; }
+  .kst-bot-row   { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+  .kst-stat-row { grid-template-columns: 1fr 1fr; }
+  .kst-bot-row  { grid-template-columns: 1fr; }
+}

@@ -1,342 +1,185 @@
-import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { TOKEN_KEY, getUserData } from "../../services/auth";
-import { useFormik } from "formik";
+import React, { useState } from "react";
+import "./Attendence.css";
 import { ToastContainer, toast } from "react-toastify";
-import {
-  createStudentAttendance,
-  getClass,
-  getSection,
-  getStudentlist,
-} from "../../services/api";
+
+const CLASSES  = ["6", "7", "8", "9", "10"];
+const SECTIONS = ["A", "B", "C"];
+
+const ALL_STUDENTS = [
+  { id: "KST001", name: "Aarav Sharma"      },
+  { id: "KST002", name: "Priya Nair"        },
+  { id: "KST003", name: "Rohan Verma"       },
+  { id: "KST004", name: "Sneha Patel"       },
+  { id: "KST005", name: "Karthik Rajan"     },
+  { id: "KST006", name: "Divya Krishnan"    },
+  { id: "KST007", name: "Arjun Mehta"       },
+  { id: "KST008", name: "Meera Subramaniam" },
+  { id: "KST009", name: "Vikram Singh"      },
+  { id: "KST010", name: "Ananya Iyer"       },
+  { id: "KST011", name: "Rahul Gupta"       },
+  { id: "KST012", name: "Lakshmi Devi"      },
+];
+
+const avatarColors = ["#2D3A8C","#E8541A","#22c55e","#8b5cf6","#f59e0b","#06b6d4"];
 
 const Attendence = () => {
-  const role = getUserData("role");
-  const location = useLocation();
-  const [dropDown, setDropDown] = useState({
-    studentId: [],
-    classId: [],
-    sectionId: [],
-    subjectId: [],
-    examId: [],
-  });
-  const [selectedClassId, setSelectedClassId] = useState(0);
-  const [selectedSectionId, setSelectedSectionId] = useState(0);
+  const today = new Date().toISOString().split("T")[0];
+  const [selClass,   setSelClass]   = useState("10");
+  const [selSection, setSelSection] = useState("A");
+  const [selDate,    setSelDate]    = useState(today);
+  const [attendance, setAttendance] = useState({});
+  const [submitted,  setSubmitted]  = useState(false);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (name === "classId") {
-      setSelectedClassId(value);
-      formik.setFieldValue("classId", value);
-      console.log(value);
-    } else if (name === "sectionId") {
-      setSelectedSectionId(value);
-      formik.setFieldValue("sectionId", value);
-    }
+  const toggle = (id, status) => {
+    setAttendance(prev => ({ ...prev, [id]: status }));
   };
-  const formik = useFormik({
-    initialValues: {
-      classId: "",
-      sectionId: "",
-      stdAttendance: {},
-    },
-    onSubmit: async (values, { resetForm }) => {
-      try {
-        const selectedStudents = dropDown.studentId.map((data) => ({
-          studentId: data.id,
-          status: !!values.stdAttendance[data.id],
-        }));
 
-        const payload = {
-          classId: parseInt(values.classId),
-          sectionId: parseInt(values.sectionId),
-          stdAttendance: selectedStudents,
-        };
+  const markAll = (status) => {
+    const all = {};
+    ALL_STUDENTS.forEach(s => { all[s.id] = status; });
+    setAttendance(all);
+  };
 
-        console.log("Payload values:", payload);
-        const response = await createStudentAttendance(payload, TOKEN_KEY);
-        console.log("Attendance creation response:", response);
-        if (response.status === "Error") {
-          toast.error(response.message);
-        } else if (response.status === "success") {
-          toast.success(response.message);
-          resetForm();
-        }
-      } catch (error) {
-        console.error("Error creating student attendance:", error);
-      }
-    },
-  });
+  const presentCount = Object.values(attendance).filter(v => v === "P").length;
+  const absentCount  = Object.values(attendance).filter(v => v === "A").length;
+  const unmarked     = ALL_STUDENTS.length - presentCount - absentCount;
 
-  useEffect(() => {
-    const getDropdownData = async (funcName, id, name) => {
-      try {
-        const response = await funcName(id, TOKEN_KEY);
-        console.log(`${name} dropdown:`, response);
-        const data = response.map((value, index) => ({
-          id: value.id,
-          value: value.name,
-        }));
-        setDropDown((prevData) => ({
-          ...prevData,
-          [name]: data,
-        }));
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    const getStudent = async () => {
-      try {
-        const response = await getStudentlist(
-          {
-            userName: 0,
-            classId: selectedClassId,
-            sectionId: selectedSectionId,
-          },
-          TOKEN_KEY
-        );
-        console.log(response);
-        const studentlist = response.data.map((value, index) => ({
-          id: value.admissionNo,
-          value: value.studentName,
-        }));
-        setDropDown((prevData) => ({
-          ...prevData,
-          studentId: studentlist,
-        }));
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    const getClassdata = async () => {
-      try {
-        const response = await getClass(0, TOKEN_KEY);
-        const class1 = response.map((value, index) => ({
-          id: value.id,
-          value: value.name,
-        }));
-        setDropDown((prevData) => ({
-          ...prevData,
-          classId: class1,
-        }));
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    getStudent();
-    getClassdata();
-    getDropdownData(getSection, 0, "sectionId");
-  }, [selectedClassId, selectedSectionId]);
+  const handleSubmit = () => {
+    if (unmarked > 0) {
+      toast.warning(`${unmarked} student(s) not marked yet!`);
+      return;
+    }
+    setSubmitted(true);
+    toast.success("Attendance submitted successfully!");
+  };
+
+  const getInitials = (name) =>
+    name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <div>
-      {location.pathname === "/attendence" ? (
+    <div className="att-wrap">
+      {/* Header */}
+      <div className="att-header">
         <div>
-          {/* <h3>{role} Attendence</h3> */}
-          <ul class="breadcrumb">
-            <li>
-              <Link to={"/staffview"}>
-                <a style={{ color: "#646464" }}>Attendence</a>
-              </Link>
-            </li>
-            <li>
-              <a>{role} Attendence</a>
-            </li>
-          </ul>
+          <h2 className="att-title">Student Attendance</h2>
+          <p className="att-sub">Mark daily attendance for your class</p>
         </div>
-      ) : (
-        <>
-          <div>
-            {/* <h3>Student Attendence</h3> */}
-            <ul class="breadcrumb" style={{ display: "flex" }}>
-              <li>
-                <Link to={"/studentattendence"}>
-                  <a style={{ color: "#051F3E" }}>
-                    <h4>Student</h4>
-                  </a>
-                </Link>
-              </li>
-              <li>
-                <a>Student Attendance</a>
-              </li>
-            </ul>
-          </div>
-        </>
-      )}
-      <form onSubmit={formik.handleSubmit}>
-        <div className="table-container">
-          <h3
-            style={{
-              color: "#051F3E",
-              marginBottom: "20px",
-            }}
-          >
-            Student Attendance
-          </h3>
-          <div className="input-container-registers">
-            <div className="input-group" style={{ marginBottom: "5px" }}>
-              <label className="input-label" style={{ fontWeight: "400" }}>
-                Class
-              </label>
-              <select
-                style={{ width: "200px" }}
-                id="classId"
-                name="classId"
-                className="effect-1"
-                onChange={handleInputChange}
-                value={selectedClassId}
-              >
-                <option value="">Select Class</option>
-                {dropDown.classId.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.value}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="input-group">
-              <label className="input-label" style={{ fontWeight: "400" }}>
-                Section
-              </label>
-              <select
-                style={{ width: "200px" }}
-                id="sectionId"
-                name="sectionId"
-                className="effect-1"
-                onChange={handleInputChange}
-                value={selectedSectionId}
-              >
-                <option value="">Select Section</option>
-                {dropDown.sectionId.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.value}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          {selectedClassId && selectedSectionId ? (
-            <div className="table-responsive">
-              <table className="table table-striped table-hover">
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: "center" }}>NO</th>
-                    <th>STUDENT NAME</th>
-                    <th style={{ textAlign: "center" }}>PRESENT</th>
-                    <th style={{ textAlign: "center" }}>ABSENT</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dropDown.studentId.map((data, index) => (
-                    <tr key={data.id}>
-                      <td style={{ textAlign: "center", color: "#051F3E",fontSize:'12px' }}>
-                        {index + 1}
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          id={data.id}
-                          name={data.id}
-                          value={data.value}
-                          disabled
-                          style={{ border: "0", color: "#051F3E",fontSize:'12px' }}
-                          className={`${
-                            formik.touched.username && formik.errors.username
-                              ? "is-invalid"
-                              : ""
-                          }`}
-                        />
-                        {formik.touched.username && formik.errors.username ? (
-                          <div className="text-danger">
-                            {formik.errors.username}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        <input
-                          type="checkbox"
-                          id={`present-${data.id}`}
-                          name={`attendance-${data.id}`}
-                          checked={
-                            formik.values.stdAttendance[data.id] === true
-                          }
-                          onChange={() => {
-                            const updatedAttendance = {
-                              ...formik.values.stdAttendance,
-                              [data.id]: true,
-                            };
-                            formik.setFieldValue(
-                              "stdAttendance",
-                              updatedAttendance
-                            );
-                          }}
-                        />
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        <input
-                          type="checkbox"
-                          id={`absent-${data.id}`}
-                          name={`attendance-${data.id}`}
-                          checked={
-                            formik.values.stdAttendance[data.id] === false
-                          }
-                          onChange={() => {
-                            const updatedAttendance = {
-                              ...formik.values.stdAttendance,
-                              [data.id]: false,
-                            };
-                            formik.setFieldValue(
-                              "stdAttendance",
-                              updatedAttendance
-                            );
-                          }}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div
-                className="btn-style-registration"
-                style={{ marginTop: "20px" }}
-              >
-                <button className="cancel-button" type="button">
-                  Cancel
-                </button>
-                &nbsp;&nbsp;
-                <button className="custom-button" type="submit">
-                  Submit
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th colSpan="11" style={{ textAlign: "center" }}>
-                      No student data available for the selected class and
-                      section.
-                    </th>
-                  </tr>
-                </thead>
-              </table>
-            </>
-          )}
+        <div className="att-summary-pills">
+          <span className="att-pill present"><i className="bx bxs-check-circle"></i>{presentCount} Present</span>
+          <span className="att-pill absent"><i className="bx bxs-x-circle"></i>{absentCount} Absent</span>
+          <span className="att-pill unmarked"><i className="bx bx-time"></i>{unmarked} Unmarked</span>
         </div>
-      </form>
-      <ToastContainer
-        position="top-right"
-        autoClose={2000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        style={{ fontSize: "14px" }} 
-      />
+      </div>
+
+      {/* Filters */}
+      <div className="att-filters-card">
+        <div className="att-filter-group">
+          <label>Date</label>
+          <input type="date" value={selDate} onChange={e => setSelDate(e.target.value)} className="att-input" />
+        </div>
+        <div className="att-filter-group">
+          <label>Class</label>
+          <select value={selClass} onChange={e => setSelClass(e.target.value)} className="att-input">
+            {CLASSES.map(c => <option key={c} value={c}>Class {c}</option>)}
+          </select>
+        </div>
+        <div className="att-filter-group">
+          <label>Section</label>
+          <select value={selSection} onChange={e => setSelSection(e.target.value)} className="att-input">
+            {SECTIONS.map(s => <option key={s} value={s}>Section {s}</option>)}
+          </select>
+        </div>
+        <div className="att-filter-group" style={{ justifyContent: "flex-end" }}>
+          <label>&nbsp;</label>
+          <div className="att-mark-all-btns">
+            <button className="att-mark-btn present" onClick={() => markAll("P")}>
+              <i className="bx bx-check-double"></i> All Present
+            </button>
+            <button className="att-mark-btn absent" onClick={() => markAll("A")}>
+              <i className="bx bx-x"></i> All Absent
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="att-progress-bar-wrap">
+        <div className="att-progress-bar">
+          <div className="att-progress-fill present" style={{ width: `${(presentCount / ALL_STUDENTS.length) * 100}%` }}></div>
+          <div className="att-progress-fill absent"  style={{ width: `${(absentCount  / ALL_STUDENTS.length) * 100}%` }}></div>
+        </div>
+        <span className="att-progress-label">
+          {Math.round((presentCount / ALL_STUDENTS.length) * 100)}% attendance marked
+        </span>
+      </div>
+
+      {/* Table */}
+      <div className="att-table-card">
+        <table className="att-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Student</th>
+              <th>Adm. No</th>
+              <th style={{ textAlign: "center" }}>Present</th>
+              <th style={{ textAlign: "center" }}>Absent</th>
+              <th style={{ textAlign: "center" }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ALL_STUDENTS.map((s, i) => {
+              const status = attendance[s.id];
+              return (
+                <tr key={s.id} className={status === "P" ? "row-present" : status === "A" ? "row-absent" : ""}>
+                  <td className="att-num">{i + 1}</td>
+                  <td>
+                    <div className="att-student-cell">
+                      <div className="att-avatar" style={{ background: avatarColors[i % avatarColors.length] }}>
+                        {getInitials(s.name)}
+                      </div>
+                      <span className="att-name">{s.name}</span>
+                    </div>
+                  </td>
+                  <td className="att-adm">{s.id}</td>
+                  <td style={{ textAlign: "center" }}>
+                    <button
+                      className={`att-toggle-btn present${status === "P" ? " selected" : ""}`}
+                      onClick={() => toggle(s.id, "P")}
+                    >
+                      <i className="bx bx-check"></i>
+                    </button>
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    <button
+                      className={`att-toggle-btn absent${status === "A" ? " selected" : ""}`}
+                      onClick={() => toggle(s.id, "A")}
+                    >
+                      <i className="bx bx-x"></i>
+                    </button>
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    {status === "P" && <span className="att-status-badge present">Present</span>}
+                    {status === "A" && <span className="att-status-badge absent">Absent</span>}
+                    {!status      && <span className="att-status-badge unmarked"></span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer */}
+      <div className="att-footer">
+        <button className="att-cancel-btn" onClick={() => setAttendance({})}>
+          <i className="bx bx-reset"></i> Reset
+        </button>
+        <button className="att-submit-btn" onClick={handleSubmit} disabled={submitted}>
+          <i className="bx bx-send"></i> {submitted ? "Submitted" : "Submit Attendance"}
+        </button>
+      </div>
+
+      <ToastContainer position="top-right" autoClose={2500} style={{ fontSize: "14px" }} />
     </div>
   );
 };

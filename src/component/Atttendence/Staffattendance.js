@@ -17,7 +17,6 @@ export default function Staffattendance() {
     subjectId: [],
     examId: [],
   });
-  console.log("staffId");
   const formik = useFormik({
     initialValues: {
       classId: "",
@@ -133,10 +132,7 @@ export default function Staffattendance() {
                   <a>Staff Attendance</a>
                 </li>
               </ul>
-              <span
-                class="horizontal-line"
-                style={{ background: "#F0F1F3", marginTop: "20px" }}
-              ></span>
+             
               <div
                 className="table-responsive"
                 style={{ display: "flex", justifyContent: "center" }}

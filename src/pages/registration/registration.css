@@ -1,45 +1,59 @@
-.form-field{
-        display: flex;
-        justify-content: space-between; /* Distribute space between the two fields */
-        flex-direction: column;
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-family: 'Poppins', sans-serif;
 }
+
+.input-group {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.input-groupInfo {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
 .half-width {
-    width: 50%; /* Adjust the width as needed */
-    margin-right: 10px; /* Adjust the spacing between fields */
-    display: inline-block;
-  }
-.input-group{
-    display: flex;
-    justify-content: space-between;
+  width: calc(50% - 8px);
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
 }
-.input-groupInfo{
-    gap: 10px;
-    display: flex;
-    justify-Content: space-around;
-    margin-Bottom: 5px
+
+.input-container-register {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+  width: 100%;
+  max-width: 440px;
 }
-.input-container-register{
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 20px;
-    width: 450px;
+
+.input-container-registers {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+  width: 100%;
+  max-width: 300px;
 }
-.input-container-registers{
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 20px;
-    width: 300px;
+
+/* Add button row */
+.btn-style-registration {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
 }
-/* .table-container h3{
-    margin-bottom: 15px;
-} */
-.btn-style-registration{
-    display: flex;
-    justify-content: flex-end;
-}
-.error-message1{
-    color: red;
-    font-size: 12px;
-    font-weight: 400;
-    margin-bottom: -14px;
+
+/* Inline error */
+.error-message1 {
+  color: #FF5630;
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 3px;
 }

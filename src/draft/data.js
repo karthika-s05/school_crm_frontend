@@ -1,3 +1,8 @@
+const getCity = async (params, token) => {
+    // Placeholder implementation; replace with actual getCity API import if needed.
+    return [];
+};
+
 const getData = async () => {
     try {
         const response = await getNationality(0, TOKEN_KEY);

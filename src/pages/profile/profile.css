@@ -1,106 +1,125 @@
-img {
-    max-width: 100%;
-    height: 150px;
-    object-fit:cover;
-    border-radius: 50%;
-    width: 150px;
-    float: right;
-    margin-bottom: 20px;
-}
-.Profile .container{
-    display: flex;
-}
-.Profile .container .left{
-    padding: 20px;
-    flex: 3;
-}
-.Profile .container .left p{
-    margin-bottom: 10px;
-    /* font-family: 'Poppins', sans-serif; */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 
+.Profile {
+  font-family: 'Poppins', sans-serif;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(28, 54, 89, 0.08);
+  padding: 28px 28px 32px;
+  max-width: 900px;
 }
 
-.Profile .container .left p span{
-    font-size: 15px;
-    color: #051F3E;
-    margin-right: 15px;
-}
-.Profile .container .right{
-    flex:3 ;
+.Profile .container {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
 }
 
-.Profile .container .right{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-   
+.Profile .container .left {
+  flex: 2;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.Profile .container .right .img-con{
-        padding: 10px;
-        background-color:#FFA602 ;
-        border-radius: 50%;
-        border: 5px solid #051F3E;
-}
-/* .Profile .container .right .img-con img{
-        
-} */
-
-
-
-.Profile{
-    margin-top: 25px;
-    padding: 15px 30px 30px;
-    background-color: #ffffff;
-    border-radius: 4px;
-    width: 85%;
-    margin-left: 100px;
+.Profile .container .left p {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.7;
 }
 
-.studentData td{
-    border: 1px solid white;
-    background:white;
-    padding: 10px;
-    color: rgb(167, 167, 167);
+.Profile .container .left p span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1C3659;
+  margin-right: 10px;
+  display: inline-block;
+  min-width: 140px;
 }
-.studentData .Names{
-    border: 0;
-    background:white;
-    padding: 10px;
-    color: black;
-}
-/* Table CSS */
 
+.Profile .container .right {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.Profile .container .right .img-con {
+  padding: 5px;
+  background: #FF5630;
+  border-radius: 50%;
+  border: 4px solid #1C3659;
+  box-shadow: 0 4px 16px rgba(28, 54, 89, 0.15);
+}
+
+.Profile .container .right .img-con img,
+.Profile img {
+  height: 130px;
+  width: 130px;
+  object-fit: cover;
+  border-radius: 50%;
+  float: none;
+  margin: 0;
+  display: block;
+}
+
+/* Student data table inside profile */
+.studentData td {
+  border: 1px solid #e4e7f0;
+  background: #fff;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #7b8099;
+  font-family: 'Poppins', sans-serif;
+}
+
+.studentData .Names {
+  border: none;
+  background: #fff;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1d2e;
+}
+
+/* Table inside profile */
 .table {
-    /* margin-top: 30px; */
-    /* font-family: 'Poppins', sans-serif; */
-    font-family: Roboto, sans-serif;
-    border-collapse: collapse;
-    /* width: 100%; */
+  border-collapse: collapse;
+  width: 100%;
+  font-family: 'Poppins', sans-serif;
 }
 
-.table td,
-th {
-    border: 1px solid #dddddd;
-    text-align: left;
-    padding: 2px;
-    font-size: 12px;
-    font-family: sans-serif;
-    color: #111111;
-}
-.table td{
-    color: #646464;
+.table td, .table th {
+  border: 1px solid #e4e7f0;
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #374151;
 }
 
-tr:nth-child(even) {
-    background-color: #F9F9F9;
+.table th {
+  background: #1C3659;
+  color: #F5F2ED;
+  font-weight: 600;
 }
 
-tr:nth-child(odd) {
-    background-color: #FFFFFF;
-}
+.table tr:nth-child(even) { background: #FAF8F5; }
+.table tr:nth-child(odd)  { background: #ffffff; }
+.table tr:hover           { background: #EDE8E0; }
 
-.download-icon{
-    background: rgb(241,242,244);
-    padding: 8px;
+.download-icon {
+  background: #f0f2f8;
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: #1C3659;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.18s;
 }
+.download-icon:hover { background: #1C3659; color: #fff; }

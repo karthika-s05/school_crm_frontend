@@ -1,45 +1,40 @@
-                /* .table-time{
-    border-collapse: collapse;
-    width: 100%;
-}
-.table-time th{
-color: rgb(160, 49, 49);
-font-size: 20px;
-}
-.table-time th,td{
-    border: 2px solid black;
-    color: black;
-    text-align: center;
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+.timetable-wrap {
+  font-family: 'Poppins', sans-serif;
 }
 
-.table-cap{
-    text-align: center;
-    font-weight: bold;
-    font-size: 16px;
-
-} */
-
-
-.table td,
-th {
-    border: 1px solid rgb(235, 235, 235);
-    text-align: left;
-    /* padding: 15px; */
-    font-size: 12px;
-    font-family: sans-serif;
-background-color: #FFFFFF;
-}
-/* .table td{
-    color: #646464;
-} */
-
-tr:nth-child(even) {
-    background-color: #F9F9F9;
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-family: 'Poppins', sans-serif;
 }
 
-tr:nth-child(odd) {
-    background-color: #FFFFFF;
+.table th {
+  background: #1C3659;
+  color: #F5F2ED;
+  padding: 12px 14px;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid #3a5f70;
+  white-space: nowrap;
 }
-.table .weeks{
-    text-align: center;
+
+.table td {
+  padding: 10px 14px;
+  border: 1px solid #e4e7f0;
+  color: #374151;
+  background: #ffffff;
+  text-align: left;
 }
+
+.table .weeks {
+  text-align: center;
+  font-weight: 600;
+  color: #1C3659;
+}
+
+.table tr:nth-child(even) td { background: #FAF8F5; }
+.table tr:nth-child(odd)  td { background: #ffffff; }
+.table tr:hover           td { background: #EDE8E0; transition: background 0.2s; }

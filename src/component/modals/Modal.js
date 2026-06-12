@@ -53,10 +53,8 @@ const Modal = ({
         const getData = async () => {
           try {
             const response = await getNationality(0, TOKEN_KEY);
-            console.log("dropdown ", response);
             setDropdown(response);
           } catch (err) {
-            console.log(err);
           }
         };
         getData();
@@ -65,10 +63,8 @@ const Modal = ({
         const getCitydata = async () => {
           try {
             const response = await getState({ id: 0, nationId: 0 }, TOKEN_KEY);
-            console.log("dropdown ", response);
             setDropdown(response);
           } catch (err) {
-            console.log(err);
           }
         };
         getCitydata();
@@ -85,7 +81,6 @@ const Modal = ({
             }));
             classSection.push({ classId: class1 });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSectiondata = async () => {
@@ -97,7 +92,6 @@ const Modal = ({
             }));
             classSection.push({ sectionId: section });
           } catch (err) {
-            console.log(err);
           }
         };
         getClassdata();
@@ -115,7 +109,6 @@ const Modal = ({
             }));
             classTeacher.push({ classId: classTeachers });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSectiondat = async () => {
@@ -127,7 +120,6 @@ const Modal = ({
             }));
             classTeacher.push({ sectionId: sectionTeacher });
           } catch (err) {
-            console.log(err);
           }
         };
         const getStaffList = async () => {
@@ -139,7 +131,6 @@ const Modal = ({
             }));
             classTeacher.push({ staffId: staff });
           } catch (err) {
-            console.log(err);
           }
         };
         getClassdat();
@@ -152,14 +143,12 @@ const Modal = ({
         const getSubjectClass = async () => {
           try {
             const response = await getClass(0, TOKEN_KEY);
-            console.log("dropdown ", response);
             const classTeacher = response.map((value, index) => ({
               id: value.id,
               value: value.name,
             }));
             subjectTeacher.push({ classId: classTeacher });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSubjectSection = async () => {
@@ -171,20 +160,17 @@ const Modal = ({
             }));
             subjectTeacher.push({ sectionId: sectionTeacher });
           } catch (err) {
-            console.log(err);
           }
         };
         const getsubjectStaff = async () => {
           try {
             const response = await getStafflist("0", TOKEN_KEY);
-            console.log(response);
             const staff = response.data.map((value, index) => ({
               id: value.staffId,
               value: value.staffName,
             }));
             subjectTeacher.push({ staffId: staff });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSubject1 = async () => {
@@ -196,7 +182,6 @@ const Modal = ({
             }));
             subjectTeacher.push({ subjectId: subject });
           } catch (err) {
-            console.log(err);
           }
         };
         getSubjectClass();
@@ -213,10 +198,8 @@ const Modal = ({
               id: value.id,
               value: value.name,
             }));
-            console.log(classTeachers);
             setDropdown([{ classId: classTeachers }]);
           } catch (err) {
-            console.log(err);
           }
         };
         getperiod();
@@ -232,7 +215,6 @@ const Modal = ({
             }));
             classSection1.push({ classId: class1 });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSectiondata1 = async () => {
@@ -244,7 +226,6 @@ const Modal = ({
             }));
             classSection1.push({ sectionId: section });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSubjectTime = async () => {
@@ -256,7 +237,6 @@ const Modal = ({
             }));
             classSection1.push({ subjectId: subject });
           } catch (err) {
-            console.log(err);
           }
         };
         const getperiodTime = async () => {
@@ -266,23 +246,19 @@ const Modal = ({
               id: value.id,
               value: value.slotName,
             }));
-            console.log(classTeachers);
             classSection1.push({ periodSlotId: classTeachers });
           } catch (err) {
-            console.log(err);
           }
         };
         const getDays = async () => {
           try {
             const response = await getDay(TOKEN_KEY);
-            console.log("One", response);
             const classTeachers = response.map((value, index) => ({
               id: value.id,
               value: value.dayName,
             }));
             classSection1.push({ dayId: classTeachers });
           } catch (err) {
-            console.log(err);
           }
         };
         getperiodTime();
@@ -293,20 +269,16 @@ const Modal = ({
         setDropdown(classSection1);
         break;
       case "Assignment":
-        console.log("first123");
         let assignment = [];
         const getClassstaff = async () => {
           try {
             const response = await getClass(0, STAFF_KEY);
-            console.log(response, "hello");
             const class1 = response.map((value, index) => ({
               id: value.id,
               value: value.name,
             }));
             assignment.push({ classId: class1 });
-            console.log({ classId: class1 });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSectionstaff = async () => {
@@ -318,7 +290,6 @@ const Modal = ({
             }));
             assignment.push({ sectionId: section });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSubjectstaff = async () => {
@@ -330,7 +301,6 @@ const Modal = ({
             }));
             assignment.push({ subjectId: subject });
           } catch (err) {
-            console.log(err);
           }
         };
 
@@ -340,20 +310,16 @@ const Modal = ({
         setDropdown(assignment);
         break;
       case "Homework":
-        console.log("first123");
         let homework = [];
         const getClassstaffs = async () => {
           try {
             const response = await getClass(0, STAFF_KEY);
-            console.log(response, "hello");
             const class1 = response.map((value, index) => ({
               id: value.id,
               value: value.name,
             }));
             homework.push({ classId: class1 });
-            console.log({ classId: class1 });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSectionstaffs = async () => {
@@ -365,7 +331,6 @@ const Modal = ({
             }));
             homework.push({ sectionId: section });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSubjectstaffs = async () => {
@@ -377,7 +342,6 @@ const Modal = ({
             }));
             homework.push({ subjectId: subject });
           } catch (err) {
-            console.log(err);
           }
         };
         const getStaffLists = async () => {
@@ -389,7 +353,6 @@ const Modal = ({
             }));
             homework.push({ staffId: staff });
           } catch (err) {
-            console.log(err);
           }
         };
         getClassstaffs();
@@ -399,20 +362,16 @@ const Modal = ({
         setDropdown(homework);
         break;
       case "Exam Type":
-        console.log("first123");
         let exam = [];
         const getClassstaffExam = async () => {
           try {
             const response = await getClass(0, STAFF_KEY);
-            console.log(response, "hello");
             const class1 = response.map((value, index) => ({
               id: value.id,
               value: value.name,
             }));
             exam.push({ classId: class1 });
-            console.log({ classId: class1 });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSectionstaffExam = async () => {
@@ -424,7 +383,6 @@ const Modal = ({
             }));
             exam.push({ sectionId: section });
           } catch (err) {
-            console.log(err);
           }
         };
 
@@ -433,20 +391,16 @@ const Modal = ({
         setDropdown(exam);
         break;
       case "Exam Portion":
-        console.log("first123");
         let examportion = [];
         const ClassstaffExam = async () => {
           try {
             const response = await getClass(0, STAFF_KEY);
-            console.log(response, "hello");
             const class1 = response.map((value, index) => ({
               id: value.id,
               value: value.name,
             }));
             examportion.push({ classId: class1 });
-            console.log({ classId: class1 });
           } catch (err) {
-            console.log(err);
           }
         };
         const SectionstaffExam = async () => {
@@ -458,20 +412,17 @@ const Modal = ({
             }));
             examportion.push({ sectionId: section });
           } catch (err) {
-            console.log(err);
           }
         };
         const subjectStaff = async () => {
           try {
             const response = await getStafflist("0", STAFF_KEY);
-            console.log(response);
             const staff = response.data.map((value, index) => ({
               id: value.staffId,
               value: value.staffName,
             }));
             examportion.push({ staffId: staff });
           } catch (err) {
-            console.log(err);
           }
         };
         const SubjectExam = async () => {
@@ -483,7 +434,6 @@ const Modal = ({
             }));
             examportion.push({ subjectId: subject });
           } catch (err) {
-            console.log(err);
           }
         };
         const getExamstaffExam1 = async () => {
@@ -493,10 +443,8 @@ const Modal = ({
               id: value.id,
               value: value.exam,
             }));
-            console.log("examName", examName);
             examportion.push({ examId: examName });
           } catch (err) {
-            console.log(err);
           }
         };
 
@@ -515,29 +463,23 @@ const Modal = ({
               id: value.id,
               value: value.name,
             }));
-            console.log(classTeachers);
             setDropdown([{ classId: classTeachers }]);
           } catch (err) {
-            console.log(err);
           }
         };
         getEvents();
         break;
       case "Exam Report List":
-        console.log("first123");
         let subjectreport = [];
         const getClassstaffreport = async () => {
           try {
             const response = await getClass(0, STAFF_KEY);
-            console.log(response, "hello");
             const class1 = response.map((value, index) => ({
               id: value.id,
               value: value.name,
             }));
             subjectreport.push({ classId: class1 });
-            console.log({ classId: class1 });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSectionstaffeport = async () => {
@@ -549,7 +491,6 @@ const Modal = ({
             }));
             subjectreport.push({ sectionId: section });
           } catch (err) {
-            console.log(err);
           }
         };
         const getSubjectstaffeport = async () => {
@@ -561,7 +502,6 @@ const Modal = ({
             }));
             subjectreport.push({ subjectId: subject });
           } catch (err) {
-            console.log(err);
           }
         };
         const getExamstaffExam2 = async () => {
@@ -571,24 +511,19 @@ const Modal = ({
               id: value.id,
               value: value.exam,
             }));
-            console.log("examName", examName);
             subjectreport.push({ examId: examName });
           } catch (err) {
-            console.log(err);
           }
         };
         const StudentsExams = async () => {
           try {
             const response = await getStudentlist({ userName: 0 }, TOKEN_KEY);
-            console.log(response);
             const studentlist = response.data.map((value, index) => ({
               id: value.admissionNo,
               value: value.studentName,
             }));
             subjectreport.push({ studentId: studentlist });
-            console.log({ studentId: studentlist });
           } catch (err) {
-            console.log(err);
           }
         };
         StudentsExams();
@@ -600,7 +535,6 @@ const Modal = ({
         break;
       default:
         setDropdown("");
-        console.log("No matching data scenario");
     }
     const timer = setTimeout(() => {
       setShowHTML(true);
@@ -615,14 +549,12 @@ const Modal = ({
     // Trim leading and trailing spaces
     value = value.trim();
   
-    console.log("test", value);
   
     let errorMessage = "";
   
     // Replace single quotes and double quotes with spaces
     value = value.replace(/['"]/g, " ");
   
-    console.log("out", value);
   
     if (value === "") {
       errorMessage = `${name} is required.`;
@@ -630,27 +562,19 @@ const Modal = ({
   
     if (name === "fromDate" || name === "startDate") {
       setDate(value);
-      console.log("jsgaafgkjasdgut", value);
     }
   
     setValidationErrors({ ...validationErrors, [name]: errorMessage });
   
-    console.log("insert", value);
   
     setFormData((prevInputValue) => ({
       ...prevInputValue,
       [name]: type === "file" ? e.target.files[0] : value,
     }));
   };
-  
-  console.log(closeModal,"123")
 
-  console.log("formData", inputData);
-  console.log("formDataEdit", editData);
-  console.log("drop", dropdown);
 
   if (editData) {
-    console.log("edit", editData);
     inputData.forEach(async (obj1) => {
       const matchingObj2 = await editData.find(
         (obj2) => obj2.name === obj1.name
@@ -660,13 +584,11 @@ const Modal = ({
       }
     });
   } else {
-    console.log("firsmmjjj");
     inputData.map((value, index) => {
       delete value.value;
     });
   }
 
-  console.log("data", dropdown);
   return (
     <>
       {showHTML ? (

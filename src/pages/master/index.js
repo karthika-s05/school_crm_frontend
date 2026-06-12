@@ -169,7 +169,7 @@ const Master = () => {
         const postCitydetail = async () => {
           try {
             const response = await postCity(formData, TOKEN_KEY);
-            console.log(response.data);
+            console.log("City API response:", response.data);
             const responseValue = response.status.toString().toLowerCase();
             const responseMessage =
               responseValue === "error" &&
@@ -686,7 +686,6 @@ const Master = () => {
         const getData = async () => {
           try {
             const response = await getState({ id, nationId: 0 }, TOKEN_KEY);
-            console.log("StateRES", response);
             setFormData({
               id: response[0].id,
               code: response[0].State_Code,
@@ -826,7 +825,7 @@ const Master = () => {
         const getNationalityDetails = async () => {
           try {
             const response = await getNationality(id, TOKEN_KEY);
-            console.log(response);
+            console.log("Nationality API response:", response);
             setFormData({
               id: response[0].id,
               code: response[0].code,
@@ -1527,7 +1526,7 @@ const Master = () => {
               id: item.id,
               "class Name": item.className,
               "section Name": item.sectionName,
-              "total Count":item.totalCount
+              "total Count": item.totalCount
             }));
             setData(resultData);
           } catch (err) {
@@ -1574,9 +1573,10 @@ const Master = () => {
             console.log(response, "ijyuy");
             const resultData = response.map((item) => ({
               id: item.id,
-              " Name": item.name,
-              " code": item.code,
+              Name: item.name,
+              Code: item.code,
             }));
+            console.log(resultData, "resultdata");
             setData(resultData);
           } catch (err) {
             console.log(err);
@@ -1770,40 +1770,30 @@ const Master = () => {
     setFormData({})
   }, [propsData])
 
+  const [isTableOpen, setIsTableOpen] = useState(true);
   return (
-    <div>
-      <div>
-        {/* <h3>{propsData}</h3> */}
-        <ul class="breadcrumb" style={{ display: "flex" }}>
-          {/* <li>
-            <Link to={"/dashboard"}>
-              <a style={{ color: "#051F3E" }}>
-                <h4>Home</h4>
-              </a>
-            </Link>
-          </li>
-          <li>
-            <a>{propsData}</a>
-          </li> */}
-        </ul>
-      </div>
-      {/* {isSuccessVisible && <h1 className="success-message">{message}</h1>} */}
-      <div className="button-content">
-        {isModalOpen && (
-          <Modal
-            onSubmit={handleSubmit}
-            setFormData={setFormData}
-            formData={formData}
-            closeModal={closeModal}
-            inputData={inputData}
-            propsData={propsData}
-            editData={editData}
-            dropdown={data}
-          />
-        )}
-      </div>
+  <div className="master-page">
+
+    {/* Modal */}
+    <div className="button-content">
+      {isModalOpen && (
+        <Modal
+          onSubmit={handleSubmit}
+          setFormData={setFormData}
+          formData={formData}
+          closeModal={closeModal}
+          inputData={inputData}
+          propsData={propsData}
+          editData={editData}
+          dropdown={data}
+        />
+      )}
+    </div>
+
+    {/* Table */}
+    {isTableOpen && (
       <div className="table-container">
-        {data ? (
+        {data?.length > 0 ? (
           <Table
             data={data}
             onEdit={handleEdit}
@@ -1812,23 +1802,24 @@ const Master = () => {
             openModal={openModal}
           />
         ) : (
-          <div>NO DATA FOUND...</div>
+          <div className="no-data">No Records Found</div>
         )}
       </div>
-      <ToastContainer
-        position="top-right"
-        autoClose={2000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        style={{ fontSize: "14px" }}
-      />
-    </div>
-  );
+    )}
+
+    <ToastContainer
+      position="top-right"
+      autoClose={2000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+    />
+  </div>
+);
 };
 
 export default Master;

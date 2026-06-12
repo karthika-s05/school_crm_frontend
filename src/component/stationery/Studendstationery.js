@@ -241,7 +241,7 @@ export default function Studendstationery() {
             <div class="search-input">
               <i
                 class="bx bx-search"
-                style={{ padding: "10px", color: "gray",marginLeft:'-30px' }}
+                style={{ color: "gray" }}
               ></i>
               <input
                 type="text"

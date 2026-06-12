@@ -1,136 +1,59 @@
-
-.dashboard-summery-one {
-    margin-bottom: 30px;
-    background-color: #ffffff;
-    padding: 22px 28px;
-    border-radius: 4px;
-    box-shadow: 0px 10px 20px 0px rgba(229, 229, 229, 0.75);
-    width: 280px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    height: 110px;
-    width: 250px;
+.box-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(5, 31, 62, 0.08);
+  position: relative;
+  overflow: hidden;
+  min-width: 200px;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.icon i {
-    display: flex;
-    align-items: center;
-    height: 80px;
-    min-width: 80px;
-    font-size: 70px;
-    border-radius: 80px;
-    padding: 13px;
+.box-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(5, 31, 62, 0.14);
 }
 
-.data .item-title {
-    color: #a8a8a8;
-    margin-bottom: 15px;
+.box-card-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  border-radius: 14px 0 0 14px;
 }
-.data .item-number{
-    font-size: 20px;
+
+.box-card-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
 }
-@media screen and (max-width: 1300px) {
-    .dashboard-summery-one {
-        margin-bottom: 30px;
-        background-color: #ffffff;
-        padding: 22px 28px;
-        border-radius: 4px;
-        box-shadow: 0px 10px 20px 0px rgba(229, 229, 229, 0.75);
-        width: 190px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .icon i {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    
-    .data .item-title {
-        color: #a8a8a8;
-        margin-bottom: 15px;
-    }
-    .data .item-number{
-        font-size: 20px;
-    }
+
+.box-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-@media screen and (max-width: 1064px) {
-    .dashboard-summery-one {
-        margin-bottom: 30px;
-        background-color: #ffffff;
-        padding: 22px 28px;
-        border-radius: 4px;
-        box-shadow: 0px 10px 20px 0px rgba(229, 229, 229, 0.75);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .icon i {
-        height: 50px;
-        min-width: 50px;
-        font-size: 30px;
-        border-radius: 80px;
-        padding: 13px;
-    }
-    .data .item-title {
-        color: #a8a8a8;
-        margin-bottom: 15px;
-        font-size: 14px;
-    }
-    .data .item-number{
-        font-size: 12px;
-    }
+
+.box-card-label {
+  font-size: 11px;
+  color: #7a8499;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-@media screen and (max-width: 898px) {
-    .dashboard-summery-one {
-        margin-bottom: 30px;
-        background-color: #ffffff;
-        border-radius: 4px;
-        box-shadow: 0px 10px 20px 0px rgba(229, 229, 229, 0.75);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .icon i {
-        height: 40px;
-        min-width: 13px;
-        font-size: 18px;
-        border-radius: 80px;
-    }
-    .data .item-title {
-        color: #a8a8a8;
-        /* margin-bottom: 15px; */
-        font-size: 11px;
-        margin-right: -15px;
-    }
-    .data .item-number{
-        font-size: 10px;
-    }
-}
-@media screen and (max-width: 681px) {
-    .dashboard-summery-one {
-        background-color: #ffffff;
-        border-radius: 4px;
-        box-shadow: 0px 10px 20px 0px rgba(229, 229, 229, 0.75);
-        width: 90px;
-        display: flex;
-        justify-content: center;
-    }
-    .icon i {
-        height: 35px;
-        min-width: 10px;
-        font-size: 15px;
-        border-radius: 80px;
-        padding: 13px;
-    }
-    .data .item-title {
-        color: #a8a8a8;
-        margin-bottom: 15px;
-        font-size: 11px;
-    }
-    .data .item-number{
-        font-size: 12px;
-    }
+
+.box-card-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #051f3e;
+  line-height: 1;
 }

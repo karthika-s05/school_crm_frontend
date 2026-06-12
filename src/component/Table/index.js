@@ -233,7 +233,6 @@ const Table = (props) => {
       };
 
       const profileKey = profileKeyMap[props.propsData];
-      console.log("sjkgfasdfjk", item);
       const columns = [];
       for (const key in item) {
         if (key === "image") {
@@ -421,10 +420,7 @@ const Table = (props) => {
             <a>{props.propsData} </a>
           </li>
         </ul>
-        <span
-          class="horizontal-line"
-          style={{ background: "#F0F1F3", marginTop: "20px" }}
-        ></span>
+      
         <div class="form-group" style={{ marginTop: "-38px" }}>
           <div
             className="search-input"
@@ -438,7 +434,7 @@ const Table = (props) => {
           >
             <i
               class="bx bx-search"
-              style={{ padding: "10px", color: "gray", marginLeft: "-30px" }}
+              style={{ color: "gray" }}
             ></i>
             <input
               type="text"

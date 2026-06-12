@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./nav.css";
 import Dashboard from "../../pages/dashboard";
 import Master from "../../pages/master";
-import Login from "../../pages/Login/index";
 import Registration from "../../pages/registration/registration";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { getUserData, removeToken } from "../../services/auth";
 import { useNavigate } from "react-router-dom";
 import List from "../../pages/List/list";
@@ -22,7 +21,6 @@ import ExamTable from "../../pages/exam/examTable.js";
 import Examresult from "../../pages/exam/examResults.js";
 import ViewAttendance from "../Atttendence/ViewAttendance.js";
 import Studendstationery from "../stationery/Studendstationery.js";
-import Adlogin from "../../pages/Login/Adlogin.js";
 import Staffattendance from "../Atttendence/Staffattendance.js";
 import Staffview from "../Atttendence/Staffview.js";
 import Nationality from "../../pages/master/nationality/Nationality.js";
@@ -30,923 +28,441 @@ import Studendlist from "../../pages/List/Studendlist.js";
 import Stafflist from "../../pages/List/Stafflist.js";
 import Studentinfo from "../../pages/List/Studentinfo.js";
 import Nextpage from "../../pages/List/Nextpage.js";
+import StudentDummyList from "../../pages/List/StudentDummyList.js";
+import logo from '../../assets/images/kst_logo.png'
+import { IoIosArrowForward } from "react-icons/io";
+
+
+/*  Sub link  active when path + state both match  */
+const SubLink = ({ to, state, children }) => {
+  const location = useLocation();
+  const isActive =
+    location.pathname === to && location.state === state;
+  return (
+    <Link
+      to={to}
+      state={state}
+      className={`kst-sub-link${isActive ? " kst-sub-active" : ""}`}
+    >
+      <i></i>
+      {children}
+    </Link>
+  );
+};
+
+/*  NavItem  auto-opens when any child sub-link is active  */
+const NavItem = ({ icon, label, children, collapsed, childPaths = [], activeItem, setActiveItem }) => {
+  const location = useLocation();
+  const itemRef = useRef(null);
+  const [flyoutTop, setFlyoutTop] = useState(0);
+
+  const isChildActive = childPaths.some(
+    (cp) => location.pathname === cp.to && location.state === cp.state
+  );
+
+  // open = expanded (non-collapsed) OR flyout visible (collapsed)
+  const open = activeItem === label || (!collapsed && isChildActive);
+
+  useEffect(() => {
+    // auto-open the correct item when navigating directly
+    if (isChildActive && !collapsed) setActiveItem(label);
+  }, [isChildActive, collapsed]);
+
+  // close flyout on route change
+  useEffect(() => {
+    if (collapsed) setActiveItem(null);
+  }, [location.pathname, location.state]);
+
+  const handleClick = () => {
+    if (collapsed && itemRef.current) {
+      const rect = itemRef.current.getBoundingClientRect();
+      setFlyoutTop(rect.top);
+    }
+    setActiveItem(activeItem === label ? null : label);
+  };
+
+  return (
+    <div className={`kst-nav-item${open ? " open" : ""}`} ref={itemRef}>
+      <div
+        className={`kst-nav-link${isChildActive ? " active" : ""}`}
+        onClick={handleClick}
+      >
+        <i className={`${icon} nav-icon`}></i>
+        <span className="nav-label">{label}</span>
+        <i className="bx bxs-chevron-down nav-arrow"></i>
+      </div>
+
+      {!collapsed && (
+        <div className="kst-submenu">{children}</div>
+      )}
+
+      {collapsed && open && (
+        <div className="kst-flyout" style={{ top: flyoutTop }}>
+          <div className="kst-flyout-title">{label}</div>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Nav = () => {
-  const history = useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
   const image = getUserData("image");
-
   const userName = getUserData("adminName") || getUserData("staffName");
-
   const role = getUserData("role");
+  const [collapsed, setCollapsed] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeItem, setActiveItem] = useState(null);
 
-  const [sidebarClosed, setSidebarClosed] = useState(false);
-  const [logouts, setLogouts] = useState(false);
-
-  const toggleSidebar = () => {
-    setSidebarClosed(!sidebarClosed);
-  };
-  const toggleSubMenu = (e) => {
-    const arrowParent = e.currentTarget.parentElement;
-    arrowParent.classList.toggle("showMenu");
-  };
-
-  // const logout = () => {
-  //   removeToken();
-  //   history("/");
-  //   window.location.reload();
-  // };
-  // const openLogout = () => {
-  //   setLogouts(!logouts);
-  // };
-  const [isModalOpen, setModalOpen] = useState(false);
-
-  const openLogout = () => {
-    setModalOpen(true);
-  };
-  const closeLogout = () => {
-    setModalOpen(false);
-  };
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname, location.state]);
 
   const logout = () => {
     removeToken();
-    history("/");
+    navigate("/");
     window.location.reload();
-    closeLogout();
   };
+
+  const isActive = (...paths) => paths.includes(location.pathname);
+
+  // const pageTitle = () => {
+  //   const map = {
+  //     "/dashboard": "Dashboard",
+  //     "/master": location.state ? String(location.state) : "Master",
+  //     "/students": "Student List",
+  //     "/list": "List",
+  //     "/timetable": "Time Table",
+  //     "/staff": "Staff Panel",
+  //     "/exam": "Exam",
+  //     "/staffview": "Attendance",
+  //     "/studentattendence": "Student Attendance",
+  //     "/viewattendance": "View Attendance",
+  //   };
+  //   return map[location.pathname] || "Dashboard";
+  // };
+
+  // Child path definitions for NavItems (used for active detection)
+  const masterPaths = [
+    { to: "/master", state: "Nationality" },
+    { to: "/master", state: "State" },
+    { to: "/master", state: "City" },
+    { to: "/master", state: "BloodGroup" },
+    { to: "/master", state: "Community" },
+    { to: "/master", state: "Religion" },
+    { to: "/master", state: "Subject" },
+    { to: "/master", state: "Class" },
+    { to: "/master", state: "Section" },
+  ];
+
+  const studentAdminPaths = [
+    { to: "/students", state: "Student List" },
+    { to: "/studentlist/:id", state: "Student Registration" },
+  ];
+
+  const staffAdminPaths = [
+    { to: "/list", state: "Staff List" },
+    { to: "/stafflist/:id", state: "Staff Registration" },
+  ];
+
+  const mappingPaths = [
+    { to: "/master", state: "Class & Section" },
+    { to: "/master", state: "Class Teacher" },
+    { to: "/master", state: "Subject Teacher" },
+  ];
+
+  const timetablePaths = [
+    { to: "/master", state: "Period Slot" },
+    { to: "/master", state: "Class Time Table" },
+    { to: "/timetable", state: "Class Time Table" },
+  ];
+
+  const stationeryAdminPaths = [{ to: "/master", state: "Products" }];
+  const transportPaths = [{ to: "/master", state: "Transport" }];
+
+  const studentStaffPaths = [
+    { to: "/studentattendence", state: "Attendance" },
+    { to: "/viewattendance", state: "View Attendance" },
+    { to: "/staff", state: "Assignment" },
+    { to: "/staff", state: "Homework" },
+  ];
+
+  const examPaths = [
+    { to: "/staff", state: "Exam Type" },
+    { to: "/staff", state: "Exam Portion" },
+    { to: "/exam", state: "Subject Mark" },
+    { to: "/examresult", state: "Exam Result" },
+  ];
+
+  const gradePaths = [
+    { to: "/staff", state: "Overall grade" },
+    { to: "/staff", state: "Subject grade" },
+  ];
+
+  const stationeryStaffPaths = [{ to: "/Studendstationery", state: "Studend Stationery" }];
+  const eventsPaths = [{ to: "/staff", state: "Events" }];
+  const reportPaths = [
+    { to: "/assignment", state: "Assignment Report" },
+    { to: "/examtable", state: "Exam Results" },
+  ];
+
   return (
-    <div>
-      <div className={`sidebar ${sidebarClosed ? "close" : ""}`}>
-        <div className="logo-details">
-          <i className="bx bxl-c-plus-plus"></i>
-          <span className="logo_name">Kst School</span>
+    <div className="kst-shell">
+      {/* Mobile overlay */}
+      <div
+        className={`kst-overlay${mobileOpen ? " visible" : ""}`}
+        onClick={() => setMobileOpen(false)}
+      />
+
+      {/* SIDEBAR */}
+      <aside className={`kst-sidebar${collapsed ? " collapsed" : ""}${mobileOpen ? " mobile-open" : ""}`}>
+
+        {/* Mobile close */}
+        <button className="kst-mobile-close" onClick={() => setMobileOpen(false)}>
+          <i className="bx bx-x"></i>
+        </button>
+
+        <div className="kst-logo">
+          <img src={logo} alt="logo" className="kst-logo-img" />
         </div>
 
-        <ul className="nav-links" style={{marginTop:'15px'}}>
-          <li>
-            <a>
-              <Link to={"/dashboard"}>
-                <i className="bx bx-grid-alt"></i>
-                <span className="link_name">Dashboard</span>
-              </Link>
-            </a>
-            <ul className="sub-menu blank ">
-              <Link to={"/dashboard"}>
-                <li>
-                  <a style={{ height: "10px", padding: "20px" }}>Dashboard</a>
-                </li>
-              </Link>
-            </ul>
-          </li>
+        <nav className="kst-nav">
+          {/* Dashboard */}
+          <Link
+            to="/dashboard"
+            className={`kst-nav-link${isActive("/dashboard", "/") ? " active" : ""}`}
+          >
+            <i className="bx bx-grid-alt nav-icon"></i>
+            <span className="nav-label">Dashboard</span>
+          </Link>
 
-          <>
+          {role === "Admin" ? (
+            <>
+              <div className="kst-nav-section">Management</div>
+
+              <NavItem icon="bx bxs-group" label="Master" collapsed={collapsed} childPaths={masterPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/master" state="Nationality">Nationality</SubLink>
+                <SubLink to="/master" state="State">State</SubLink>
+                <SubLink to="/master" state="City">City</SubLink>
+                <SubLink to="/master" state="BloodGroup">Blood Group</SubLink>
+                <SubLink to="/master" state="Community">Community</SubLink>
+                <SubLink to="/master" state="Religion">Religion</SubLink>
+                <SubLink to="/master" state="Subject">Subject</SubLink>
+                <SubLink to="/master" state="Class">Class</SubLink>
+                <SubLink to="/master" state="Section">Section</SubLink>
+              </NavItem>
+
+              <NavItem icon="bx bxs-user-check" label="Student" collapsed={collapsed} childPaths={studentAdminPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/students" state="Student List">List</SubLink>
+                <SubLink to="/studentlist/:id" state="Student Registration">Registration</SubLink>
+              </NavItem>
+
+              <NavItem icon="bx bxs-user-x" label="Staff" collapsed={collapsed} childPaths={staffAdminPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/list" state="Staff List">List</SubLink>
+                <SubLink to="/stafflist/:id" state="Staff Registration">Registration</SubLink>
+              </NavItem>
+
+              <div className="kst-nav-section">Academic</div>
+
+              <NavItem icon="bx bx-group" label="Mapping" collapsed={collapsed} childPaths={mappingPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/master" state="Class & Section">Class & Section</SubLink>
+                <SubLink to="/master" state="Class Teacher">Class Teacher</SubLink>
+                <SubLink to="/master" state="Subject Teacher">Subject Teacher</SubLink>
+              </NavItem>
+
+              <NavItem icon="bx bxs-notepad" label="Time Table" collapsed={collapsed} childPaths={timetablePaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/master" state="Period Slot">Period Slot</SubLink>
+                <SubLink to="/master" state="Class Time Table">Class Time Table</SubLink>
+                <SubLink to="/timetable" state="Class Time Table">Period Time Table</SubLink>
+              </NavItem>
+
+              <div className="kst-nav-section">Other</div>
+
+              <NavItem icon="bx bxs-id-card" label="Stationery" collapsed={collapsed} childPaths={stationeryAdminPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/master" state="Products">Products</SubLink>
+              </NavItem>
+
+              <NavItem icon="bx bxs-bus" label="Transport" collapsed={collapsed} childPaths={transportPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/master" state="Transport">Transport Services</SubLink>
+              </NavItem>
+            </>
+          ) : (
+            <>
+              <div className="kst-nav-section">My Work</div>
+
+              <Link
+                to="/staffview"
+                className={`kst-nav-link${isActive("/staffview") ? " active" : ""}`}
+              >
+                <i className="bx bxs-calendar-check nav-icon"></i>
+                <span className="nav-label">Attendance</span>
+              </Link>
+
+              <NavItem icon="bx bxs-graduation" label="Student" collapsed={collapsed} childPaths={studentStaffPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/studentattendence" state="Attendance">Student Attendance</SubLink>
+                <SubLink to="/viewattendance" state="View Attendance">View Attendance</SubLink>
+                <SubLink to="/staff" state="Assignment">Assignment</SubLink>
+                <SubLink to="/staff" state="Homework">Home Work</SubLink>
+              </NavItem>
+
+              <NavItem icon="bx bx-edit" label="Exam" collapsed={collapsed} childPaths={examPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/staff" state="Exam Type">Exam Type</SubLink>
+                <SubLink to="/staff" state="Exam Portion">Exam Portion</SubLink>
+                <SubLink to="/exam" state="Subject Mark">Subject Mark</SubLink>
+                <SubLink to="/examresult" state="Exam Result">Exam Result</SubLink>
+              </NavItem>
+
+              <NavItem icon="bx bx-calendar-star" label="Grade" collapsed={collapsed} childPaths={gradePaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/staff" state="Overall grade">Overall Grade</SubLink>
+                <SubLink to="/staff" state="Subject grade">Subject Grade</SubLink>
+              </NavItem>
+
+              <div className="kst-nav-section">More</div>
+
+              <NavItem icon="bx bxs-id-card" label="Stationery" collapsed={collapsed} childPaths={stationeryStaffPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/Studendstationery" state="Studend Stationery">Products</SubLink>
+              </NavItem>
+
+              <NavItem icon="bx bx-calendar-event" label="Events" collapsed={collapsed} childPaths={eventsPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/staff" state="Events">Events</SubLink>
+              </NavItem>
+
+              <NavItem icon="bx bxs-report" label="Report" collapsed={collapsed} childPaths={reportPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
+                <SubLink to="/assignment" state="Assignment Report">Assignment Report</SubLink>
+                <SubLink to="/examtable" state="Exam Results">Exam Report</SubLink>
+              </NavItem>
+            </>
+          )}
+        </nav>
+
+        <div className="kst-sidebar-user" onClick={() => setShowPopup(!showPopup)}>
+          <img src="https://img.magnific.com/free-vector/woman-with-long-brown-hair-pink-shirt_90220-2940.jpg?semt=ais_hybrid&w=740&q=80" alt="user" />
+          <div className="kst-sidebar-user-info">
+            <strong>{userName}</strong>
+            <span>{role}</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* ══ MAIN ══ */}
+      <div className="kst-main">
+        
+       
+        <header className="kst-topbar">
+
+          {/* Collapse toggle — far left of header */}
+          <button
+            className={`kst-toggle-btn${collapsed ? " collapsed" : ""}`}
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            <IoIosArrowForward />
+          </button>
+
+          <span className="page-title">
+            {location.pathname === "/master" && location.state
+              ? String(location.state)
+              : location.pathname === "/students" ? "Student List"
+              : location.pathname === "/staffview" ? "Attendance"
+              : location.pathname === "/studentattendence" ? "Student Attendance"
+              : location.pathname === "/viewattendance" ? "View Attendance"
+              : location.pathname === "/timetable" ? "Time Table"
+              : location.pathname === "/exam" ? "Exam"
+              : location.pathname === "/examresult" ? "Exam Result"
+              : location.pathname === "/assignment" ? "Assignment Report"
+              : location.pathname === "/examtable" ? "Exam Report"
+              : location.pathname === "/list" ? "Staff List"
+              : "Dashboard"}
+          </span>
+
+          <div className="topbar-right">
+            <div className="search-box">
+            <i className="bx bx-search"></i>
+            <input type="text" placeholder="Search..." />
+          </div>
+            {/* <div className="tb-icon-btn">
+              <i className="bx bx-bell"></i>
+              <span className="notif-dot"></span>
+            </div> */}
+            <div className="tb-icon-btn">
+              <i className="bx bx-bell"></i>
+            </div>
+            <div className="tb-user-wrap" onClick={() => setShowPopup(!showPopup)}>
+              <img src="https://img.magnific.com/free-vector/woman-with-long-brown-hair-pink-shirt_90220-2940.jpg?semt=ais_hybrid&w=740&q=80" alt="user" />
+              <div className="tb-user-info">
+                <strong>{userName}</strong>
+                <span>{role}</span>
+              </div>
+              <i className="bx bxs-chevron-down" style={{ fontSize: 13, color: "#7b8099" }}></i>
+
+              {showPopup && (
+                <div className="kst-user-popup" onClick={e => e.stopPropagation()}>
+                  <div className="pop-avatar">
+                    <img src="https://img.magnific.com/free-vector/woman-with-long-brown-hair-pink-shirt_90220-2940.jpg?semt=ais_hybrid&w=740&q=80" alt="user" />
+                    <div>
+                      <div className="pop-name">{userName}</div>
+                      <div className="pop-role">{role}</div>
+                    </div>
+                  </div>
+                  <hr />
+                  <button className="pop-btn logout" onClick={logout}>
+                    <i className="bx bx-log-out"></i> Logout
+                  </button>
+                  <button className="pop-btn cancel" onClick={() => setShowPopup(false)}>
+                    Cancel
+                  </button>
+                </div>
+              )}
+              
+            </div>
+            
+          </div>
+        </header>
+
+        <div className="kst-page">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             {role === "Admin" ? (
               <>
-                <span class="horizontal-line"></span>
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      <i class="bx bxs-group"></i>
-                      <span className="link_name">Master</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Master</a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Nationality"}>
-                          Nationality
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={`/master`} state={"State"}>
-                          State
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"City"}>
-                          City
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"BloodGroup"}>
-                          BloodGroup
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Community"}>
-                          Community
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Religion"}>
-                          Religion
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Subject"}>
-                          Subject
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Class"}>
-                          Class
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Section"}>
-                          Section
-                        </Link>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span>
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      <i class="bx bxs-user-check"></i>
-                      <span className="link_name">Student</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Student</a>
-                    </li>
-                    {/* <li><a ><i class='bx bx-right-arrow-alt'></i><Link to={'/registration'} state={"Admin Registration"}>Admin Registration</Link></a></li> */}
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/list"} state={"Student List"}>
-                         List
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link
-                          to={"/studentlist/:id"}
-                          state={"Student Registration"}
-                        >
-                         Registration
-                        </Link>
-                      </a>
-                    </li>
-                    {/* <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/releiving"} state={"Student Relieving"}>
-                         Relieving
-                        </Link>
-                      </a>
-                    </li> */}
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span>
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      <i class="bx bxs-user-x"></i>
-                      <span className="link_name">Staff</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Staff</a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/list"} state={"Staff List"}>
-                           List
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/stafflist/:id"} state={"Staff Registration"}>
-                           Registration
-                        </Link>
-                      </a>
-                    </li>
-                    {/* <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/releiving"} state={"Staff Relieving"}>
-                           Relieving
-                        </Link>
-                      </a>
-                    </li> */}
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span>
-                {/* <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                    <i class="fa-regular fa-calendar-check"></i>
-                      <span className="link_name">Attendance</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Attendance</a>
-                    </li>
-                    <li>
-                      <a>
-                      <i class="bx bxs-pencil"></i>
-                        <Link to={"/staffattendance"} state={"Staff Attendance"}>
-                          Staff Attendance
-                        </Link>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span> */}
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      <i class="bx bx-group"></i>
-                      <span className="link_name">Mapping</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Mapping</a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Class & Section"}>
-                          Class & Section
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Class Teacher"}>
-                          Class Teacher
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Subject Teacher"}>
-                          Subject Teacher
-                        </Link>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span>
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      <i class="bx bxs-id-card"></i>
-                      <span className="link_name">Stationery</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Stationery</a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Products"}>
-                          Products
-                        </Link>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span>
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      <i class="bx bxs-notepad"></i>
-                      <span className="link_name">Time Table</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">TimeTable</a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Period Slot"}>
-                          Period Slot
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Class Time Table"}>
-                          Class Time Table
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/timetable"} state={"Class Time Table"}>
-                        Period Time Table
-                        </Link>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span>
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      <i class="bx bxs-bus"></i>
-                      <span className="link_name">Transport</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Transport</a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/master"} state={"Transport"}>
-                          Transport Services
-                        </Link>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span>
+                <Route path="/master" element={<Master />} />
+                <Route path="/nationality" element={<Nationality />} />
+                <Route path="/registration" element={<Registration />} />
+                <Route path="/releiving/:id" element={<Registration />} />
+                <Route path="/students" element={<StudentDummyList />} />
+                <Route path="/list" element={<List />} />
+                <Route path="/timetable" element={<Timetable />} />
+                <Route path="/profile/:id" element={<Profile />} />
+                <Route path="/staffattendance" element={<Staffattendance />} />
+                <Route path="/stafflist/:id" element={<Stafflist />} />
+                <Route path="/studentlist/:id" element={<Studendlist />} />
+                <Route path="/studentinfo/:id" element={<Studentinfo />} />
+                <Route path="/nextpage" element={<Nextpage />} />
               </>
             ) : (
               <>
-                <span class="horizontal-line"></span>
-
-                <li>
-                  <a style={{ height: "50px" }}>
-                    <Link to={"/staffview"} state={"Staff View Attendance"}>
-                      <i class="fa-regular fa-calendar-check"></i>
-                      <span className="link_name">Attendance</span>
-                    </Link>
-                  </a>
-                  <ul className="sub-menu blank">
-                    <Link to={"/staffview"}>
-                      <li>
-                        <a style={{ height: "10px", padding: "20px" }}>
-                          Attendance
-                        </a>
-                      </li>
-                    </Link>
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span>
-
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      <i className="fas fa-graduation-cap fa-fw unchecked-icon"></i>
-                      <span className="link_name">Student</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Student</a>
-                    </li>
-                    <li>
-                      <a>
-                        <i className="bx bxs-pencil"></i>
-                        <Link to={"/studentattendence"} state={"Attendance"}>
-                          Student Attendance
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i className="bx bxs-pencil"></i>
-                        <Link to={"/viewattendance"} state={"View Attendance"}>
-                          View Attendance
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i className="bx bxs-pencil"></i>
-                        <Link to={"/staff"} state={"Assignment"}>
-                          Assignment
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i className="bx bxs-pencil"></i>
-                        <Link to={"/staff"} state={"Homework"}>
-                          Home Work
-                        </Link>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-
-                <span class="horizontal-line"></span>
-
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      <i class="fa fa-edit"></i>
-                      <span className="link_name">Exam</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Exam</a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/staff"} state={"Exam Type"}>
-                          Exam Type
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/staff"} state={"Exam Portion"}>
-                          Exam Portion
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/exam"} state={"Subject Mark"}>
-                          Subject Mark
-                        </Link>
-                      </a>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/staff"} state={"Exam Report List"}>
-                          Exam Report List
-                        </Link>
-                      </a>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/examresult"} state={"Exam Result"}>
-                          Exam Result
-                        </Link>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span>
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      <i class="bx bx-calendar-star"></i>
-                      <span className="link_name">Grade</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Grade</a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/staff"} state={"Overall grade"}>
-                          Overall Grade
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/staff"} state={"Subject grade"}>
-                          Subject Grade
-                        </Link>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span>
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      <i class="bx bxs-id-card"></i>
-                      <span className="link_name">Stationery</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Stationery</a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link
-                          to={"/Studendstationery"}
-                          state={"Studend Stationery"}
-                        >
-                          Products
-                        </Link>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-
-                <span class="horizontal-line"></span>
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      <i class="fa-sharp fa-solid fa-calendar-days"></i>
-                      <span className="link_name">Events</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Events</a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/staff"} state={"Events"}>
-                          Events
-                        </Link>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span>
-                <li>
-                  <div
-                    className="iocn-link"
-                    style={{ cursor: "pointer" }}
-                    onClick={toggleSubMenu}
-                  >
-                    <a>
-                      {/* <i class="bx bxs-bus"></i> */}
-                      <i class="bx bxs-report"></i>
-                      <span className="link_name">Report</span>
-                    </a>
-                    <i className="bx bxs-chevron-down arrow"></i>
-                  </div>
-                  <ul className="sub-menu">
-                    <li>
-                      <a className="link_name">Report</a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/assignment"} state={"Assignment Report"}>
-                          Assignment Report
-                        </Link>
-                      </a>
-                    </li>
-                    <li>
-                      <a>
-                        <i class="bx bxs-pencil"></i>
-                        <Link to={"/examtable"} state={"Exam Results"}>
-                          Exam Report
-                        </Link>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-                <span class="horizontal-line"></span>
+                <Route path="/attendence" element={<Attendence />} />
+                <Route path="/studentattendence" element={<Attendence />} />
+                <Route path="/homework" element={<Homework />} />
+                <Route path="/events" element={<Event />} />
+                <Route path="/products" element={<Product />} />
+                <Route path="/staff" element={<Staff />} />
+                <Route path="/report" element={<Report />} />
+                <Route path="/exam" element={<Exam />} />
+                <Route path="/examtable" element={<ExamTable />} />
+                <Route path="/examresult" element={<Examresult />} />
+                <Route path="/assignment" element={<Assignment />} />
+                <Route path="/viewattendance" element={<ViewAttendance />} />
+                <Route path="/studendstationery" element={<Studendstationery />} />
+                <Route path="/staffview" element={<Staffview />} />
               </>
             )}
-          </>
-
-          {/* <li>
-                        <div className="profile-details">
-                            <div className="profile-content">
-                                <img src={image} alt="profileImg" />
-                            </div>
-                            <div className="name-job">
-                                <div className="profile_name">{role}</div>
-                            </div>
-                            <i className='bx bx-log-out' onClick={logout}></i>
-                        </div>
-                    </li> */}
-        </ul>
-      </div>
-      <section className="home-section">
-        <div className="home-route">
-          <div className="home-content ">
-            <i className="bx bx-menu" onClick={toggleSidebar}></i>
-            <div className="profile-content">
-              <img
-                src={image}
-                alt="profileImg"
-                onClick={openLogout}
-                style={{ cursor: "pointer" }}
-              />
-              <div>
-                <span onClick={openLogout} style={{ cursor: "pointer",fontSize:'12px',fontWeight:'300',fontFamily:"sans-serif" }}>
-                  {" "}
-                  {userName}
-                </span>
-                <p
-                  className="profile_name"
-                  onClick={openLogout}
-                  style={{ cursor: "pointer",fontWeight:'500',fontSize:'10px',fontFamily:"sans-serif"  }}
-                >
-                  {role}
-                </p>
-                {isModalOpen && (
-                  <div className="modal-overlay">
-                    <div className=" modal-content-popup">
-                      <span
-                        style={{
-                          display: "flex",
-                          justifyContent: "end",
-                          marginRight: "-1px",
-                          marginTop: "53px",
-                        }}
-                        className="modal-close "
-                        onClick={closeLogout}
-                      >
-                        <i
-                          class="bx bxs-x-circle"
-                          style={{ fontSize: "20px", color: "gray" }}
-                        ></i>
-                      </span>
-                      <h4
-                        style={{
-                          display: "flex",
-                          justifyContent: "center",
-                          marginBottom: "10px",
-                          marginTop: "7px",
-                          color: "#051F3E",
-                          fontSize:'12px',
-                          fontWeight:'300',
-                          padding:'3px'
-                        }}
-                      >
-                        Profile
-                      </h4>
-                      <p
-                        style={{
-                          width: "180px",
-                          borderBottom: "1px solid rgb(205,207,216)",
-                          marginTop: "-5px",
-                          marginBottom: "15px",
-                          fontSize:'12px'
-                        }}
-                      >
-                        {" "}
-                      </p>
-                      {/* <i className="bx bx-log-out"></i> */}
-                      <div
-                        style={{ display: "grid", justifyContent: "center" }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "center",
-                            marginBottom: "10px",
-                          }}
-                        >
-                          {" "}
-                          <img src={image} alt="profileImg" />
-                        </div>
-
-                        <span
-                          style={{
-                            marginRight: "0px",
-                            display: "flex",
-                            justifyContent: "center",
-                            fontSize:'12px',
-                            fontWeight:"300",
-                            fontFamily:"sans-serif"
-                          }}
-                        >
-                          {" "}
-                          {userName}
-                        </span>
-                        <p
-                          className="profile_name"
-                          style={{
-                            display: "flex",
-                            justifyContent: "center",
-                            marginRight: "0px",
-                            fontWeight:'500',fontSize:'10px',fontFamily:"sans-serif"
-                          }}
-                        >
-                          {role}
-                        </p>
-                      </div>
-
-                      <div className="profile-two-button"
-                        style={{
-                          display: "flex",
-                          marginTop: "10px",
-                          justifyContent: "center",
-                          gap: "10px",
-                        }}
-                      >
-                         <button 
-                          style={{
-                            backgroundColor: "#052955",
-                            color: "white",
-                            borderRadius: "8px",
-                            padding: "6px",
-                            height: "30px",
-                            fontSize: "13px",
-                            fontFamily:"sans-serif",
-                            fontWeight:"300"
-                          }}
-                          onClick={logout}
-                        >
-                          Logout
-                        </button>
-                        <button
-                          style={{
-                            backgroundColor: "#e74c3c",
-                            color: "white",
-                            borderRadius: "8px",
-                            padding: "6px",
-                            height: "30px",
-                            fontSize: "13px",
-                            fontFamily:"sans-serif",
-                            fontWeight:"300"
-                          }}
-                          onClick={closeLogout}
-                        >
-                          Cancel
-                        </button>
-                       
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {/* {logouts ? (
-                  <div className="dropdown-content" onClick={logout}>
-                    {" "}
-                    <i className="bx bx-log-out"></i>Logout
-                  </div>
-                ) : (
-                  ""
-                )} */}
-              </div>
-              <i
-                className="bx bxs-chevron-down arrow"
-                onClick={openLogout}
-                style={{ cursor: "pointer" }}
-              ></i>
-            </div>
-          </div>
-          <div className="change-routes">
-            <Routes>
-              <Route exact path="/" element={<Dashboard />} />
-
-              <>
-                {role === "Admin" ? (
-                  <>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/master" element={<Master />} />
-                    <Route path="/nationality" element={<Nationality />} />
-                    <Route path="/registration" element={<Registration />} />
-                    <Route path="/releiving/:id" element={<Registration />} />
-                    <Route path="/list" element={<List />} />
-                    <Route path="/timetable" element={<Timetable />} />
-                    <Route path="/profile/:id" element={<Profile />} />
-                    <Route path="/staffattendance" element={<Staffattendance />} />
-                    <Route path="/stafflist/:id" element={<Stafflist />} />
-                    <Route path="/studentlist/:id" element={<Studendlist />} />
-                    <Route path="/studentinfo/:id" element={<Studentinfo />} />
-                    <Route path="/nextpage" element={<Nextpage />} />
-                  </>
-                ) : (
-                  <>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/attendence" element={<Attendence />} />
-                    <Route path="/studentattendence" element={<Attendence />} />
-                    
-                    {/* <Route path="/staff" element={<Assignment/>} /> */}
-                    <Route path="/homework" element={<Homework />} />
-                    <Route path="/events" element={<Event />} />
-                    <Route path="/products" element={<Product />} />
-                    <Route path="/staff" element={<Staff />} />
-                    <Route path="/report" element={<Report />} />
-                    <Route path="/exam" element={<Exam />} />
-                    <Route path="/examtable" element={<ExamTable />} />
-                    <Route path="/examresult" element={<Examresult />} />
-                    <Route path="/assignment" element={<Assignment />} />
-                    <Route
-                      path="/viewattendance"
-                      element={<ViewAttendance />}
-                    />
-                    <Route
-                      path="/studendstationery"
-                      element={<Studendstationery />}
-                    />
-                    <Route path="/staffview" element={<Staffview />} />
-                  </>
-                )}
-              </>
-            </Routes>
-          </div>
+          </Routes>
         </div>
-      </section>
+      </div>
     </div>
   );
 };

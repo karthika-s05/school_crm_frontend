@@ -282,12 +282,6 @@ export default function Stafflist() {
             <a> Add Staff Information </a>
           </li>
         </ul>
-        <div>
-          <span
-            class="horizontal-line"
-            style={{ background: "#F0F1F3", marginTop: "20px" }}
-          ></span>
-        </div>
         <form
           className="ng-untouched ng-pristine ng-invalid"
           onSubmit={formik.handleSubmit}
