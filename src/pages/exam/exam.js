@@ -1,365 +1,294 @@
-import React, { useEffect, useState } from "react";
-import {
-  Link,
-  Navigate,
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
-import { useFormik } from "formik";
-import { STAFF_KEY, TOKEN_KEY } from "../../services/auth";
-import {
-  createExamreport,
-  getClass,
-  getExam,
-  getSection,
-  getStudentlist,
-  getSubject,
-  getbyidExamreport,
-} from "../../services/api";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import '../exam/exam.css'
+import "../List/StudentDummyList.css";
+import "../services/services.css";
+import "./exam.css";
+import {
+  createExamreport,
+  getExam,
+  getClass,
+  getSection,
+  getSubject,
+  getStudentlist,
+} from "../../services/api";
+import { getToken } from "../../services/auth";
+import { runApi } from "../../utils/apiHelper";
+
+const ROW_COUNT = 6;
+
+const calculateRemark = (mark) => {
+  if (mark === "" || mark === null) return "";
+  const n = parseInt(mark, 10);
+  if (isNaN(n)) return "";
+  if (n < 40) return "Below Average";
+  if (n <= 75) return "Average";
+  return "Good";
+};
 
 export default function Examreport() {
-  const location = useLocation();
-  const propsData = location.state;
-  const [dropDown, setDropDown] = useState({
-    studentId: [],
-    classId: [],
-    sectionId: [],
-    subjectId: [],
-    examId: [],
-  });
-
-  const formik = useFormik({
-    initialValues: {
-      studentId: "",
-      examId: "",
-      classId: "",
-      sectionId: "",
-      subjectId: Array.from({ length: 8 }, () => ""),
-      marks: Array.from({ length: 8 }, () => ""),
-      remarks: Array.from({ length: 8 }, () => ""),
-    },
-    onSubmit: async (values, { resetForm }) => {
-      const nonEmptySubjectId = values.subjectId.filter(
-        (subject) => subject !== ""
-      );
-      if (nonEmptySubjectId.length === 0) {
-        toast.error("Please select at least one subject.");
-        return;
-      }
-      const nonEmptyMarks = values.marks.filter((mark) => mark !== "");
-      const nonEmptyRemarks = values.remarks.filter((remark) => remark !== "");
-      const requestBody = {
-        examId: parseInt(values.examId),
-        studentId: values.studentId,
-        classId: parseInt(values.classId),
-        sectionId: parseInt(values.sectionId),
-        subjectId: nonEmptySubjectId.map((subject) => parseInt(subject)),
-        mark: nonEmptyMarks,
-        remark: nonEmptyRemarks,
-        id: 0,
-      };
-      try {
-        const response = await createExamreport(requestBody, STAFF_KEY);
-        console.log("API Response:", response);
-        if (response.status === "Error") {
-          toast.error(response.message);
-        } else if (response.status === "Success") {
-          toast.success(response.message);
-        }
-        resetForm();
-      } catch (error) {
-        console.error(error);
-        toast.error("Error making API call");
-      }
-    },
-  });
+  const navigate = useNavigate();
+  const token = getToken();
+  const [studentId, setStudentId] = useState("");
+  const [examId, setExamId] = useState("");
+  const [classId, setClassId] = useState("");
+  const [sectionId, setSectionId] = useState("");
+  const [exams, setExams] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [loadingMeta, setLoadingMeta] = useState(true);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [rows, setRows] = useState(
+    Array.from({ length: ROW_COUNT }, () => ({ subject: "", mark: "", remark: "" }))
+  );
 
   useEffect(() => {
-    const getDropdownData = async (funcName, id, name) => {
+    const loadDropdowns = async () => {
+      setLoadingMeta(true);
       try {
-        const response = await funcName(id, TOKEN_KEY);
-        console.log(`${name} dropdown:`, response);
-        const data = response.map((value, index) => ({
-          id: value.id,
-          value: value.name,
-        }));
-        setDropDown((prevData) => ({
-          ...prevData,
-          [name]: data,
-        }));
-      } catch (err) {
-        console.log(err);
+        const [cls, sec, examRes, subj] = await Promise.all([
+          getClass(0, token),
+          getSection(0, token),
+          getExam({}, token),
+          getSubject(0, token),
+        ]);
+        setClasses(Array.isArray(cls) ? cls : []);
+        setSections(Array.isArray(sec) ? sec : []);
+        setExams(Array.isArray(examRes?.data) ? examRes.data : []);
+        setSubjects(Array.isArray(subj) ? subj : []);
+      } catch {
+        toast.error("Failed to load form data");
+      } finally {
+        setLoadingMeta(false);
       }
     };
-    const getStudent = async () => {
-      try {
-        const response = await getStudentlist({userName:0}, TOKEN_KEY);
-        console.log(response);
-        const studentlist = response.data.map((value, index) => ({
-          id: value.admissionNo,
-          value: value.studentName,
-        }));
-        setDropDown((prevData) => ({
-          ...prevData,
-          studentId: studentlist,
-        }));
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    const getSubject1 = async () => {
-      try {
-        const response = await getSubject(0, TOKEN_KEY);
-        const subjects = response.map((value, index) => ({
-          id: value.id,
-          value: value.name,
-        }));
-        setDropDown((prevData) => ({
-          ...prevData,
-          subjectId: subjects,
-        }));
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    const getExamstaffExam1 = async () => {
-      try {
-        const response = await getExam({}, STAFF_KEY);
-        const examName = response.data.map((value, index) => ({
-          id: value.id,
-          value: value.exam,
-        }));
-        setDropDown((prevData) => ({
-          ...prevData,
-          examId: examName,
-        }));
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    getStudent();
-    getSubject1();
-    getExamstaffExam1();
-    getDropdownData(getClass, 0, "classId");
-    getDropdownData(getSection, 0, "sectionId");
-  }, []);
-  const calculateRemark = (mark) => {
-    if (mark === "") {
-      return "";
+    loadDropdowns();
+  }, [token]);
+
+  useEffect(() => {
+    if (!classId || !sectionId) {
+      setStudents([]);
+      setStudentId("");
+      return;
     }
-    const numericMark = parseInt(mark, 10);
-    if (numericMark < 40) {
-      return "Below Average";
-    } else if (numericMark >= 40 && numericMark <= 75) {
-      return "Average";
-    } else {
-      return "Good";
-    }
+    const loadStudents = async () => {
+      setLoadingStudents(true);
+      try {
+        const res = await getStudentlist(
+          { userName: 0, classId: parseInt(classId, 10), sectionId: parseInt(sectionId, 10) },
+          token
+        );
+        const list = Array.isArray(res?.data)
+          ? res.data.map((s) => ({
+              id: s.admissionNo,
+              name: s.studentName,
+            }))
+          : [];
+        setStudents(list);
+        setStudentId("");
+      } catch {
+        toast.error("Failed to load students");
+        setStudents([]);
+      } finally {
+        setLoadingStudents(false);
+      }
+    };
+    loadStudents();
+  }, [classId, sectionId, token]);
+
+  const updateRow = (index, field, value) => {
+    setRows((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      if (field === "mark") {
+        next[index].remark = calculateRemark(value);
+      }
+      return next;
+    });
   };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const filled = rows.filter((r) => r.subject && r.mark !== "");
+    if (!studentId || !examId || !classId || !sectionId) {
+      toast.error("Please fill all dropdown fields.");
+      return;
+    }
+    if (filled.length === 0) {
+      toast.error("Please enter at least one subject mark.");
+      return;
+    }
+
+    setSubmitting(true);
+    const body = {
+      examId: parseInt(examId, 10),
+      studentId,
+      classId: parseInt(classId, 10),
+      sectionId: parseInt(sectionId, 10),
+      subjectId: filled.map((r) => parseInt(r.subject, 10)),
+      mark: filled.map((r) => parseInt(r.mark, 10)),
+      remark: filled.map((r) => r.remark),
+    };
+
+    await runApi(() => createExamreport(body, token), {
+      successMsg: "Subject marks saved successfully",
+      onSuccess: () => {
+        setRows(Array.from({ length: ROW_COUNT }, () => ({ subject: "", mark: "", remark: "" })));
+        setStudentId("");
+        setExamId("");
+        setClassId("");
+        setSectionId("");
+      },
+    });
+    setSubmitting(false);
+  };
+
   return (
-    <>
-      <div>
-        {/* <h3>Subject Mark</h3> */}
-        <div className="table-containers">
-          <ul className="breadcrumb" style={{display:'flex'}}>
-            <li >
-              <Link to={"/exam"}>
-                <a style={{ color: "#051F3E" }}><h4>Home</h4></a>
-              </Link>
-            </li>
-            <li>
-              <a>Subject Mark</a>
-            </li>
-          </ul>
-        </div>
+    <div className="sdl-wrap">
+      <div className="sdl-stats" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+        {[
+          { label: "Exam Types", val: loadingMeta ? "…" : exams.length, icon: "bx bxs-notepad", color: "#2D3A8C", bg: "#eef0fb" },
+          { label: "Students", val: loadingStudents ? "…" : students.length, icon: "bx bxs-user", color: "#16a34a", bg: "#dcfce7" },
+          { label: "Subjects", val: loadingMeta ? "…" : subjects.length, icon: "bx bxs-book", color: "#E8541A", bg: "#fdf0eb" },
+        ].map((s, i) => (
+          <div className="sdl-stat-card" key={i}>
+            <div className="sdl-stat-icon" style={{ background: s.bg, color: s.color }}>
+              <i className={s.icon}></i>
+            </div>
+            <div>
+              <div className="sdl-stat-val">{s.val}</div>
+              <div className="sdl-stat-label">{s.label}</div>
+            </div>
+          </div>
+        ))}
       </div>
-      <div>
-        <form style={{marginTop:'-25px'}} onSubmit={formik.handleSubmit}>
-          <div className="table-container">
-            <h3 style={{ color: "#051F3E",marginBottom:'20px' }}>Subject Mark</h3>
-           <div className="img-boxs" style={{width:'270px',height:'270px',marginTop:'-25px'}}></div>
-            <div className="input-groups">
-              <div className="input-container-registers">
-                <div className="input-group">
-                  <label className="input-label" style={{fontWeight:"400"}}>Student</label>
-                  <select
-                    style={{ width: "200px" }}
-                    id="studentId"
-                    name="studentId"
-                    className="effect-1"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.studentId}
-                  >
-                    <option value="">Select Student</option>
-                    {dropDown.studentId.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.value}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+
+      {loadingMeta ? (
+        <div className="exam-form-card" style={{ textAlign: "center", padding: "48px 0", color: "#64748b" }}>
+          <i className="bx bx-loader-alt bx-spin" style={{ fontSize: 36, display: "block", marginBottom: 10, color: "#2D3A8C" }}></i>
+          Loading form…
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <div className="exam-form-card">
+            <h3 className="exam-form-title">Subject Mark Entry</h3>
+
+            <div className="exam-form-grid">
+              <div className="exam-field">
+                <label>Class</label>
+                <select value={classId} onChange={(e) => setClassId(e.target.value)}>
+                  <option value="">Select Class</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>Class {c.name}</option>
+                  ))}
+                </select>
               </div>
-              <div className="input-container-registers">
-                <div className="input-group">
-                  <label className="input-label" style={{fontWeight:"400"}}>Exam</label>
-                  <select
-                    style={{ width: "200px" }}
-                    id="examId"
-                    name="examId"
-                    className="effect-1"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.examId}
-                  >
-                    <option value="">Select Exam</option>
-                    {dropDown.examId.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.value}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="exam-field">
+                <label>Section</label>
+                <select value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
+                  <option value="">Select Section</option>
+                  {sections.map((s) => (
+                    <option key={s.id} value={s.id}>Section {s.name}</option>
+                  ))}
+                </select>
               </div>
-            </div>
-            <div className="input-groups">
-              <div className="input-container-registers">
-                <div className="input-group">
-                  <label className="input-label" style={{fontWeight:"400"}}>Class</label>
-                  <select
-                    style={{ width: "200px" }}
-                    id="classId"
-                    name="classId"
-                    className="effect-1"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.classId}
-                  >
-                    <option value="">Select Class</option>
-                    {dropDown.classId.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.value}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="exam-field">
+                <label>Student</label>
+                <select
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  disabled={loadingStudents || !classId || !sectionId}
+                >
+                  <option value="">
+                    {loadingStudents ? "Loading students…" : "Select Student"}
+                  </option>
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
               </div>
-              <div className="input-container-registers">
-                <div className="input-group">
-                  <label className="input-label" style={{fontWeight:"400"}}>Section</label>
-                  <select
-                    style={{ width: "200px" }}
-                    id="sectionId"
-                    name="sectionId"
-                    className="effect-1"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.sectionId}
-                  >
-                    <option value="">Select Section</option>
-                    {dropDown.sectionId.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.value}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="exam-field">
+                <label>Exam</label>
+                <select value={examId} onChange={(e) => setExamId(e.target.value)}>
+                  <option value="">Select Exam</option>
+                  {exams.map((ex) => (
+                    <option key={ex.id} value={ex.id}>{ex.exam}</option>
+                  ))}
+                </select>
               </div>
             </div>
-            <div className="table-responsive">
-              <table class="table table-striped table-hover">
+
+            <div className="sdl-table-card exam-marks-table">
+              <table className="sdl-table">
                 <thead>
                   <tr>
-                    <th style={{textAlign:'center'}}>SUBJECT</th>
-                    <th style={{textAlign:'center'}}>MARK</th>
-                    <th style={{textAlign:'center'}}>REMARK</th>
+                    <th>#</th>
+                    <th>Subject</th>
+                    <th>Mark</th>
+                    <th>Remark</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {Array.from({ length: 8 }, (_, index) => (
+                  {rows.map((row, index) => (
                     <tr key={index}>
+                      <td className="sdl-num">{index + 1}</td>
                       <td>
-                        <select
-                          style={{ height: "30px", width: "200px" }}
-                          className="form-select"
-                          id={`subjectId${index + 1}`}
-                          name={`subjectId[${index}]`}
-                          value={formik.values.subjectId[index]}
-                          onChange={formik.handleChange}
-                          onBlur={formik.handleBlur}
-                        >
-                          <option value="">Select Subject</option>
-                          {dropDown.subjectId.map((option) => (
-                            <option key={option.id} value={option.id}>
-                              {option.value}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="exam-field">
+                          <select
+                            value={row.subject}
+                            onChange={(e) => updateRow(index, "subject", e.target.value)}
+                          >
+                            <option value="">Select Subject</option>
+                            {subjects.map((sub) => (
+                              <option key={sub.id} value={sub.id}>{sub.name}</option>
+                            ))}
+                          </select>
+                        </div>
                       </td>
                       <td>
-                        <input
-                          style={{ height: "30px", width: "200px" }}
-                          className="form-control"
-                          type="number"
-                          name={`marks[${index}]`}
-                          onChange={(e) => {
-                            formik.handleChange(e);
-
-                            const mark = e.target.value;
-                            const remark = calculateRemark(mark);
-                            formik.setFieldValue(`remarks[${index}]`, remark);
-                          }}
-                          onBlur={formik.handleBlur}
-                          value={formik.values.marks[index]}
-                        />
+                        <div className="exam-field">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            placeholder="0–100"
+                            value={row.mark}
+                            onChange={(e) => updateRow(index, "mark", e.target.value)}
+                          />
+                        </div>
                       </td>
                       <td>
-                        <input
-                          style={{ height: "30px", width: "200px" }}
-                          className="form-control"
-                          type="text"
-                          name={`remarks[${index}]`}
-                          onChange={formik.handleChange}
-                          onBlur={formik.handleBlur}
-                          value={formik.values.remarks[index]}
-                        />
+                        <div className="exam-field">
+                          <input type="text" readOnly placeholder="Auto" value={row.remark} />
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div
-              className="btn-style-registration"
-              style={{ marginTop: "20px" }}
-            >
-              <button className="cancel-button" type="button">
+
+            <div className="exam-form-actions">
+              <button type="button" className="exam-btn-cancel" onClick={() => navigate("/examresult")} disabled={submitting}>
                 Cancel
               </button>
-              &nbsp;&nbsp;
-              <button className="custom-button" type="submit">
-                Submit
+              <button type="submit" className="exam-btn-submit" disabled={submitting}>
+                {submitting ? (
+                  <><i className="bx bx-loader-alt bx-spin"></i> Submitting…</>
+                ) : (
+                  "Submit Marks"
+                )}
               </button>
             </div>
           </div>
         </form>
-      </div>
-      <ToastContainer
-        position="top-right"
-        autoClose={2000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        style={{ fontSize: "14px" }} 
-      />
-    </>
+      )}
+
+      <ToastContainer position="top-right" autoClose={2000} style={{ fontSize: "14px" }} />
+    </div>
   );
 }

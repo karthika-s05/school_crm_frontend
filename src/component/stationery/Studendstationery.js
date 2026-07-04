@@ -7,8 +7,10 @@ import {
   getStudentlist,
   updatestudentStationerys,
 } from "../../services/api";
-import { STAFF_KEY, TOKEN_KEY } from "../../services/auth";
+import { getToken } from "../../services/auth";
 import { ToastContainer, toast } from "react-toastify";
+import { RiDeleteBin6Line } from "react-icons/ri";
+import { FiEdit } from "react-icons/fi";
 
 export default function Studendstationery() {
   const [data, setData] = useState([]);
@@ -45,7 +47,7 @@ export default function Studendstationery() {
         issue: parseInt(e.target.issue.value),
         total: parseInt(e.target.total.value),
       };
-      const response = await updatestudentStationerys(updatedData, STAFF_KEY);
+      const response = await updatestudentStationerys(updatedData, getToken());
       closeModal();
       GetStationerylist();
       if (response.status === "Error") {
@@ -80,7 +82,7 @@ export default function Studendstationery() {
           classId: selectedClassId,
           sectionId: selectedSectionId,
         },
-        STAFF_KEY
+        getToken()
       );
       console.log(response.data);
       const resultData = response.data.map((item) => ({
@@ -184,7 +186,7 @@ export default function Studendstationery() {
   useEffect(() => {
     const getDropdownData = async (funcName, id, name) => {
       try {
-        const response = await funcName(id, TOKEN_KEY);
+        const response = await funcName(id, getToken());
         const data = response.map((value, index) => ({
           id: value.id,
           value: value.name,
@@ -199,7 +201,7 @@ export default function Studendstationery() {
     };
     const getStudent = async () => {
       try {
-        const response = await getStudentlist({ userName: 0 }, TOKEN_KEY);
+        const response = await getStudentlist({ userName: 0 }, getToken());
         console.log(response);
         const studentlist = response.data.map((value, index) => ({
           id: value.admissionNo,
@@ -326,12 +328,12 @@ export default function Studendstationery() {
                           openModal(item);
                         }}
                       >
-                        <i class='bx bxs-edit'></i>
+                        <FiEdit/>
                       </button>
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <button class="delete-button">
-                        <i class="bx bxs-trash"></i>
+                        <RiDeleteBin6Line/>
                       </button>
                     </td>
                   </tr>

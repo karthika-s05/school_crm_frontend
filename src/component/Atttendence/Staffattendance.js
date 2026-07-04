@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useFormik } from "formik";
 import { createStaffAttendance, getStafflist } from "../../services/api";
-import { TOKEN_KEY } from "../../services/auth";
+import { getToken } from "../../services/auth";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Loader from "../loader/Loader";
@@ -33,7 +33,7 @@ export default function Staffattendance() {
           stffAttendance: selectedStaff,
         };
         console.log("Payload values:", payload);
-        const response = await createStaffAttendance(payload, TOKEN_KEY);
+        const response = await createStaffAttendance(payload, getToken());
         console.log("Attendance creation response:", response);
         if (response.status === "Error") {
           toast.error(response.message);
@@ -56,7 +56,7 @@ export default function Staffattendance() {
       //       stdAttendance: selectedStudents,
       //     };
       //     console.log("Payload values:", payload);
-      //     const response = await createStudentAttendance(payload, TOKEN_KEY);
+      //     const response = await createStudentAttendance(payload, getToken());
       //     console.log("Attendance creation response:", response);
       //     if (response.status === "Error") {
       //       toast.error(response.message);
@@ -71,27 +71,10 @@ export default function Staffattendance() {
   });
   useEffect(() => {
     setLoading(true);
-    const getDropdownData = async (funcName, id, name) => {
-      try {
-        const response = await funcName(id, TOKEN_KEY);
-        console.log(`${name} dropdown:`, response);
-        const data = response.map((value, index) => ({
-          id: value.id,
-          value: value.name,
-        }));
-        setDropDown((prevData) => ({
-          ...prevData,
-          [name]: data,
-        }));
-      } catch (err) {
-        console.log(err);
-      }
-    };
     const getStaffList = async () => {
       try {
-        setLoading(false);
-        const response = await getStafflist("0", TOKEN_KEY);
-        const staff = response.data.map((value, index) => ({
+        const response = await getStafflist("0", getToken());
+        const staff = response.data.map((value) => ({
           id: value.staffId,
           value: value.staffName,
         }));
@@ -99,13 +82,13 @@ export default function Staffattendance() {
           ...prevData,
           staffId: staff,
         }));
-        setLoading(true);
       } catch (err) {
         console.log(err);
+      } finally {
+        setLoading(false);
       }
     };
     getStaffList();
-    getDropdownData(getStafflist, 0, "staffId");
   }, []);
   return (
     <>
@@ -118,14 +101,12 @@ export default function Staffattendance() {
           <div className="table-container">
             <div className="table-main">
               <ul
-                class="breadcrumb"
+                className="breadcrumb"
                 style={{ display: "flex", alignItems: "center" }}
               >
                 <li>
-                  <Link to={"/dashboard"}>
-                    <a style={{ color: "#051F3E" }}>
-                      <h4>Home</h4>
-                    </a>
+                  <Link to="/dashboard" style={{ color: "#051F3E" }}>
+                    <h4 style={{ margin: 0 }}>Home</h4>
                   </Link>
                 </li>
                 <li>

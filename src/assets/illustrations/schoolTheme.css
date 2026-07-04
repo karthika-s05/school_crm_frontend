@@ -1,0 +1,214 @@
+/* ── School ambience: floating icons ── */
+.school-ambience {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.school-float-svg {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  opacity: 0.09;
+  animation: school-float 6s ease-in-out infinite;
+}
+
+.school-float-svg svg {
+  width: 100%;
+  height: 100%;
+}
+
+.school-float-svg:nth-child(2) { animation-delay: -1.2s; width: 44px; height: 44px; opacity: 0.07; }
+.school-float-svg:nth-child(3) { animation-delay: -2.4s; width: 56px; height: 56px; }
+.school-float-svg:nth-child(4) { animation-delay: -3.6s; width: 40px; height: 40px; opacity: 0.08; }
+.school-float-svg:nth-child(5) { animation-delay: -4.8s; width: 48px; height: 48px; opacity: 0.07; }
+.school-float-svg:nth-child(6) { animation-delay: -0.8s; width: 38px; height: 38px; opacity: 0.08; }
+
+@keyframes school-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(4deg); }
+}
+
+.crm-page {
+  position: relative;
+  z-index: 0;
+}
+
+
+/* ── Login scene ── */
+.adlogin-scene-wrap {
+  width: 100%;
+  max-width: 340px;
+  margin-bottom: 8px;
+  animation: school-scene-in 0.8s ease;
+}
+
+@keyframes school-scene-in {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.adlogin-float-deco {
+  position: absolute;
+  font-size: 22px;
+  opacity: 0.35;
+  animation: school-float 5s ease-in-out infinite;
+  z-index: 0;
+}
+
+.adlogin-float-deco.d1 { top: 12%; left: 8%; color: #fff; animation-delay: 0s; }
+.adlogin-float-deco.d2 { top: 22%; right: 12%; color: #fde68a; font-size: 18px; animation-delay: -1.5s; }
+.adlogin-float-deco.d3 { bottom: 28%; left: 14%; color: #a5f3fc; font-size: 26px; animation-delay: -2.5s; }
+.adlogin-float-deco.d4 { bottom: 18%; right: 10%; color: #fbcfe8; font-size: 20px; animation-delay: -3.5s; }
+.adlogin-float-deco.d5 { top: 45%; left: 5%; color: #bbf7d0; font-size: 16px; animation-delay: -4s; }
+
+/* ── Dashboard welcome banner ── */
+.kst-welcome-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: linear-gradient(135deg, #2D3A8C 0%, #3b52b4 55%, #E8541A 100%);
+  border-radius: 18px;
+  padding: 22px 28px;
+  margin-bottom: 20px;
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 8px 28px rgba(45, 58, 140, 0.22);
+}
+
+.kst-welcome-banner::before {
+  content: "";
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  top: -80px;
+  right: 120px;
+}
+
+.kst-welcome-text h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.kst-welcome-text p {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.88;
+}
+
+.kst-welcome-tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.kst-welcome-tag {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.kst-welcome-art {
+  flex-shrink: 0;
+  width: 140px;
+  animation: school-mascot-bob 3s ease-in-out infinite;
+}
+
+@keyframes school-mascot-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ── Sidebar school footer ── */
+.crm-school-footer {
+  padding: 10px 12px 6px;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.crm-school-footer-art {
+  width: 72px;
+  margin: 0 auto 6px;
+  opacity: 0.9;
+}
+
+.crm-school-footer p {
+  margin: 0;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.5px;
+}
+
+.crm-sidebar.collapsed .crm-school-footer {
+  padding: 10px 4px;
+}
+
+.crm-sidebar.collapsed .crm-school-footer-art {
+  width: 36px;
+}
+
+.crm-sidebar.collapsed .crm-school-footer p {
+  display: none;
+}
+
+/* ── Stationery kit icon (sidebar) ── */
+.stationery-kit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  align-items: center;
+  justify-items: center;
+  color: currentColor;
+  flex-shrink: 0;
+}
+
+.stationery-kit--md {
+  width: 22px;
+  height: 22px;
+}
+
+.stationery-kit--sm {
+  width: 18px;
+  height: 18px;
+}
+
+.react-menu-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.crm-sub-icon .react-menu-icon,
+.crm-sub-icon svg:not(.stationery-kit svg) {
+  width: 16px;
+  height: 16px;
+}
+
+.crm-flyout-header .stationery-kit--md {
+  width: 22px;
+  height: 22px;
+}
+
+@media (max-width: 768px) {
+  .kst-welcome-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+  .kst-welcome-tags { justify-content: center; }
+  .kst-welcome-art { width: 110px; }
+}

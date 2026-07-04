@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import "./Dashboard.css";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
+import { getStaffDashboardSummary } from "../../services/api";
+import { getToken } from "../../services/auth";
+import { runApi } from "../../utils/apiHelper";
 
 const KST_NAVY = "#1e3a8a";
 const KST_ORANGE = "#fb923c";
@@ -38,7 +41,7 @@ const navItems = [
   { label: "Reports", icon: "bx bx-bar-chart-alt-2" },
 ];
 
-const summaryTiles = [
+const DEFAULT_SUMMARY_TILES = [
   { label: "Students", value: "932", detail: "Active this month", icon: "bx bxs-graduation", color: "#4f46e5" },
   { label: "Teachers", value: "54", detail: "Full-time staff", icon: "bx bxs-user-account", color: "#10b981" },
   { label: "Events", value: "14", detail: "Upcoming items", icon: "bx bxs-calendar", color: "#f59e0b" },
@@ -56,7 +59,46 @@ const sidebarCards = [
   { label: "Total Leave", value: "16", icon: "bx bxs-calendar-x" },
 ];
 
-const StaffDashboard = () => (
+const StaffDashboard = () => {
+  const [summary, setSummary] = useState(null);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    runApi(() => getStaffDashboardSummary(token), {
+      onSuccess: (res) => setSummary(res?.data || null),
+    });
+  }, []);
+
+  const summaryTiles = useMemo(() => {
+    if (!summary) return DEFAULT_SUMMARY_TILES;
+    return [
+      {
+        ...DEFAULT_SUMMARY_TILES[0],
+        value: String(summary.assignedClasses ?? DEFAULT_SUMMARY_TILES[0].value),
+        detail: "Assigned classes",
+      },
+      {
+        ...DEFAULT_SUMMARY_TILES[1],
+        value: String(summary.homeworkCount ?? DEFAULT_SUMMARY_TILES[1].value),
+        detail: "Homework items",
+      },
+      {
+        ...DEFAULT_SUMMARY_TILES[2],
+        value: String(summary.upcomingEvents ?? DEFAULT_SUMMARY_TILES[2].value),
+        detail: "Upcoming items",
+      },
+      {
+        ...DEFAULT_SUMMARY_TILES[3],
+        value: String(summary.totalLeaves ?? DEFAULT_SUMMARY_TILES[3].value),
+        detail: summary.pendingLeaves != null
+          ? `${summary.pendingLeaves} pending leave`
+          : DEFAULT_SUMMARY_TILES[3].detail,
+      },
+    ];
+  }, [summary]);
+
+  return (
   <div className="staff-dash">
     <aside className="staff-sidebar">
       <div className="sidebar-brand">
@@ -124,15 +166,15 @@ const StaffDashboard = () => (
             <AreaChart data={attendTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="attGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={KST_NAVY} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={KST_NAVY} stopOpacity={0} />
+                  <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#06B6D4" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="4 4" stroke="#e5e7eb" />
               <XAxis dataKey="week" tick={{ fontSize: 13, fill: "#6b7280" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 13, fill: "#6b7280" }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ borderRadius: 14, border: "none", fontSize: 13 }} />
-              <Area type="monotone" dataKey="pct" name="Attendance" stroke={KST_NAVY} strokeWidth={3} fill="url(#attGrad)" dot={{ r: 4, fill: KST_ORANGE, stroke: "#fff", strokeWidth: 2 }} />
+              <Area type="monotone" dataKey="pct" name="Attendance" stroke="#06B6D4" strokeWidth={3} fill="url(#attGrad)" dot={{ r: 4, fill: "#06B6D4", stroke: "#fff", strokeWidth: 2 }} />
             </AreaChart>
           </ResponsiveContainer>
           <div className="chart-stats">
@@ -257,6 +299,7 @@ const StaffDashboard = () => (
       </div>
     </aside>
   </div>
-);
+  );
+};
 
 export default StaffDashboard;

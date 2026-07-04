@@ -8,9 +8,9 @@ import {
   getStudentlist,
   getSubject,
 } from "../../services/api";
-import { STAFF_KEY, TOKEN_KEY } from "../../services/auth";
+import { getToken } from "../../services/auth";
 import { useNavigate } from "react-router-dom";
-
+import "../List/StudentDummyList.css"
 export default function ExamTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [data, setData] = useState([]);
@@ -99,7 +99,7 @@ export default function ExamTable() {
     try {
       const studentDetailsResponse = await getExamResultlist(
         { examId: 1, studentId: "KST100001", classId: 1, sectionId: 1 },
-        TOKEN_KEY
+        getToken()
       );
 
       const studentDetails = studentDetailsResponse.data;
@@ -120,7 +120,7 @@ export default function ExamTable() {
       try {
         const response = await getExamResultlist(
           { examId: 1, studentId: "All", classId: 1, sectionId: 1 },
-          STAFF_KEY
+          getToken()
         );
         const resultData = response.data.map((item) => ({
           id: item.id,

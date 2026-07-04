@@ -1,0 +1,346 @@
+/* ─── Transport page layout ─────────────────────────────────────────────────── */
+
+.transport-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.transport-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.transport-hero-text h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1d2e;
+  letter-spacing: -0.02em;
+}
+
+.transport-hero-text p {
+  margin: 0;
+  font-size: 13px;
+  color: #7b8099;
+  line-height: 1.45;
+}
+
+.transport-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #eef0fb;
+  color: #2D3A8C;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.transport-hero-badge i {
+  font-size: 16px;
+}
+
+/* Stats strip */
+.transport-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 1100px) {
+  .transport-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .transport-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.transport-stat-card {
+  background: #fff;
+  border: 1px solid #e9ebf0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 2px 8px rgba(45, 58, 140, 0.06);
+  min-width: 0;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+
+.transport-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(45, 58, 140, 0.1);
+}
+
+.transport-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.transport-stat-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.transport-stat-val {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1d2e;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transport-stat-label {
+  font-size: 12px;
+  color: #7b8099;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* Tabs bar */
+.transport-tabs-wrap {
+  background: #fff;
+  border: 1px solid #e9ebf0;
+  border-radius: 14px;
+  padding: 8px 10px;
+  box-shadow: 0 2px 8px rgba(45, 58, 140, 0.05);
+  overflow-x: auto;
+}
+
+.transport-tabs-wrap .svc-tabs {
+  width: 100%;
+  min-width: min-content;
+}
+
+/* Main content panel */
+.transport-panel {
+  background: #fff;
+  border: 1px solid #e9ebf0;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(45, 58, 140, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+}
+
+.transport-panel-inner {
+  padding: 20px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.transport-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.transport-toolbar .sdl-search {
+  flex: 1;
+  min-width: 200px;
+  max-width: 420px;
+}
+
+.transport-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Fleet grid — equal-height cards */
+.transport-fleet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+
+.transport-fleet-grid .svc-bus-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 300px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.transport-fleet-grid .svc-bus-card .svc-stops {
+  flex: 1;
+  min-height: 28px;
+  align-content: flex-start;
+}
+
+.transport-fleet-grid .svc-bus-card .transport-card-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #f0f4f8;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Empty / loading states */
+.transport-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 56px 24px;
+  text-align: center;
+  color: #7b8099;
+  background: #fafbfc;
+  border: 1px dashed #e2e8f0;
+  border-radius: 14px;
+  min-height: 200px;
+}
+
+.transport-empty i {
+  font-size: 42px;
+  color: #c5cce8;
+}
+
+.transport-empty span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.transport-empty--grid {
+  grid-column: 1 / -1;
+}
+
+.transport-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 24px;
+  color: #7b8099;
+  background: #fff;
+  border: 1px solid #e9ebf0;
+  border-radius: 16px;
+  min-height: 280px;
+}
+
+.transport-loading i {
+  font-size: 36px;
+  color: #2D3A8C;
+}
+
+/* Table panel */
+.transport-table-wrap {
+  border-radius: 12px;
+  border: 1px solid #eef0f4;
+  overflow: hidden;
+  background: #fff;
+}
+
+.transport-table-wrap .sdl-table-card {
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+}
+
+.transport-table-empty {
+  padding: 48px 24px !important;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.transport-table-empty .transport-empty-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #7b8099;
+}
+
+.transport-table-empty .transport-empty-inline i {
+  font-size: 32px;
+  color: #d1d5e8;
+}
+
+/* Fee summary inside panel */
+.transport-fee-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.transport-fee-row.svc-fee-summary {
+  display: grid;
+}
+
+@media (max-width: 900px) {
+  .transport-fee-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.transport-fee-row .svc-fee-card {
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.transport-fee-row .svc-fee-val {
+  font-size: clamp(18px, 2.5vw, 22px);
+  word-break: break-word;
+}
+
+/* Pagination inside panel */
+.transport-pagination {
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid #f0f4f8;
+}
+
+/* Status chips */
+.svc-bus-status.inactive {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Bus card text overflow */
+.svc-bus-route {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.svc-bus-no {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

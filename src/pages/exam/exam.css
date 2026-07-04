@@ -1,17 +1,155 @@
-.table-containers {
-  /* background-color: #ffffff; */
-  display: flex;
-  /* height: 40px; */
-  /* border: 1px solid rgb(190, 189, 189); */
-  border-radius: 4px;
+/* ── Exam module shared styles ── */
+.exam-form-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(45, 58, 140, 0.07);
+  padding: 24px 28px;
+  position: relative;
+  overflow: hidden;
 }
-.img-boxs {
-  width: 50%;
-  height: 100%;
+
+.exam-form-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 220px;
+  height: 220px;
   background-image: url(../../assets/images/studendmark.png);
   background-position: center;
   background-size: contain;
   background-repeat: no-repeat;
-  
- float: right;
+  opacity: 0.12;
+  pointer-events: none;
 }
+
+.exam-form-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1d2e;
+  margin: 0 0 20px;
+}
+
+.exam-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.exam-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exam-field label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.exam-field select,
+.exam-field input {
+  height: 42px;
+  border-radius: 10px;
+  border: 1.5px solid #e4e7f0;
+  padding: 0 12px;
+  font-size: 14px;
+  color: #1a1d2e;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.exam-field select:focus,
+.exam-field input:focus {
+  border-color: #2D3A8C;
+}
+
+.exam-marks-table .exam-field select,
+.exam-marks-table .exam-field input {
+  height: 36px;
+  font-size: 13px;
+}
+
+.exam-marks-table td {
+  padding: 10px 14px !important;
+}
+
+.exam-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f2f8;
+}
+
+.exam-btn-cancel {
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: 1.5px solid #e4e7f0;
+  background: #fff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.exam-btn-cancel:hover {
+  border-color: #2D3A8C;
+  color: #2D3A8C;
+}
+
+.exam-btn-submit {
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: none;
+  background: #E8541A;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(232, 84, 26, 0.3);
+  transition: background 0.15s, transform 0.12s;
+}
+
+.exam-btn-submit:hover {
+  background: #d44a14;
+  transform: translateY(-1px);
+}
+
+.exam-filter-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.exam-filter-row select {
+  height: 40px;
+  padding: 0 32px 0 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #374151;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%236b7280'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  min-width: 120px;
+}
+
+.exam-filter-row select:focus {
+  border-color: #2D3A8C;
+}
+
+.sdl-status.pass { background: #f0fdf4; color: #16a34a; }
+.sdl-status.fail { background: #fef2f2; color: #ef4444; }
+.sdl-status.graded { background: #eef0fb; color: #2D3A8C; }
+.sdl-status.pending { background: #fef3c7; color: #d97706; }

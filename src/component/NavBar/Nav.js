@@ -1,105 +1,245 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "./nav.css";
+import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
+
+import {
+  FiBell, FiSearch,
+  FiChevronLeft, FiChevronRight, FiX, FiCheck, FiTrash2,
+} from "react-icons/fi";
+
+import { getUserData, removeToken, getToken } from "../../services/auth";
+import { getNotifications, updateNotificationTime } from "../../services/api";
+
 import Dashboard from "../../pages/dashboard";
 import Master from "../../pages/master";
 import Registration from "../../pages/registration/registration";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
-import { getUserData, removeToken } from "../../services/auth";
-import { useNavigate } from "react-router-dom";
 import List from "../../pages/List/list";
 import Profile from "../../pages/profile/profile";
-import Timetable from "../../pages/Timetable/timetable.js";
-import Attendence from "../Atttendence/Attendence.jsx";
-import Assignment from "../Assignment/Assignment.jsx";
-import Homework from "../Homework/Homework.jsx";
-import Event from "../../pages/Event/Event.jsx";
-import Product from "../../pages/Product/Product.jsx";
-import Staff from "../../pages/staff/index.js";
-import Report from "../../pages/report/report.js";
-import Exam from "../../pages/exam/exam.js";
-import ExamTable from "../../pages/exam/examTable.js";
-import Examresult from "../../pages/exam/examResults.js";
-import ViewAttendance from "../Atttendence/ViewAttendance.js";
-import Studendstationery from "../stationery/Studendstationery.js";
-import Staffattendance from "../Atttendence/Staffattendance.js";
-import Staffview from "../Atttendence/Staffview.js";
-import Nationality from "../../pages/master/nationality/Nationality.js";
-import Studendlist from "../../pages/List/Studendlist.js";
-import Stafflist from "../../pages/List/Stafflist.js";
-import Studentinfo from "../../pages/List/Studentinfo.js";
-import Nextpage from "../../pages/List/Nextpage.js";
-import StudentDummyList from "../../pages/List/StudentDummyList.js";
-import logo from '../../assets/images/kst_logo.png'
-import { IoIosArrowForward } from "react-icons/io";
+import Timetable from "../../pages/Timetable/timetable";
+import Attendence from "../Atttendence/Attendence";
+import Assignment from "../Assignment/Assignment";
+import Homework from "../Homework/Homework";
+import Event from "../../pages/Event/Event";
+import Product from "../../pages/Product/Product";
+import Staff from "../../pages/staff";
+import Exam from "../../pages/exam/exam";
+import Examresult from "../../pages/exam/examResults";
+import ExamType from "../../pages/exam/ExamType";
+import ExamPortion from "../../pages/exam/ExamPortion";
+import ExamReport from "../../pages/report/ExamReport";
+import AssignmentReport from "../../pages/report/AssignmentReport";
+import ReportsOverview from "../../pages/report/ReportsOverview";
+import AttendanceReport from "../../pages/report/AttendanceReport";
+import HomeworkReport from "../../pages/report/HomeworkReport";
+import LeaveManagement from "../../pages/services/LeaveManagement";
+import ViewAttendance from "../Atttendence/ViewAttendance";
+import Studendstationery from "../stationery/Studendstationery";
+import Staffattendance from "../Atttendence/Staffattendance";
+import Staffview from "../Atttendence/Staffview";
+import Nationality from "../../pages/master/nationality/Nationality";
+import Studendlist from "../../pages/List/Studendlist";
+import StudentWizard from "../../pages/registration/StudentWizard";
+import StaffWizard from "../../pages/registration/StaffWizard";
+import Studentinfo from "../../pages/List/Studentinfo";
+import Nextpage from "../../pages/List/Nextpage";
+import StudentDummyList from "../../pages/List/StudentDummyList";
+import Transport from "../../pages/services/Transport";
+import Stationery from "../../pages/services/Stationery";
+import "../../assets/illustrations/schoolTheme.css";
+import { SchoolAmbience, SchoolBellIcon } from "../../assets/illustrations/SchoolIllustrations";
+import { SchoolMenuIcon, SchoolSubMenuIcon, IconChevronDown, IconSidebarCollapse, IconSidebarExpand, IconLogout, IconSettings, HeaderStationeryDeco } from "../../assets/illustrations/SchoolMenuIcons";
 
+const MENU_GROUPS = [
+  {
+    title: "Student", icon: null, section: "Management",
+    items: [
+      { label: "Student List", path: "/students", state: "Student List" },
+      { label: "Registration", path: "/studentlist/new", state: "Student Registration" },
+    ],
+  },
+  {
+    title: "Staff", icon: null,
+    items: [
+      { label: "Staff List", path: "/list", state: "Staff List" },
+      { label: "Registration", path: "/stafflist/new", state: "Staff Registration" },
+    ],
+  },
+  {
+    title: "Master", icon: null,
+    items: [
+      { label: "Nationality", path: "/master", state: "Nationality" },
+      { label: "State", path: "/master", state: "State" },
+      { label: "City", path: "/master", state: "City" },
+      { label: "Blood Group", path: "/master", state: "BloodGroup" },
+      { label: "Community", path: "/master", state: "Community" },
+      { label: "Religion", path: "/master", state: "Religion" },
+      { label: "Subject", path: "/master", state: "Subject" },
+      { label: "Class", path: "/master", state: "Class" },
+      { label: "Section", path: "/master", state: "Section" },
+    ],
+  },
+  {
+    title: "Mapping", icon: null, section: "Academics",
+    items: [
+      { label: "Class & Section", path: "/master", state: "Class & Section" },
+      { label: "Class Teacher", path: "/master", state: "Class Teacher" },
+      { label: "Subject Teacher", path: "/master", state: "Subject Teacher" },
+    ],
+  },
+  {
+    title: "Time Table", icon: null,
+    items: [
+      { label: "Period Slot", path: "/master", state: "Period Slot" },
+      { label: "Class Time Table", path: "/master", state: "Class Time Table" },
+      { label: "Period Time Table", path: "/timetable", state: undefined },
+    ],
+  },
+  {
+    title: "Examination", icon: null,
+    items: [
+      { label: "Exam Type", path: "/examtype", state: "Exam Type" },
+      { label: "Exam Portion", path: "/examportion", state: "Exam Portion" },
+      { label: "Subject Mark", path: "/subjectmark", state: "Subject Mark" },
+      { label: "Exam Result", path: "/examresult", state: "Exam Result" },
+    ],
+  },
+  {
+    title: "Stationery", icon: null, section: "Services",
+    items: [
+      { label: "Stationery", path: "/stationery", state: undefined },
+    ],
+  },
+  {
+    title: "Transport", icon: null,
+    items: [
+      { label: "Transport", path: "/transport", state: undefined },
+    ],
+  },
+  {
+    title: "Leave", icon: null, section: "Operations",
+    items: [
+      { label: "Leave Management", path: "/leave", state: undefined },
+    ],
+  },
+  {
+    title: "Reports", icon: null, section: "Reports",
+    items: [
+      { label: "Reports Overview", path: "/reports", state: undefined },
+      { label: "Assignment Report", path: "/assignment", state: "Assignment Report" },
+      { label: "Exam Report", path: "/examtable", state: "Exam Report" },
+      { label: "Attendance Report", path: "/reports/attendance", state: undefined },
+      { label: "Homework Report", path: "/reports/homework", state: undefined },
+    ],
+  },
+];
 
-/*  Sub link  active when path + state both match  */
-const SubLink = ({ to, state, children }) => {
-  const location = useLocation();
-  const isActive =
-    location.pathname === to && location.state === state;
-  return (
-    <Link
-      to={to}
-      state={state}
-      className={`kst-sub-link${isActive ? " kst-sub-active" : ""}`}
-    >
-      <i></i>
-      {children}
-    </Link>
-  );
+// Resolve active page title + parent from pathname + state
+const resolvePageTitle = (pathname, state) => {
+  if (pathname === "/dashboard" || pathname === "/") return { title: "Dashboard", parent: "Home" };
+  for (const group of MENU_GROUPS) {
+    for (const item of group.items) {
+      if (item.path === pathname && (!item.state || item.state === state)) {
+        return { title: item.label, parent: group.title };
+      }
+    }
+  }
+  // Fallback for dynamic routes
+  if (pathname === "/students") return { title: "Student List", parent: "Student" };
+  if (pathname === "/list" && state === "Staff List") return { title: "Staff List", parent: "Staff" };
+  if (pathname === "/list" && state === "Student List") return { title: "Student List", parent: "Student" };
+  if (pathname === "/examtable") return { title: "Exam Report", parent: "Reports" };
+  if (pathname === "/assignment") return { title: "Assignment Report", parent: "Reports" };
+  if (pathname === "/reports") return { title: "Reports Overview", parent: "Reports" };
+  if (pathname === "/reports/attendance") return { title: "Attendance Report", parent: "Reports" };
+  if (pathname === "/reports/homework") return { title: "Homework Report", parent: "Reports" };
+  if (pathname === "/leave") return { title: "Leave Management", parent: "Operations" };
+  if (pathname.startsWith("/releiving")) return { title: "Relieving", parent: "Staff" };
+  if (pathname.startsWith("/studentinfo")) return { title: "Document Upload", parent: "Student" };
+  if (pathname.startsWith("/studentlist")) return { title: "Registration", parent: "Student" };
+  if (pathname.startsWith("/stafflist")) {
+    if (pathname.endsWith("/new")) return { title: "Registration", parent: "Staff" };
+    return { title: "Staff Registration", parent: "Staff" };
+  }
+  if (pathname.startsWith("/transport")) return { title: "Transport", parent: "Services" };
+  if (pathname.startsWith("/stationery")) return { title: "Stationery", parent: "Services" };
+  if (pathname === "/settings") return { title: "Settings", parent: "Home" };
+  return { title: "Dashboard", parent: "Home" };
 };
 
-/*  NavItem  auto-opens when any child sub-link is active  */
-const NavItem = ({ icon, label, children, collapsed, childPaths = [], activeItem, setActiveItem }) => {
-  const location = useLocation();
-  const itemRef = useRef(null);
+const MenuGroup = ({ title, items, openMenu, setOpenMenu, collapsed, pathname, locationState, onFlyoutNavigate }) => {
+  const btnRef = useRef(null);
   const [flyoutTop, setFlyoutTop] = useState(0);
+  const isOpen = openMenu === title;
 
-  const isChildActive = childPaths.some(
-    (cp) => location.pathname === cp.to && location.state === cp.state
+  const hasActiveChild = items.some(item =>
+    item.path === pathname && (!item.state || item.state === locationState)
   );
 
-  // open = expanded (non-collapsed) OR flyout visible (collapsed)
-  const open = activeItem === label || (!collapsed && isChildActive);
-
-  useEffect(() => {
-    // auto-open the correct item when navigating directly
-    if (isChildActive && !collapsed) setActiveItem(label);
-  }, [isChildActive, collapsed]);
-
-  // close flyout on route change
-  useEffect(() => {
-    if (collapsed) setActiveItem(null);
-  }, [location.pathname, location.state]);
-
-  const handleClick = () => {
-    if (collapsed && itemRef.current) {
-      const rect = itemRef.current.getBoundingClientRect();
-      setFlyoutTop(rect.top);
+  const handleToggle = () => {
+    if (collapsed) {
+      if (!isOpen && btnRef.current) {
+        const rect = btnRef.current.getBoundingClientRect();
+        setFlyoutTop(rect.top);
+      }
+      setOpenMenu(isOpen ? null : title);
+    } else {
+      setOpenMenu(isOpen ? null : title);
     }
-    setActiveItem(activeItem === label ? null : label);
   };
 
-  return (
-    <div className={`kst-nav-item${open ? " open" : ""}`} ref={itemRef}>
-      <div
-        className={`kst-nav-link${isChildActive ? " active" : ""}`}
-        onClick={handleClick}
+  const subLinks = items.map((item, i) => {
+    const isSubActive =
+      item.path === pathname &&
+      (!item.state || item.state === locationState);
+    return (
+      <Link
+        key={i}
+        to={item.path}
+        state={item.state}
+        className={`crm-sub-link${isSubActive ? " sub-active" : ""}`}
+        onClick={() => onFlyoutNavigate?.()}
       >
-        <i className={`${icon} nav-icon`}></i>
-        <span className="nav-label">{label}</span>
-        <i className="bx bxs-chevron-down nav-arrow"></i>
-      </div>
+        <span className="crm-sub-icon"><SchoolSubMenuIcon label={item.label} /></span>
+        {item.label}
+      </Link>
+    );
+  });
 
-      {!collapsed && (
-        <div className="kst-submenu">{children}</div>
+  return (
+    <div className={`crm-menu-group${isOpen && collapsed ? " flyout-open" : ""}`}>
+      <button
+        ref={btnRef}
+        className={`crm-menu-btn${hasActiveChild ? " active" : ""}${isOpen && !collapsed ? " open" : ""}`}
+        onClick={handleToggle}
+        title={collapsed ? title : undefined}
+        aria-expanded={isOpen}
+      >
+        <div className="crm-menu-left">
+          <span className="crm-menu-icon"><SchoolMenuIcon name={title} /></span>
+          {!collapsed && <span className="crm-menu-label">{title}</span>}
+        </div>
+        {!collapsed && (
+          <IconChevronDown className={`crm-arrow${isOpen ? " rotate" : ""}`} />
+        )}
+        {hasActiveChild && collapsed && <span className="crm-active-dot" />}
+      </button>
+
+      {/* Expanded sidebar - inline submenu */}
+      {!collapsed && isOpen && (
+        <div className="crm-submenu">{subLinks}</div>
       )}
 
-      {collapsed && open && (
-        <div className="kst-flyout" style={{ top: flyoutTop }}>
-          <div className="kst-flyout-title">{label}</div>
-          {children}
+      {/* Collapsed sidebar - flyout popup */}
+      {collapsed && isOpen && (
+        <div
+          className="crm-submenu-flyout"
+          style={{ top: flyoutTop }}
+        >
+          <div className="crm-flyout-header">
+            <SchoolMenuIcon name={title} />
+            <span>{title}</span>
+          </div>
+          <div className="crm-flyout-items">{subLinks}</div>
         </div>
       )}
     </div>
@@ -109,362 +249,387 @@ const NavItem = ({ icon, label, children, collapsed, childPaths = [], activeItem
 const Nav = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const image = getUserData("image");
-  const userName = getUserData("adminName") || getUserData("staffName");
+  const pathname = location.pathname;
+  const locState = location.state;
+
+  // Derive active page title dynamically
+  const { title: pageTitle, parent: pageParent } = resolvePageTitle(pathname, locState);
+
   const role = getUserData("role");
+  const userName = getUserData("adminName") || getUserData("staffName");
+
   const [collapsed, setCollapsed] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeItem, setActiveItem] = useState(null);
+  const [openMenu, setOpenMenu] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
 
-  // Close mobile sidebar on route change
+  const [showCal, setShowCal] = useState(false);
+  const [calDate, setCalDate] = useState(new Date());
+  const calRef = useRef(null);
+  const today = new Date();
+
+  const [showNotif, setShowNotif] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const notifRef = useRef(null);
+  const profileRef = useRef(null);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   useEffect(() => {
-    setMobileOpen(false);
-  }, [location.pathname, location.state]);
+    const token = getToken();
+    if (!token) return;
+    getNotifications(token)
+      .then((res) => {
+        if (res?.status === "success" && Array.isArray(res.data)) {
+          setNotifications(
+            res.data.map((n, i) => ({
+              id: n.id || i,
+              title: n.title || "Notification",
+              desc: n.message || n.description || "",
+              time: n.createdAt || n.time || "",
+              read: n.isRead === 1 || n.read === true,
+              icon: "bx bxs-bell",
+              color: "#2D3A8C",
+              bg: "#eef0fb",
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
 
-  const logout = () => {
-    removeToken();
-    navigate("/");
-    window.location.reload();
+  useEffect(() => {
+    const handler = (e) => {
+      if (calRef.current && !calRef.current.contains(e.target)) setShowCal(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotif(false);
+      if (profileRef.current && !profileRef.current.contains(e.target)) setShowProfile(false);
+      if (collapsed && openMenu) {
+        const insideMenu = e.target.closest(".crm-menu-group") || e.target.closest(".crm-submenu-flyout");
+        if (!insideMenu) setOpenMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [collapsed, openMenu]);
+
+  useEffect(() => {
+    if (collapsed) {
+      setOpenMenu(null);
+      return;
+    }
+    const match = MENU_GROUPS.find(g =>
+      g.items.some(item =>
+        item.path === pathname && (!item.state || item.state === locState)
+      )
+    );
+    if (match) setOpenMenu(match.title);
+  }, [pathname, locState, collapsed]);
+
+  const MONTHS = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
+  const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+  const calYear = calDate.getFullYear();
+  const calMonth = calDate.getMonth();
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const prevMonth = () => setCalDate(new Date(calYear, calMonth - 1, 1));
+  const nextMonth = () => setCalDate(new Date(calYear, calMonth + 1, 1));
+  const isToday = (d) => d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
+  const dateLabel = today.toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+
+  const markAllRead = () => {
+    setNotifications(ns => ns.map(n => ({ ...n, read: true })));
+    const token = getToken();
+    if (token) updateNotificationTime(token).catch(() => {});
   };
+  const clearAll = () => setNotifications([]);
+  const markRead = (id) => setNotifications(ns => ns.map(n => n.id === id ? { ...n, read: true } : n));
 
-  const isActive = (...paths) => paths.includes(location.pathname);
+  const logout = () => { removeToken(); navigate("/"); window.location.reload(); };
 
-  // const pageTitle = () => {
-  //   const map = {
-  //     "/dashboard": "Dashboard",
-  //     "/master": location.state ? String(location.state) : "Master",
-  //     "/students": "Student List",
-  //     "/list": "List",
-  //     "/timetable": "Time Table",
-  //     "/staff": "Staff Panel",
-  //     "/exam": "Exam",
-  //     "/staffview": "Attendance",
-  //     "/studentattendence": "Student Attendance",
-  //     "/viewattendance": "View Attendance",
-  //   };
-  //   return map[location.pathname] || "Dashboard";
-  // };
+  const closeFlyout = () => { if (collapsed) setOpenMenu(null); };
+  const isDashboardActive = pathname === "/dashboard" || pathname === "/";
+  const isSettingsActive = pathname === "/settings";
 
-  // Child path definitions for NavItems (used for active detection)
-  const masterPaths = [
-    { to: "/master", state: "Nationality" },
-    { to: "/master", state: "State" },
-    { to: "/master", state: "City" },
-    { to: "/master", state: "BloodGroup" },
-    { to: "/master", state: "Community" },
-    { to: "/master", state: "Religion" },
-    { to: "/master", state: "Subject" },
-    { to: "/master", state: "Class" },
-    { to: "/master", state: "Section" },
-  ];
-
-  const studentAdminPaths = [
-    { to: "/students", state: "Student List" },
-    { to: "/studentlist/:id", state: "Student Registration" },
-  ];
-
-  const staffAdminPaths = [
-    { to: "/list", state: "Staff List" },
-    { to: "/stafflist/:id", state: "Staff Registration" },
-  ];
-
-  const mappingPaths = [
-    { to: "/master", state: "Class & Section" },
-    { to: "/master", state: "Class Teacher" },
-    { to: "/master", state: "Subject Teacher" },
-  ];
-
-  const timetablePaths = [
-    { to: "/master", state: "Period Slot" },
-    { to: "/master", state: "Class Time Table" },
-    { to: "/timetable", state: "Class Time Table" },
-  ];
-
-  const stationeryAdminPaths = [{ to: "/master", state: "Products" }];
-  const transportPaths = [{ to: "/master", state: "Transport" }];
-
-  const studentStaffPaths = [
-    { to: "/studentattendence", state: "Attendance" },
-    { to: "/viewattendance", state: "View Attendance" },
-    { to: "/staff", state: "Assignment" },
-    { to: "/staff", state: "Homework" },
-  ];
-
-  const examPaths = [
-    { to: "/staff", state: "Exam Type" },
-    { to: "/staff", state: "Exam Portion" },
-    { to: "/exam", state: "Subject Mark" },
-    { to: "/examresult", state: "Exam Result" },
-  ];
-
-  const gradePaths = [
-    { to: "/staff", state: "Overall grade" },
-    { to: "/staff", state: "Subject grade" },
-  ];
-
-  const stationeryStaffPaths = [{ to: "/Studendstationery", state: "Studend Stationery" }];
-  const eventsPaths = [{ to: "/staff", state: "Events" }];
-  const reportPaths = [
-    { to: "/assignment", state: "Assignment Report" },
-    { to: "/examtable", state: "Exam Results" },
-  ];
+  const renderedSections = new Set();
 
   return (
-    <div className="kst-shell">
-      {/* Mobile overlay */}
-      <div
-        className={`kst-overlay${mobileOpen ? " visible" : ""}`}
-        onClick={() => setMobileOpen(false)}
-      />
+    <div className="crm-layout">
+      <SchoolAmbience />
 
-      {/* SIDEBAR */}
-      <aside className={`kst-sidebar${collapsed ? " collapsed" : ""}${mobileOpen ? " mobile-open" : ""}`}>
+      <aside className={`crm-sidebar${collapsed ? " collapsed" : ""}`}>
 
-        {/* Mobile close */}
-        <button className="kst-mobile-close" onClick={() => setMobileOpen(false)}>
-          <i className="bx bx-x"></i>
+        <button
+          className="crm-sidebar-toggle"
+          onClick={() => setCollapsed(v => !v)}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed
+            ? <IconSidebarExpand className="crm-toggle-icon" />
+            : <IconSidebarCollapse className="crm-toggle-icon" />
+          }
         </button>
 
-        <div className="kst-logo">
-          <img src={logo} alt="logo" className="kst-logo-img" />
+        <div className="crm-logo">
+          <div className="crm-logo-mark" aria-hidden="true">KST</div>
+          {!collapsed && (
+            <div>
+              <h3>KST School</h3>
+              <span>School CRM</span>
+            </div>
+          )}
         </div>
 
-        <nav className="kst-nav">
+        <nav className="crm-nav">
+
           {/* Dashboard */}
           <Link
             to="/dashboard"
-            className={`kst-nav-link${isActive("/dashboard", "/") ? " active" : ""}`}
+            className={`crm-link${isDashboardActive ? " active" : ""}`}
+            title={collapsed ? "Dashboard" : undefined}
           >
-            <i className="bx bx-grid-alt nav-icon"></i>
-            <span className="nav-label">Dashboard</span>
+            <span className="crm-menu-icon"><SchoolMenuIcon name="Dashboard" /></span>
+            {!collapsed && <span>Dashboard</span>}
           </Link>
 
-          {role === "Admin" ? (
-            <>
-              <div className="kst-nav-section">Management</div>
-
-              <NavItem icon="bx bxs-group" label="Master" collapsed={collapsed} childPaths={masterPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/master" state="Nationality">Nationality</SubLink>
-                <SubLink to="/master" state="State">State</SubLink>
-                <SubLink to="/master" state="City">City</SubLink>
-                <SubLink to="/master" state="BloodGroup">Blood Group</SubLink>
-                <SubLink to="/master" state="Community">Community</SubLink>
-                <SubLink to="/master" state="Religion">Religion</SubLink>
-                <SubLink to="/master" state="Subject">Subject</SubLink>
-                <SubLink to="/master" state="Class">Class</SubLink>
-                <SubLink to="/master" state="Section">Section</SubLink>
-              </NavItem>
-
-              <NavItem icon="bx bxs-user-check" label="Student" collapsed={collapsed} childPaths={studentAdminPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/students" state="Student List">List</SubLink>
-                <SubLink to="/studentlist/:id" state="Student Registration">Registration</SubLink>
-              </NavItem>
-
-              <NavItem icon="bx bxs-user-x" label="Staff" collapsed={collapsed} childPaths={staffAdminPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/list" state="Staff List">List</SubLink>
-                <SubLink to="/stafflist/:id" state="Staff Registration">Registration</SubLink>
-              </NavItem>
-
-              <div className="kst-nav-section">Academic</div>
-
-              <NavItem icon="bx bx-group" label="Mapping" collapsed={collapsed} childPaths={mappingPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/master" state="Class & Section">Class & Section</SubLink>
-                <SubLink to="/master" state="Class Teacher">Class Teacher</SubLink>
-                <SubLink to="/master" state="Subject Teacher">Subject Teacher</SubLink>
-              </NavItem>
-
-              <NavItem icon="bx bxs-notepad" label="Time Table" collapsed={collapsed} childPaths={timetablePaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/master" state="Period Slot">Period Slot</SubLink>
-                <SubLink to="/master" state="Class Time Table">Class Time Table</SubLink>
-                <SubLink to="/timetable" state="Class Time Table">Period Time Table</SubLink>
-              </NavItem>
-
-              <div className="kst-nav-section">Other</div>
-
-              <NavItem icon="bx bxs-id-card" label="Stationery" collapsed={collapsed} childPaths={stationeryAdminPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/master" state="Products">Products</SubLink>
-              </NavItem>
-
-              <NavItem icon="bx bxs-bus" label="Transport" collapsed={collapsed} childPaths={transportPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/master" state="Transport">Transport Services</SubLink>
-              </NavItem>
-            </>
-          ) : (
-            <>
-              <div className="kst-nav-section">My Work</div>
-
-              <Link
-                to="/staffview"
-                className={`kst-nav-link${isActive("/staffview") ? " active" : ""}`}
-              >
-                <i className="bx bxs-calendar-check nav-icon"></i>
-                <span className="nav-label">Attendance</span>
-              </Link>
-
-              <NavItem icon="bx bxs-graduation" label="Student" collapsed={collapsed} childPaths={studentStaffPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/studentattendence" state="Attendance">Student Attendance</SubLink>
-                <SubLink to="/viewattendance" state="View Attendance">View Attendance</SubLink>
-                <SubLink to="/staff" state="Assignment">Assignment</SubLink>
-                <SubLink to="/staff" state="Homework">Home Work</SubLink>
-              </NavItem>
-
-              <NavItem icon="bx bx-edit" label="Exam" collapsed={collapsed} childPaths={examPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/staff" state="Exam Type">Exam Type</SubLink>
-                <SubLink to="/staff" state="Exam Portion">Exam Portion</SubLink>
-                <SubLink to="/exam" state="Subject Mark">Subject Mark</SubLink>
-                <SubLink to="/examresult" state="Exam Result">Exam Result</SubLink>
-              </NavItem>
-
-              <NavItem icon="bx bx-calendar-star" label="Grade" collapsed={collapsed} childPaths={gradePaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/staff" state="Overall grade">Overall Grade</SubLink>
-                <SubLink to="/staff" state="Subject grade">Subject Grade</SubLink>
-              </NavItem>
-
-              <div className="kst-nav-section">More</div>
-
-              <NavItem icon="bx bxs-id-card" label="Stationery" collapsed={collapsed} childPaths={stationeryStaffPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/Studendstationery" state="Studend Stationery">Products</SubLink>
-              </NavItem>
-
-              <NavItem icon="bx bx-calendar-event" label="Events" collapsed={collapsed} childPaths={eventsPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/staff" state="Events">Events</SubLink>
-              </NavItem>
-
-              <NavItem icon="bx bxs-report" label="Report" collapsed={collapsed} childPaths={reportPaths} activeItem={activeItem} setActiveItem={setActiveItem}>
-                <SubLink to="/assignment" state="Assignment Report">Assignment Report</SubLink>
-                <SubLink to="/examtable" state="Exam Results">Exam Report</SubLink>
-              </NavItem>
-            </>
-          )}
+          {/* Dynamic menu groups */}
+          {MENU_GROUPS.map((group, i) => {
+            const showSection = group.section && !renderedSections.has(group.section);
+            if (showSection) renderedSections.add(group.section);
+            return (
+              <React.Fragment key={i}>
+                {showSection && (
+                  <div className="crm-section">
+                    {!collapsed && group.section}
+                  </div>
+                )}
+                <MenuGroup
+                  title={group.title}
+                  items={group.items}
+                  openMenu={openMenu}
+                  setOpenMenu={setOpenMenu}
+                  collapsed={collapsed}
+                  pathname={pathname}
+                  locationState={locState}
+                  onFlyoutNavigate={closeFlyout}
+                />
+              </React.Fragment>
+            );
+          })}
         </nav>
 
-        <div className="kst-sidebar-user" onClick={() => setShowPopup(!showPopup)}>
-          <img src="https://img.magnific.com/free-vector/woman-with-long-brown-hair-pink-shirt_90220-2940.jpg?semt=ais_hybrid&w=740&q=80" alt="user" />
-          <div className="kst-sidebar-user-info">
-            <strong>{userName}</strong>
-            <span>{role}</span>
-          </div>
+        <div className="crm-sidebar-footer">
+          <Link
+            to="/settings"
+            className={`crm-link crm-settings-link${isSettingsActive ? " active" : ""}`}
+            title={collapsed ? "Settings" : undefined}
+          >
+            <span className="crm-menu-icon"><IconSettings /></span>
+            {!collapsed && <span>Settings</span>}
+          </Link>
         </div>
       </aside>
 
-      {/* ══ MAIN ══ */}
-      <div className="kst-main">
-        
-       
-        <header className="kst-topbar">
+      {/* ── MAIN ── */}
+      <main className="crm-main">
+        <header className="crm-header">
+          <HeaderStationeryDeco />
 
-          {/* Collapse toggle — far left of header */}
-          <button
-            className={`kst-toggle-btn${collapsed ? " collapsed" : ""}`}
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            <IoIosArrowForward />
-          </button>
-
-          <span className="page-title">
-            {location.pathname === "/master" && location.state
-              ? String(location.state)
-              : location.pathname === "/students" ? "Student List"
-              : location.pathname === "/staffview" ? "Attendance"
-              : location.pathname === "/studentattendence" ? "Student Attendance"
-              : location.pathname === "/viewattendance" ? "View Attendance"
-              : location.pathname === "/timetable" ? "Time Table"
-              : location.pathname === "/exam" ? "Exam"
-              : location.pathname === "/examresult" ? "Exam Result"
-              : location.pathname === "/assignment" ? "Assignment Report"
-              : location.pathname === "/examtable" ? "Exam Report"
-              : location.pathname === "/list" ? "Staff List"
-              : "Dashboard"}
-          </span>
-
-          <div className="topbar-right">
-            <div className="search-box">
-            <i className="bx bx-search"></i>
-            <input type="text" placeholder="Search..." />
-          </div>
-            {/* <div className="tb-icon-btn">
-              <i className="bx bx-bell"></i>
-              <span className="notif-dot"></span>
-            </div> */}
-            <div className="tb-icon-btn">
-              <i className="bx bx-bell"></i>
+          <div className="crm-header-left">
+            <div className="crm-page-title-wrap">
+              <h2 className="crm-page-title">{pageTitle}</h2>
+              <span className="crm-page-breadcrumb">
+                <span className="crm-breadcrumb-home">Home</span>
+                {pageParent !== "Home" && (
+                  <><span className="crm-breadcrumb-sep">›</span><span>{pageParent}</span></>
+                )}
+                {pageTitle !== pageParent && pageParent !== "Home" && (
+                  <><span className="crm-breadcrumb-sep">›</span><span className="crm-breadcrumb-active">{pageTitle}</span></>
+                )}
+                {pageParent === "Home" && pageTitle !== "Dashboard" && (
+                  <><span className="crm-breadcrumb-sep">›</span><span className="crm-breadcrumb-active">{pageTitle}</span></>
+                )}
+              </span>
             </div>
-            <div className="tb-user-wrap" onClick={() => setShowPopup(!showPopup)}>
-              <img src="https://img.magnific.com/free-vector/woman-with-long-brown-hair-pink-shirt_90220-2940.jpg?semt=ais_hybrid&w=740&q=80" alt="user" />
-              <div className="tb-user-info">
-                <strong>{userName}</strong>
-                <span>{role}</span>
-              </div>
-              <i className="bx bxs-chevron-down" style={{ fontSize: 13, color: "#7b8099" }}></i>
+          </div>
 
-              {showPopup && (
-                <div className="kst-user-popup" onClick={e => e.stopPropagation()}>
-                  <div className="pop-avatar">
-                    <img src="https://img.magnific.com/free-vector/woman-with-long-brown-hair-pink-shirt_90220-2940.jpg?semt=ais_hybrid&w=740&q=80" alt="user" />
-                    <div>
-                      <div className="pop-name">{userName}</div>
-                      <div className="pop-role">{role}</div>
-                    </div>
+          <div className="crm-header-right">
+            {/* Search */}
+            <div className="crm-search">
+              <FiSearch />
+              <input placeholder="Search students, staff, classes..." />
+            </div>
+
+            {/* Date card */}
+            <div className="crm-date-wrap" ref={calRef}>
+              <button className="crm-date-btn" onClick={() => setShowCal(v => !v)}>
+                <i className="bx bx-calendar crm-date-icon"></i>
+                <span className="crm-date-text">{dateLabel}</span>
+              </button>
+
+              {showCal && (
+                <div className="crm-cal-popup">
+                  <div className="crm-cal-header">
+                    <button className="crm-cal-nav" onClick={prevMonth}><FiChevronLeft /></button>
+                    <span className="crm-cal-title">{MONTHS[calMonth]} {calYear}</span>
+                    <button className="crm-cal-nav" onClick={nextMonth}><FiChevronRight /></button>
                   </div>
-                  <hr />
-                  <button className="pop-btn logout" onClick={logout}>
-                    <i className="bx bx-log-out"></i> Logout
-                  </button>
-                  <button className="pop-btn cancel" onClick={() => setShowPopup(false)}>
-                    Cancel
-                  </button>
+                  <div className="crm-cal-days">
+                    {DAYS.map(d => <span key={d} className="crm-cal-day-hdr">{d}</span>)}
+                  </div>
+                  <div className="crm-cal-grid">
+                    {Array.from({ length: firstDay }).map((_, i) => <span key={`e${i}`} />)}
+                    {Array.from({ length: daysInMonth }).map((_, i) => (
+                      <button
+                        key={i}
+                        className={`crm-cal-cell${isToday(i + 1) ? " today" : ""}`}
+                        onClick={() => setShowCal(false)}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="crm-cal-footer">
+                    <button className="crm-cal-today-btn" onClick={() => { setCalDate(new Date()); setShowCal(false); }}>
+                      Today
+                    </button>
+                  </div>
                 </div>
               )}
-              
             </div>
-            
+
+            {/* Bell */}
+            <button className="crm-notification" onClick={() => setShowNotif(v => !v)}>
+              <FiBell />
+              {unreadCount > 0 && (
+                <span className="crm-notif-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>
+              )}
+            </button>
+
+            <div className="crm-header-profile" ref={profileRef}>
+              <button
+                type="button"
+                className={`crm-user crm-user-avatar-btn${showProfile ? " open" : ""}`}
+                onClick={() => setShowProfile(v => !v)}
+                aria-expanded={showProfile}
+                aria-haspopup="true"
+                aria-label="Open profile menu"
+              >
+                <img
+                  src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQx-dp4uGCohdJKwWhlWiiQvwaxGRTHaML-EA&s"
+                  alt={userName || "Profile"}
+                />
+              </button>
+
+              {showProfile && (
+                <div className="crm-profile-menu">
+                  <div className="crm-profile-menu-user">
+                    <h4>{userName}</h4>
+                    <p>{role}</p>
+                  </div>
+                  <button type="button" onClick={logout}><IconLogout /> Logout</button>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Notification drawer */}
+          {showNotif && (
+            <div className="crm-notif-overlay" onClick={() => setShowNotif(false)}>
+              <div className="crm-notif-drawer" ref={notifRef} onClick={e => e.stopPropagation()}>
+                <div className="crm-nd-header">
+                  <div className="crm-nd-title">
+                    <i className="bx bxs-bell" style={{ color: "#2D3A8C", fontSize: 20 }}></i>
+                    <span>Notifications</span>
+                    {unreadCount > 0 && <span className="crm-nd-badge">{unreadCount} new</span>}
+                  </div>
+                  <button className="crm-nd-close" onClick={() => setShowNotif(false)}><FiX /></button>
+                </div>
+
+                <div className="crm-nd-actions">
+                  <button className="crm-nd-act-btn" onClick={markAllRead}><FiCheck /> Mark all read</button>
+                  <button className="crm-nd-act-btn crm-nd-act-danger" onClick={clearAll}><FiTrash2 /> Clear all</button>
+                </div>
+
+                <div className="crm-nd-list">
+                  {notifications.length === 0 ? (
+                    <div className="crm-nd-empty">
+                      <i className="bx bx-bell-off"></i>
+                      <p>No notifications</p>
+                    </div>
+                  ) : notifications.map(n => (
+                    <div
+                      key={n.id}
+                      className={`crm-nd-item${n.read ? "" : " unread"}`}
+                      onClick={() => markRead(n.id)}
+                    >
+                      <div className="crm-nd-item-icon" style={{ background: n.bg, color: n.color }}>
+                        <i className={n.icon}></i>
+                      </div>
+                      <div className="crm-nd-item-body">
+                        <div className="crm-nd-item-top">
+                          <span className="crm-nd-item-title">{n.title}</span>
+                          {!n.read && <span className="crm-nd-unread-dot"></span>}
+                        </div>
+                        <p className="crm-nd-item-desc">{n.desc}</p>
+                        <span className="crm-nd-item-time">{n.time}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {notifications.length > 0 && (
+                  <div className="crm-nd-footer">
+                    <button className="crm-nd-view-all">View all notifications <FiChevronRight /></button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </header>
 
-        <div className="kst-page">
+        <div className="crm-page">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            {role === "Admin" ? (
-              <>
-                <Route path="/master" element={<Master />} />
-                <Route path="/nationality" element={<Nationality />} />
-                <Route path="/registration" element={<Registration />} />
-                <Route path="/releiving/:id" element={<Registration />} />
-                <Route path="/students" element={<StudentDummyList />} />
-                <Route path="/list" element={<List />} />
-                <Route path="/timetable" element={<Timetable />} />
-                <Route path="/profile/:id" element={<Profile />} />
-                <Route path="/staffattendance" element={<Staffattendance />} />
-                <Route path="/stafflist/:id" element={<Stafflist />} />
-                <Route path="/studentlist/:id" element={<Studendlist />} />
-                <Route path="/studentinfo/:id" element={<Studentinfo />} />
-                <Route path="/nextpage" element={<Nextpage />} />
-              </>
-            ) : (
-              <>
-                <Route path="/attendence" element={<Attendence />} />
-                <Route path="/studentattendence" element={<Attendence />} />
-                <Route path="/homework" element={<Homework />} />
-                <Route path="/events" element={<Event />} />
-                <Route path="/products" element={<Product />} />
-                <Route path="/staff" element={<Staff />} />
-                <Route path="/report" element={<Report />} />
-                <Route path="/exam" element={<Exam />} />
-                <Route path="/examtable" element={<ExamTable />} />
-                <Route path="/examresult" element={<Examresult />} />
-                <Route path="/assignment" element={<Assignment />} />
-                <Route path="/viewattendance" element={<ViewAttendance />} />
-                <Route path="/studendstationery" element={<Studendstationery />} />
-                <Route path="/staffview" element={<Staffview />} />
-              </>
-            )}
+            <Route path="/master" element={<Master />} />
+            <Route path="/nationality" element={<Nationality />} />
+            <Route path="/registration" element={<Registration />} />
+            <Route path="/releiving/:id" element={<Registration />} />
+            <Route path="/students" element={<StudentDummyList />} />
+            <Route path="/list" element={<List />} />
+            <Route path="/timetable" element={<Timetable />} />
+            <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/staffattendance" element={<Staffattendance />} />
+            <Route path="/studentlist/new" element={<StudentWizard />} />
+            <Route path="/studentlist/:id" element={<StudentWizard />} />
+            <Route path="/stafflist/new" element={<StaffWizard />} />
+            <Route path="/stafflist/:id" element={<StaffWizard />} />
+            <Route path="/studentinfo/:id" element={<Studentinfo />} />
+            <Route path="/exam" element={<Exam />} />
+            <Route path="/subjectmark" element={<Exam />} />
+            <Route path="/examtype" element={<ExamType />} />
+            <Route path="/examportion" element={<ExamPortion />} />
+            <Route path="/examresult" element={<Examresult />} />
+            <Route path="/examtable" element={<ExamReport />} />
+            <Route path="/assignment" element={<AssignmentReport />} />
+            <Route path="/reports" element={<ReportsOverview />} />
+            <Route path="/reports/attendance" element={<AttendanceReport />} />
+            <Route path="/reports/homework" element={<HomeworkReport />} />
+            <Route path="/leave" element={<LeaveManagement />} />
+            <Route path="/transport" element={<Transport />} />
+            <Route path="/stationery" element={<Stationery />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
+
+const SettingsPage = () => (
+  <div style={{ padding: "28px 32px" }}>
+    <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Settings</h2>
+    <p style={{ color: "#64748b" }}>School configuration and preferences.</p>
+  </div>
+);
 
 export default Nav;

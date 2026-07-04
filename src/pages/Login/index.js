@@ -8,7 +8,7 @@ import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 const Login = () => {
   const history = useNavigate();
-  const [userName, setUsername] = useState("");
+  const [userName, setUsername] = useState(0);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");

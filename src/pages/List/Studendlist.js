@@ -23,7 +23,7 @@ import {
   updateStudent,
   getStudentToCheck
 } from "../../services/api";
-import { STAFF_KEY, TOKEN_KEY, getToken } from "../../services/auth";
+import { getToken } from "../../services/auth";
 import "./list.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -36,6 +36,7 @@ export default function Studendlist() {
   const [viewStaff, setViewStaff] = useState();
   const [emailRegex, setEmailRegex] = useState("/^[^s@]+@[^s@]+.[^s@]+$/");
   const ids = useParams();
+  const isNewStudent = ids.id === ":id" || ids.id === "new";
   console.log(ids, "id");
   const inputRef = useRef(null);
   const token = getToken();
@@ -177,13 +178,6 @@ export default function Studendlist() {
     const regexNoSpace = /^[^\s](?:.*\S)?[^\s]$/;
 
     if (
-      !values.admissionNo ||
-      !regexNoSpace.test(values.admissionNo) ||
-      values.admissionNo.includes("'")
-    ) {
-      errors.admissionNo = "Please enter admission no";
-    }
-    if (
       !values.firstName ||
       !regexNoSpace.test(values.firstName) ||
       values.firstName.includes("'")
@@ -270,7 +264,6 @@ export default function Studendlist() {
       cityId: "",
       pincode: "",
       mobile: "",
-      genderId: "",
       address1: "",
       emailId: "",
       religionId: "",
@@ -374,11 +367,22 @@ export default function Studendlist() {
       }
       console.log(values, "values");
       try {
+        if (isNewStudent && values.admissionNo?.trim()) {
+          const dupCheck = await getStudentToCheck(
+            { userName: values.admissionNo.trim() },
+            token
+          );
+          if (dupCheck?.data?.length > 0) {
+            toast.error(
+              `Admission number ${values.admissionNo.trim()} is already registered.`
+            );
+            return;
+          }
+        }
+
         const payload = {
           basicInfo: {
-            admissionNo: values.admissionNo
-              ? values.admissionNo.toString()
-              : "",
+            admissionNo: values.admissionNo?.trim() || ids.id || "",
             firstName: values.firstName ? values.firstName.toString() : "",
             lastName: values.lastName ? values.lastName.toString() : "",
             genderId: values.genderId ? parseInt(values.genderId) : 0,
@@ -487,7 +491,7 @@ export default function Studendlist() {
 
         console.log(payload);
 
-        if (ids.id !== ":id") {
+        if (!isNewStudent) {
           const response = await updateStudent(payload, token);
           console.log("API Response:", response);
           const responseValue = response.status.toString().toLowerCase();
@@ -506,19 +510,23 @@ export default function Studendlist() {
           } else if (responseValue === "success") {
             toast.success(response.message, {
               onClose: () => {
-                // resetForm();
-                navigate(`/studentinfo/${response.id}`);
+                navigate(`/studentinfo/${response.id || ids.id}`);
               },
             });
+            navigate(`/studentinfo/${response.id || ids.id}`);
           }
         } else {
           const response = await createStudent(payload, token);
           console.log("API Response:", response);
           const responseValue = response.status.toString().toLowerCase();
+          const duplicateMsg =
+            response?.data?.sqlMessage ||
+            (typeof response.data === "string" ? response.data : null);
           const responseMessage =
-            responseValue === "error" &&
-              response.data === "Roll number already exists!"
-              ? response.data
+            responseValue === "error" && duplicateMsg
+              ? duplicateMsg.includes("Duplicate entry")
+                ? response.message || duplicateMsg
+                : duplicateMsg
               : response.message;
           if (responseValue === "error") {
             toast.error(responseMessage, {
@@ -527,12 +535,11 @@ export default function Studendlist() {
               },
             });
           } else if (responseValue === "success") {
+            const studentId = response.id || response.admissionNo || values.admissionNo?.trim();
             toast.success(response.message, {
-              onClose: () => {
-                // resetForm();
-                navigate(`/studentinfo/${response.id}`);
-              },
+              onClose: () => navigate(`/studentinfo/${studentId}`),
             });
+            navigate(`/studentinfo/${studentId}`);
           }
         }
       } catch (error) {
@@ -542,20 +549,25 @@ export default function Studendlist() {
     },
   });
 
-  useEffect(()=>{
-    console.log("11111")
-    if (ids.id == ":id") {
-      const fetchData = async () => {
-        try {
-          const response = await getStudentToCheck({ userName: formik.values.admissionNo }, TOKEN_KEY);
-          setAdmissionValidate(response.data)    
-        } catch (error) {
-          console.error("Error fetching student data:", error);
-        }
-      };
-      fetchData()
+  useEffect(() => {
+    if (!isNewStudent || !formik.values.admissionNo?.trim()) {
+      setAdmissionValidate(null);
+      return;
     }
-  },[ids,formik.values.admissionNo])
+    const fetchData = async () => {
+      try {
+        const response = await getStudentToCheck(
+          { userName: formik.values.admissionNo.trim() },
+          getToken()
+        );
+        setAdmissionValidate(response.data);
+      } catch (error) {
+        console.error("Error fetching student data:", error);
+      }
+    };
+    const timer = setTimeout(fetchData, 400);
+    return () => clearTimeout(timer);
+  }, [isNewStudent, formik.values.admissionNo]);
 
   useEffect(() => {
     if (ids.id === ":id") {
@@ -567,149 +579,157 @@ export default function Studendlist() {
     formik.resetForm();
   };
   useEffect(() => {
-    setLoading(true);
-    if (ids.id !== ":id") {
-      console.log("firsttttt", ids);
-      const getStatedata = async () => {
-        try {
-          const response = await getState({ id: 0, nationId: 0 }, TOKEN_KEY);
-          console.log("dropdown ", response);
-          const data = response.map((value, index) => ({
-            id: value.id,
-            value: value.name,
-          }));
-          setDropDown((prevData) => ({
-            ...prevData,
-            stateId: data,
-          }));
-        } catch (err) {
-          console.log(err);
-        }
-      };
-      const getCitydata = async () => {
-        try {
-          const response = await getCity({ id: 0, stateId: 0 }, TOKEN_KEY);
-          console.log("city ", response);
-          const data = response.map((value, index) => ({
-            id: value.id,
-            value: value.name,
-          }));
-          setDropDown((prevData) => ({
-            ...prevData,
-            cityId: data,
-          }));
-        } catch (err) {
-          console.log(err);
-        }
-      };
-      const getStudentList = async () => {
-        try {
-          const response = await getStudentlist(
-            {
-              classId: classs,
-              sectionId: sections,
-              userName: ids.id,
-            },
-            TOKEN_KEY
-          );
-          if (response.data && response.data.length > 0) {
-            const studentData = response.data[0];
-            setClasss(studentData.classId);
-            formik.setValues({
-              admissionNo: studentData.admissionNo,
-              firstName: studentData.firstName,
-              lastName: studentData.lastName,
-              genderId: studentData.genderId,
-              adharCardNo: parseInt(studentData.adharcardNo),
-              pincode: studentData.pincode,
-              mobile: studentData.mobile,
-              emailId: studentData.emailId,
-              address1: studentData.address1,
-              dateOfBirth: studentData.dateOfBirth,
-              dateOfJoining: studentData.dateOfJoining,
-              nationalityId: studentData.nationalityId,
-              cityId: studentData.cityId,
-              stateId: studentData.stateId,
-              classId: studentData.classId,
-              sectionId: studentData.sectionId,
-              religionId: studentData.religionId,
-              communityId: studentData.communityId,
-              bloodGroupId: studentData.bloodGroupId,
-              emisNo: studentData.emisNo,
-              rollNo: studentData.registrationNo,
-              fatherName: studentData.fatherName,
-              fatherOccupation: studentData.fatherOccupation,
-              fatherQualification: studentData.fatherQualification,
-              fatherAnnualIncome: studentData.fatherAnnualIncome,
-              fatherMobileNo: studentData.parentMobileNo1,
-              fatherEmailId: studentData.parentEmailId1,
-              motherMobileNo: studentData.parentMobileNo2,
-              motherEmailId: studentData.parentEmailId2,
-              motherName: studentData.motherName,
-              motherOccupation: studentData.motherOccupation,
-              motherQualification: studentData.motherQualification,
-              motherAnnualIncome: studentData.motherAnnualIncome,
-              guardianMobileNo: studentData.parentMobileNo4,
-              guardianEmail: studentData.parentEmailId3,
-              guardianName: studentData.guardianName,
-              guardianOccupation: studentData.guardianOccupation,
-              guardianQualification: studentData.guardianQualification,
-              guardianAnnualincome: studentData.guardianAnnualIncome,
-              contactType: studentData.contactType,
-              isSiblings: studentData.isSiblings,
-              siblingsId1: studentData.siblingId1,
-              siblingsId2: studentData.siblingId2,
-              siblingsId3: studentData.siblingId3,
-              parentId1: studentData.parentId1,
-              parentId2: studentData.parentId2,
-              isParent: studentData.isParent,
-              isPreviousSchool: studentData.isPreviousSchool,
-              schoolName: studentData.previousSchool,
-              reasonForReleaving: studentData.reasonForReleaving,
-            });
-            setValues({
-              ...values,
-              contactType: studentData.contactType,
-              isSiblings: studentData.isSiblings,
-              isParent: studentData.isParent,
-              isPreviousSchool: studentData.isPreviousSchool,
-            });
-          }
-        } catch (err) {
-          console.log(err);
-        }
-      };
-      const getSectionlist = async () => {
-        try {
-          const response = await getsectionList(
-            { id: 0, classId: classs },
-            TOKEN_KEY
-          );
-          const section1 = response.data.map((value, index) => ({
-            id: value.id,
-            value: value.name,
-          }));
-          setDropDown((prevData) => ({
-            ...prevData,
-            sectionId: section1,
-          }));
-        } catch (err) {
-          console.log(err);
-        }
-      };
-      getSectionlist();
-      getCitydata();
-      getStatedata();
-      getStudentList();
+    if (isNewStudent || !ids.id) {
+      return;
     }
-    setLoading(false);
-  }, [ids, classs, sections]);
+
+    let cancelled = false;
+
+    const loadStudentForEdit = async () => {
+      setLoading(true);
+      try {
+        const [stateRes, cityRes, studentRes] = await Promise.all([
+          getState({ id: 0, nationId: 0 }, getToken()),
+          getCity({ id: 0, stateId: 0 }, getToken()),
+          getStudentlist({ userName: ids.id, classId: 0, sectionId: 0 }, getToken()),
+        ]);
+
+        if (cancelled) return;
+
+        setDropDown((prevData) => ({
+          ...prevData,
+          stateId: stateRes.map((value) => ({ id: value.id, value: value.name })),
+          cityId: cityRes.map((value) => ({ id: value.id, value: value.name })),
+        }));
+
+        const studentData = studentRes?.data?.[0];
+        if (!studentData) {
+          toast.error("Student not found.");
+          return;
+        }
+
+        setClasss(studentData.classId);
+        setSections(studentData.sectionId);
+        setState(studentData.stateId);
+        setCity(studentData.cityId);
+
+        if (studentData.classId) {
+          const sectionRes = await getsectionList(
+            { id: 0, classId: studentData.classId },
+            getToken()
+          );
+          if (!cancelled) {
+            setDropDown((prevData) => ({
+              ...prevData,
+              sectionId: sectionRes.data.map((value) => ({
+                id: value.id,
+                value: value.name,
+              })),
+            }));
+          }
+        }
+
+        formik.setValues({
+          admissionNo: studentData.admissionNo || ids.id,
+          firstName: studentData.firstName || "",
+          lastName: studentData.lastName || "",
+          genderId: studentData.genderId || "",
+          adharCardNo: studentData.adharcardNo
+            ? String(studentData.adharcardNo).replace(/\D/g, "")
+            : "",
+          pincode: studentData.pincode || "",
+          mobile: studentData.mobile || "",
+          emailId: studentData.emailId || "",
+          address1: studentData.address1 || "",
+          dateOfBirth: studentData.dateOfBirth || "",
+          dateOfJoining: studentData.dateOfJoining || "",
+          nationalityId: studentData.nationalityId || "",
+          cityId: studentData.cityId || "",
+          stateId: studentData.stateId || "",
+          classId: studentData.classId || "",
+          sectionId: studentData.sectionId || "",
+          religionId: studentData.religionId || "",
+          communityId: studentData.communityId || "",
+          bloodGroupId: studentData.bloodGroupId || "",
+          emisNo: studentData.emisNo || "",
+          rollNo: studentData.registrationNo || "-",
+          fatherName: studentData.fatherName || "",
+          fatherOccupation: studentData.fatherOccupation || "",
+          fatherQualification: studentData.fatherQualification || "",
+          fatherAnnualIncome: studentData.fatherAnnualIncome || "",
+          fatherMobileNo: studentData.parentMobileNo1 || "",
+          fatherEmailId: studentData.parentEmailId1 || "",
+          motherMobileNo: studentData.parentMobileNo2 || "",
+          motherEmailId: studentData.parentEmailId2 || "",
+          motherName: studentData.motherName || "",
+          motherOccupation: studentData.motherOccupation || "",
+          motherQualification: studentData.motherQualification || "",
+          motherAnnualIncome: studentData.motherAnnualIncome || "",
+          guardianMobileNo: studentData.parentMobileNo4 || "",
+          guardianEmail: studentData.parentEmailId3 || "",
+          guardianName: studentData.guardianName || "",
+          guardianOccupation: studentData.guardianOccupation || "",
+          guardianQualification: studentData.guardianQualification || "",
+          guardianAnnualincome: studentData.guardianAnnualIncome || "",
+          contactType: studentData.contactType || "parent",
+          isSiblings: studentData.isSiblings || "no",
+          siblingsId1: studentData.siblingId1 || "",
+          siblingsId2: studentData.siblingId2 || "",
+          siblingsId3: studentData.siblingId3 || "",
+          parentId1: studentData.parentId1 || "",
+          parentId2: studentData.parentId2 || "",
+          isParent: studentData.isParent || "no",
+          isPreviousSchool: studentData.isPreviousSchool || "no",
+          schoolName: studentData.previousSchool || "",
+          reasonForReleaving: studentData.reasonForReleaving || "",
+        });
+
+        setValues({
+          contactType: studentData.contactType || "parent",
+          isSiblings: studentData.isSiblings || "no",
+          isParent: studentData.isParent || "no",
+          isPreviousSchool: studentData.isPreviousSchool || "no",
+        });
+      } catch (err) {
+        console.error("Failed to load student for edit:", err);
+        toast.error("Could not load student details.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadStudentForEdit();
+    return () => {
+      cancelled = true;
+    };
+  }, [ids.id, isNewStudent]);
+
+  useEffect(() => {
+    if (!classs || isNewStudent) return;
+
+    const loadSections = async () => {
+      try {
+        const response = await getsectionList({ id: 0, classId: classs }, getToken());
+        setDropDown((prevData) => ({
+          ...prevData,
+          sectionId: response.data.map((value) => ({
+            id: value.id,
+            value: value.name,
+          })),
+        }));
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    loadSections();
+  }, [classs, isNewStudent]);
 
   useEffect(() => {
     setLoading(true);
     const getDropdownData = async (funcName, id, name) => {
       try {
-        const response = await funcName(id, TOKEN_KEY);
+        const response = await funcName(id, getToken());
         console.log(`${name} dropdown:`, response);
         const data = response.map((value, index) => ({
           id: value.id,
@@ -725,7 +745,7 @@ export default function Studendlist() {
     };
     const getStudent = async () => {
       try {
-        const response = await getStudentlist({ userName: 0 }, TOKEN_KEY);
+        const response = await getStudentlist({ userName: 0 }, getToken());
         // console.log(response);
         const studentlist = response.data.map((value, index) => ({
           id: value.admissionNo,
@@ -741,7 +761,7 @@ export default function Studendlist() {
     };
     const getSubject1 = async () => {
       try {
-        const response = await getSubject(0, TOKEN_KEY);
+        const response = await getSubject(0, getToken());
         const subjects = response.map((value, index) => ({
           id: value.id,
           value: value.name,
@@ -756,7 +776,7 @@ export default function Studendlist() {
     };
     const getExamstaffExam1 = async () => {
       try {
-        const response = await getExam({}, STAFF_KEY);
+        const response = await getExam({}, getToken());
         const examName = response.data.map((value, index) => ({
           id: value.id,
           value: value.exam,
@@ -772,7 +792,7 @@ export default function Studendlist() {
     const getStatedata = async () => {
       try {
         console.log("123456678", "123");
-        const response = await getState({ id: 0, nationId: state }, TOKEN_KEY);
+        const response = await getState({ id: 0, nationId: state }, getToken());
         console.log("state ", response);
         const data = response.map((value, index) => ({
           id: value.id,
@@ -791,7 +811,7 @@ export default function Studendlist() {
         console.log("123456678", "1223");
 
         console.log(city, "name");
-        const response = await getCity({ id: 0, stateId: city }, TOKEN_KEY);
+        const response = await getCity({ id: 0, stateId: city }, getToken());
         console.log("city ", response);
         const data = response.map((value, index) => ({
           id: value.id,
@@ -807,7 +827,7 @@ export default function Studendlist() {
     };
     const getClasslist = async () => {
       try {
-        const response = await getclassList({ id: 0 }, TOKEN_KEY);
+        const response = await getclassList({ id: 0 }, getToken());
         const class1 = response.data.map((value, index) => ({
           id: value.id,
           value: value.name,
@@ -824,7 +844,7 @@ export default function Studendlist() {
       try {
         const response = await getsectionList(
           { id: 0, classId: classs },
-          TOKEN_KEY
+          getToken()
         );
         const section1 = response.data.map((value, index) => ({
           id: value.id,
@@ -878,7 +898,7 @@ export default function Studendlist() {
           : formik.values.siblingsId3;
     const fetchData = async () => {
       try {
-        const response = await getStudentlist({ userName: data }, TOKEN_KEY);
+        const response = await getStudentlist({ userName: data }, getToken());
         console.log(response.data, "gokul")
         if (view === 1) {
           updateStudentData("sibling1", response.data);
@@ -908,8 +928,8 @@ export default function Studendlist() {
         : formik.values.parentId2;
     const fetchData = async () => {
       try {
-        const response = await getStafflist(data, TOKEN_KEY);
-        const response1 = await getAdminlist(data, TOKEN_KEY);
+        const response = await getStafflist(data, getToken());
+        const response1 = await getAdminlist(data, getToken());
         let dataValue = response.data.length !== 0 ? response.data : response1.data.length !== 0 ? response1.data : [];
         if (viewStaff === 1) {
           updateStaffData("parent1", dataValue);
@@ -954,18 +974,18 @@ export default function Studendlist() {
     setModalOpen(false);
   };
   const handleBack = () => {
-    navigate("/list", { state: "Student List" });
+    navigate("/students");
   };
   return (
     <div>
       <div className="table-container">
-        <div>
+        {/* <div>
           <ul
             class="breadcrumb"
             style={{ display: "flex", alignItems: "center" }}
           >
             <li>
-              <Link to={"/list"} state={"Student List"}>
+              <Link to="/students">
                 <a style={{ color: "#051F3E" }}>
                   <h4>Student</h4>
                 </a>
@@ -975,7 +995,7 @@ export default function Studendlist() {
               <a>Basic Info</a>
             </li>
           </ul>
-        </div>
+        </div> */}
         {loading ? (
           <div className="mt-5 mb-5">
             <Loader />
@@ -988,75 +1008,41 @@ export default function Studendlist() {
             <div className="table-main">
               <div
                 class="input-group"
-                style={{ gap: "20px", marginTop: "10px" }}
+                style={{ gap: "20px" }}
               >
-                <div class="input-container-registers">
-                  <div class="input-container">
-                    <label class="input-label">
-                      Admission No
-                      <span
+                {isNewStudent && (
+                  <div class="input-container-registers">
+                    <div class="input-container">
+                      <label class="input-label">
+                        Admission No
+                        <span style={{ color: "#64748b", fontWeight: 400, paddingLeft: "5px" }}>
+                          (optional — auto-generated if blank)
+                        </span>
+                      </label>
+                      <input
                         style={{
-                          color: "red",
-                          fontWeight: "400",
-                          paddingLeft: "5px",
-                        }}
-                      >
-                        *
-                      </span>{" "}
-                    </label>
-                    <input
-                      ref={inputRef}
-                      style={{
-                        border: `1px solid ${(formik.touched.admissionNo &&
-                          formik.errors.admissionNo) ||(admissionValidate?.length>0 && formik.values.admissionNo)
-                          ? "red"
-                          : "#cdcbcb"
+                          border: `1px solid ${
+                            admissionValidate?.length > 0 ? "red" : "#cdcbcb"
                           }`,
-                        width: "240px"
-                      }}
-                      disabled={ids.id !== ":id" ? true : false}
-                      className={`effect-3 size ${formik.touched.admissionNo && formik.errors.admissionNo
-                        ? "is-invalid"
-                        : ""
-                        }`}
-                      type="text"
-                      name="admissionNo"
-                      onChange={formik.handleChange}
-                      // onBlur={(e) => {
-                      //   formik.handleBlur(e)
-                      //   SetviewAdminNo(!viewAdminNo)
-                      // }}
-                      onBlur={formik.handleBlur}
-                      value={formik.values.admissionNo}
-                    />
-                    {formik.touched.admissionNo && formik.errors.admissionNo  ? (
-                      <div
-                        className="text-danger"
-                        style={{
-                          color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          width: "230px",
                         }}
-                      >
-                        {formik.errors.admissionNo}.
-                      </div>
-                    ) : null}
-                       {admissionValidate?.length>0 && formik.values.admissionNo ? (
-                      <div
-                        className="text-danger"
-                        style={{
-                          color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
-                        }}
-                      >
-                        Admission no. already exists.
-                      </div>
-                    ) : null}
+                        className="effect-3 size"
+                        type="text"
+                        name="admissionNo"
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        value={formik.values.admissionNo}
+                        placeholder="e.g. KST100013"
+                      />
+                      {admissionValidate?.length > 0 && (
+                        <div className="text-danger" style={{ color: "red", fontSize: "12px" }}>
+                          This admission number is already registered
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
+               
                 <div class="input-container-registers">
                   <div class="input-container">
                     <label class="input-label">
@@ -1077,7 +1063,7 @@ export default function Studendlist() {
                           ? "red"
                           : "#cdcbcb"
                           }`,
-                        width: "240px"
+                        width: "230px"
                       }}
                       className={`effect-3 size ${formik.touched.firstName && formik.errors.firstName
                         ? "is-invalid"
@@ -1095,7 +1081,6 @@ export default function Studendlist() {
                         style={{
                           color: "red",
                           fontSize: "12px",
-                          marginBottom: "-10px",
                           marginTop: "1px",
                         }}
                       >
@@ -1191,7 +1176,6 @@ export default function Studendlist() {
                         style={{
                           color: "red",
                           fontSize: "12px",
-                          marginBottom: "-10px",
                           marginTop: "1px",
                         }}
                       >
@@ -1203,7 +1187,7 @@ export default function Studendlist() {
               </div>
               <div
                 class="input-group"
-                style={{ gap: "15px", marginTop: "-15px" }}
+                style={{ gap: "20px" }}
               >
                 <div class="input-container-registers">
                   <div class="input-container">
@@ -1226,7 +1210,7 @@ export default function Studendlist() {
                           ? "red"
                           : "#cdcbcb"
                           }`,
-                        width: "240px"
+                        width: "230px"
                       }}
                       className={`effect-3 size ${formik.touched.dateOfBirth && formik.errors.dateOfBirth
                         ? "is-invalid"
@@ -1245,7 +1229,6 @@ export default function Studendlist() {
                         style={{
                           color: "red",
                           fontSize: "12px",
-                          marginBottom: "-10px",
                           marginTop: "1px",
                         }}
                       >
@@ -1298,7 +1281,6 @@ export default function Studendlist() {
                         style={{
                           color: "red",
                           fontSize: "12px",
-                          marginBottom: "-10px",
                           marginTop: "1px",
                         }}
                       >
@@ -1348,7 +1330,6 @@ export default function Studendlist() {
                         style={{
                           color: "red",
                           fontSize: "12px",
-                          marginBottom: "-10px",
                           marginTop: "1px",
                         }}
                       >
@@ -1398,7 +1379,6 @@ export default function Studendlist() {
                         style={{
                           color: "red",
                           fontSize: "12px",
-                          marginBottom: "-10px",
                           marginTop: "1px",
                         }}
                       >
@@ -1410,7 +1390,7 @@ export default function Studendlist() {
               </div>
               <div
                 class="input-group"
-                style={{ gap: "15px", marginTop: "-15px" }}
+                style={{ gap: "20px" }}
               >
                 <div class="input-container-registers">
                   <div class="input-container">
@@ -1450,9 +1430,7 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.address1}
@@ -1497,9 +1475,7 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.pincode}
@@ -1545,9 +1521,7 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.mobile}
@@ -1591,9 +1565,7 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.emailId}
@@ -1604,9 +1576,9 @@ export default function Studendlist() {
               </div>
               <div
                 class="input-group"
-                style={{ gap: "15px", marginTop: "-76px" }}
+                style={{ gap: "20px" }}
               >
-                <div class="input-container-registers">
+                {/* <div class="input-container-registers">
                   <div class="input-container">
                     <label class="input-label"></label>
                     <select
@@ -1636,16 +1608,14 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.religionId}
                       </div>
                     ) : null}
                   </div>
-                </div>
+                </div> */}
                 <div class="input-container-registers">
                   <div class="input-container">
                     <label class="input-label">
@@ -1686,9 +1656,7 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.religionId}
@@ -1737,9 +1705,7 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.communityId}
@@ -1789,9 +1755,7 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.bloodGroupId}
@@ -1802,7 +1766,7 @@ export default function Studendlist() {
               </div>
               <div
                 class="input-group"
-                style={{ gap: "15px", marginTop: "-15px" }}
+                style={{ gap: "20px" }}
               >
                 <div className="input-container-registers">
                   <div className="input-container">
@@ -1842,9 +1806,7 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.adharCardNo}
@@ -1892,9 +1854,7 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.classId}
@@ -1942,9 +1902,7 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.sectionId}
@@ -1992,9 +1950,7 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.dateOfJoining}
@@ -2006,8 +1962,7 @@ export default function Studendlist() {
               <div
                 class="input-group"
                 style={{
-                  gap: "15px",
-                  marginTop: "-15px",
+                  gap: "20px",
                   display: "flex",
                   justifyContent: "Start",
                 }}
@@ -2028,7 +1983,7 @@ export default function Studendlist() {
                     </label>
                     <input
                       style={{
-                        width: "240px",
+                        width: "230px",
                         border: `1px solid ${formik.touched.emisNo && formik.errors.emisNo
                           ? "red"
                           : "#cdcbcb"
@@ -2049,9 +2004,7 @@ export default function Studendlist() {
                         className="text-danger"
                         style={{
                           color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
+                          fontSize: "12px"
                         }}
                       >
                         {formik.errors.emisNo}
@@ -2064,7 +2017,6 @@ export default function Studendlist() {
                     <div class="input-container-registers">
                       <div
                         class="input-container"
-                        style={{ marginLeft: "-52px" }}
                       >
                         <label class="input-label">
                           Roll No
@@ -2080,7 +2032,7 @@ export default function Studendlist() {
                         </label>
                         <input
                           style={{
-                            width: "245px",
+                            width: "230px",
                             border: `1px solid ${formik.touched.rollNo && formik.errors.rollNo
                               ? "red"
                               : "#cdcbcb"
@@ -2102,9 +2054,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             {formik.errors.rollNo}
@@ -2123,13 +2073,13 @@ export default function Studendlist() {
                   style={{
                     padding: "5px",
                     fontSize: "16px",
-                    fontWeight: "400",
+                    fontWeight: "600",
                   }}
                 >
                   Contact Info{" "}
                 </a>
               </div>
-              <div style={{ display: "flex", marginTop: "10px" }}>
+              <div style={{ display: "flex" }}>
                 <div>
                   <label
                     style={{
@@ -2175,7 +2125,7 @@ export default function Studendlist() {
                 <>
                   <div
                     class="input-group"
-                    style={{ gap: "15px", marginTop: "15px" }}
+                    style={{ gap: "20px", marginTop: "15px" }}
                   >
                     <div class="input-container-registers">
                       <div class="input-container">
@@ -2198,7 +2148,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.fatherName &&
                             formik.errors.fatherName
@@ -2217,9 +2167,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter father name
@@ -2248,7 +2196,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.fatherQualification &&
                             formik.errors.fatherQualification
@@ -2267,9 +2215,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter father qualification
@@ -2298,7 +2244,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.fatherOccupation &&
                             formik.errors.fatherOccupation
@@ -2317,9 +2263,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter father occupation
@@ -2348,7 +2292,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.fatherAnnualIncome &&
                             formik.errors.fatherAnnualIncome
@@ -2368,9 +2312,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter father annual income
@@ -2382,8 +2324,7 @@ export default function Studendlist() {
                   <div
                     class="input-group"
                     style={{
-                      gap: "15px",
-                      marginTop: "-10px",
+                      gap: "20px",
                       display: "flex",
                       justifyContent: "start",
                     }}
@@ -2409,7 +2350,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.fatherMobileNo &&
                             formik.errors.fatherMobileNo
@@ -2431,9 +2372,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter valid father mobile No
@@ -2443,7 +2382,6 @@ export default function Studendlist() {
                     </div>
                     <div
                       class="input-container-registers"
-                      style={{ marginLeft: "-51px" }}
                     >
                       <div class="input-container">
                         <label class="input-label">
@@ -2466,7 +2404,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.fatherEmailId &&
                             formik.errors.fatherEmailId
@@ -2490,7 +2428,6 @@ export default function Studendlist() {
                             style={{
                               color: "red",
                               fontSize: "12px",
-                              marginBottom: "-10px",
                               marginTop: "1px",
                             }}
                           >
@@ -2502,7 +2439,7 @@ export default function Studendlist() {
                   </div>
                   <div
                     class="input-group"
-                    style={{ gap: "15px", marginTop: "15px" }}
+                    style={{ gap: "20px" }}
                   >
                     <div class="input-container-registers">
                       <div class="input-container">
@@ -2525,7 +2462,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.motherName &&
                             formik.errors.motherName
@@ -2544,9 +2481,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter mother name
@@ -2575,7 +2510,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.motherQualification &&
                             formik.errors.motherQualification
@@ -2594,9 +2529,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter mother qualification
@@ -2625,7 +2558,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.motherOccupation &&
                             formik.errors.motherOccupation
@@ -2644,9 +2577,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter mother occupation
@@ -2675,7 +2606,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.motherAnnualIncome &&
                             formik.errors.motherAnnualIncome
@@ -2695,9 +2626,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter mother annual income
@@ -2709,8 +2638,7 @@ export default function Studendlist() {
                   <div
                     class="input-group"
                     style={{
-                      gap: "15px",
-                      marginTop: "-10px",
+                      gap: "20px",
                       display: "flex",
                       justifyContent: "start",
                     }}
@@ -2736,7 +2664,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.motherMobileNo &&
                             formik.errors.motherMobileNo
@@ -2757,9 +2685,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter valid mother Mobile No
@@ -2769,7 +2695,6 @@ export default function Studendlist() {
                     </div>
                     <div
                       class="input-container-registers"
-                      style={{ marginLeft: "-51px" }}
                     >
                       <div class="input-container">
                         <label class="input-label">
@@ -2791,7 +2716,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.motherEmailId &&
                             formik.errors.motherEmailId
@@ -2814,9 +2739,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter valid mother e-mail
@@ -2876,7 +2799,7 @@ export default function Studendlist() {
                 <>
                   <div
                     class="input-group"
-                    style={{ gap: "15px", marginTop: "14px" }}
+                    style={{ gap: "15px" }}
                   >
                     <div class="input-container-registers">
                       <div class="input-container">
@@ -2899,7 +2822,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.guardianName &&
                             formik.errors.guardianName
@@ -2919,7 +2842,6 @@ export default function Studendlist() {
                             style={{
                               color: "red",
                               fontSize: "12px",
-                              marginBottom: "-10px",
                               marginTop: "1px",
                             }}
                           >
@@ -2950,7 +2872,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.guardianQualification &&
                             formik.errors.guardianQualification
@@ -2969,9 +2891,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter guardian qualification
@@ -3000,7 +2920,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.guardianOccupation &&
                             formik.errors.guardianOccupation
@@ -3019,9 +2939,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "12px",
-                              marginBottom: "-10px",
-                              marginTop: "1px",
+                              fontSize: "12px"
                             }}
                           >
                             Please enter guardian occupation
@@ -3050,7 +2968,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "240px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.guardianAnnualincome &&
                             formik.errors.guardianAnnualincome
@@ -3071,7 +2989,6 @@ export default function Studendlist() {
                             style={{
                               color: "red",
                               fontSize: "12px",
-                              marginBottom: "-10px",
                               marginTop: "1px",
                             }}
                           >
@@ -3110,7 +3027,7 @@ export default function Studendlist() {
                               ? "red"
                               : "#cdcbcb"
                               }`,
-                            width: "248px"
+                            width: "230px"
                           }}
                           className={`effect-3 size ${formik.touched.guardianMobileNo &&
                             formik.errors.guardianMobileNo
@@ -3133,7 +3050,6 @@ export default function Studendlist() {
                             style={{
                               color: "red",
                               fontSize: "12px",
-                              marginBottom: "-10px",
                               marginTop: "1px",
                             }}
                           >
@@ -3190,7 +3106,6 @@ export default function Studendlist() {
                             style={{
                               color: "red",
                               fontSize: "12px",
-                              marginBottom: "-10px",
                               marginTop: "1px",
                             }}
                           >
@@ -3249,9 +3164,7 @@ export default function Studendlist() {
                     className="text-danger"
                     style={{
                       color: "red",
-                      fontSize: "12px",
-                      marginBottom: "-10px",
-                      marginTop: "-10px",
+                      fontSize: "12px"
                     }}
                   >
                     {formik.errors.isSiblings}
@@ -3296,8 +3209,7 @@ export default function Studendlist() {
                           className="text-danger"
                           style={{
                             color: "red",
-                            fontSize: "11px",
-                            marginBottom: "-12px",
+                            fontSize: "11px"
                           }}
                         >
                           Sibling1 admission no. wrong
@@ -3309,8 +3221,7 @@ export default function Studendlist() {
                             className="text-danger"
                             style={{
                               color: "red",
-                              fontSize: "11px",
-                              marginBottom: "-12px",
+                              fontSize: "11px"
                             }}
                           >
                             Admission no. is required
@@ -4148,7 +4059,7 @@ export default function Studendlist() {
                             ? "red"
                             : "#cdcbcb"
                             }`,
-                          width: "240px"
+                          width: "230px"
                         }}
                         className={`effect-3 size ${formik.touched.parentId1 && formik.errors.parentId1
                           ? "is-invalid"
@@ -4781,7 +4692,7 @@ export default function Studendlist() {
                     </div>
 
                     <input
-                      style={{ width: "200px" }}
+                      style={{ width: "230px" }}
                       className={`effect-3 size ${formik.touched.reasonForReleaving &&
                         formik.errors.reasonForReleaving
                         ? "is-invalid"
@@ -4843,7 +4754,7 @@ export default function Studendlist() {
       </div>
       <ToastContainer
         position="top-right"
-        autoClose={2000}
+        autoClose={2300}
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick

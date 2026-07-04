@@ -9,7 +9,7 @@ import {
   getSubject,
   studentReport,
 } from "../../services/api";
-import { STAFF_KEY, TOKEN_KEY } from "../../services/auth";
+import { getToken } from "../../services/auth";
 import { useNavigate } from "react-router-dom";
 
 export default function Assignment() {
@@ -106,7 +106,7 @@ export default function Assignment() {
           startDate: "2023-12-20",
           endDate: "2023-12-30",
         },
-        TOKEN_KEY
+        getToken()
       );
 
       const studentDetails = studentDetailsResponse.data;
@@ -132,7 +132,7 @@ export default function Assignment() {
             startDate: "2023-12-20",
             endDate: "2023-12-30",
           },
-          STAFF_KEY
+          getToken()
         );
         const resultData = response.data.map((item) => ({
           id: item.id,

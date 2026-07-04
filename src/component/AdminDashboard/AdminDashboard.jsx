@@ -1,67 +1,63 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import "./AdminDashboard.css";
+import "../../assets/illustrations/schoolTheme.css";
+import { StudentMascot } from "../../assets/illustrations/SchoolIllustrations";
+import { getUserData, getToken } from "../../services/auth";
+import { getAdminDashboardSummary } from "../../services/api";
+import { runApi } from "../../utils/apiHelper";
+import { useNavigate } from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend, PieChart, Pie, Cell,
-  AreaChart, Area,
+  ResponsiveContainer, Legend, PieChart, Pie, Cell, AreaChart, Area,
 } from "recharts";
 
-/* ══════════════════════════════════════
-   ENGLISH COLOUR PALETTE
-   Navy      #1B3A5C  – Royal Navy Blue
-   Burgundy  #7D1128  – Windsor Burgundy
-   Forest    #2D6A4F  – Forest Green
-   Gold      #B8860B  – Old Gold
-   Slate     #4A5568  – Slate Grey
-   Teal      #1A5F7A  – Cambridge Teal
-   Crimson   #C0392B  – English Crimson
-   Ochre     #C47A1E  – English Ochre
-══════════════════════════════════════ */
-const ENG = {
-  navy:    "#1B3A5C",
-  burgundy:"#7D1128",
-  forest:  "#2D6A4F",
-  gold:    "#B8860B",
-  slate:   "#4A5568",
-  teal:    "#1A5F7A",
-  crimson: "#C0392B",
-  ochre:   "#C47A1E",
-};
+const P = "#2D3A8C";
+const O = "#E8541A";
 
-const statCards = [
-  { label: "Total Students",   value: "1,240",    sub: "+24 this month",          icon: "bx bxs-group",          color: ENG.navy,    bg: "#dce8f5", trend: "+2.0%",    up: true  },
-  { label: "Total Teachers",   value: "86",       sub: "42 male · 44 female",     icon: "bx bxs-user-badge",     color: ENG.teal,    bg: "#d6edf5", trend: "+1.2%",    up: true  },
-  { label: "Attendance Today", value: "94.6%",    sub: "1,174 / 1,240 present",   icon: "bx bxs-calendar-check", color: ENG.forest,  bg: "#d4edde", trend: "+3.1%",    up: true  },
-  { label: "Fees Collected",   value: "₹4,82,000",sub: "This month",              icon: "bx bxs-wallet-alt",     color: ENG.gold,    bg: "#f5ecd1", trend: "+8.4%",    up: true  },
-  { label: "Pending Fees",     value: "₹68,500",  sub: "42 students pending",     icon: "bx bxs-error-circle",   color: ENG.crimson, bg: "#f5d5d0", trend: "-12%",     up: false },
-  { label: "Total Classes",    value: "32",       sub: "8 grades · 4 sections",   icon: "bx bxs-school",         color: ENG.slate,   bg: "#e2e6ed", trend: "Stable",   up: true  },
-  { label: "Upcoming Exams",   value: "6",        sub: "Next: Math — Dec 20",     icon: "bx bxs-notepad",        color: ENG.burgundy,bg: "#f0d5da", trend: "This week", up: true  },
-  { label: "Total Parents",    value: "980",      sub: "+8 registered",           icon: "bx bxs-home-heart",     color: ENG.ochre,   bg: "#f5e6cc", trend: "+0.8%",    up: true  },
+const DEFAULT_STAT_CARDS = [
+  { label: "Total Students", value: "1,240", sub: "↑ 24 this month", icon: "bx bxs-group", color: "#2D3A8C", bg: "#eef0fb" },
+  { label: "Total Teachers", value: "86", sub: "Active staff", icon: "bx bxs-user-badge", color: "#0891b2", bg: "#e0f7fa" },
+  { label: "Attendance Today", value: "94.6%", sub: "1,176 / 1,240 present", icon: "bx bxs-calendar-check", color: "#16a34a", bg: "#dcfce7" },
+  { label: "Fees Collected", value: "₹4,82,000", sub: "This month", icon: "bx bxs-wallet-alt", color: "#d97706", bg: "#fef3c7" },
+  { label: "Pending Fees", value: "₹68,500", sub: "42 students pending", icon: "bx bxs-error-circle", color: "#E8541A", bg: "#fdf0eb" },
+  { label: "Upcoming Exams", value: "6", sub: "Scheduled exams", icon: "bx bxs-notepad", color: "#7c3aed", bg: "#f5f3ff" },
+  { label: "Total Parents", value: "980", sub: "↑ 8 registered", icon: "bx bxs-home-heart", color: "#0891b2", bg: "#e0f7fa" },
+  { label: "Upcoming Events", value: "988", sub: "Next: Math - Dec 20", icon: "bx bxs-calendar-event", color: "#E8541A", bg: "#fdf0eb" },
 ];
 
+const fmtCount = (n) => (n == null ? null : Number(n).toLocaleString("en-IN"));
+
+const row2Cards = [
+
+];
+
+const dateCard = {
+  date: "May 20, 2025",
+  day: "Tuesday",
+  classes: "32",
+  classSub: "8 grades • 4 sections",
+};
+
 const attendanceData = [
-  { day: "Mon", present: 1180, absent: 60 },
-  { day: "Tue", present: 1160, absent: 80 },
-  { day: "Wed", present: 1200, absent: 40 },
-  { day: "Thu", present: 1140, absent: 100 },
-  { day: "Fri", present: 1174, absent: 66 },
+  { day: "Mon", Present: 1180, Absent: 60 },
+  { day: "Tue", Present: 1160, Absent: 80 },
+  { day: "Wed", Present: 1200, Absent: 40 },
+  { day: "Thu", Present: 1140, Absent: 100 },
+  { day: "Fri", Present: 1174, Absent: 66 },
+  { day: "Sat", Present: 900, Absent: 30 },
 ];
 
 const attendanceTrend = [
-  { month: "Jul", pct: 91 },
-  { month: "Aug", pct: 88 },
-  { month: "Sep", pct: 93 },
-  { month: "Oct", pct: 95 },
-  { month: "Nov", pct: 92 },
-  { month: "Dec", pct: 94 },
+  { month: "Jul", pct: 91 }, { month: "Aug", pct: 88 }, { month: "Sep", pct: 93 },
+  { month: "Oct", pct: 95 }, { month: "Nov", pct: 92 }, { month: "Dec", pct: 94 },
 ];
 
-/* Pie uses English palette — large dominant + distinct accent slices */
 const feeData = [
-  { name: "Collected",   value: 482000, color: ENG.navy    },
-  { name: "Pending",     value: 68500,  color: ENG.crimson },
-  { name: "Waived",      value: 15000,  color: ENG.gold    },
-  { name: "Scholarship", value: 24500,  color: ENG.forest  },
+  { name: "Collected", value: 482000, color: "#4F46E5" },
+  { name: "Pending", value: 68500, color: "#ef4444" },
+  { name: "Concession", value: 45000, color: "#f59e0b" },
+  { name: "Scholarship", value: 25000, color: "#8b5cf6" },
+  { name: "Waived", value: 15000, color: "#22c55e" },
 ];
 
 const feeMonthly = [
@@ -73,58 +69,160 @@ const feeMonthly = [
   { month: "Dec", collected: 482000, pending: 68500 },
 ];
 
+const quickActions = [
+  { label: "Add Student", icon: "bx bxs-user-plus", color: "#2D3A8C", bg: "#eef0fb", path: "/studentlist/new" },
+  { label: "Add Staff", icon: "bx bxs-user-check", color: "#16a34a", bg: "#dcfce7", path: "/stafflist/new" },
+  { label: "Collect Fee", icon: "bx bx-rupee", color: "#E8541A", bg: "#fdf0eb", path: "/" },
+  { label: "Create Exam", icon: "bx bxs-notepad", color: "#7c3aed", bg: "#f5f3ff", path: "/exam" },
+  { label: "Send Notice", icon: "bx bxs-send", color: "#0891b2", bg: "#e0f7fa", path: "/" },
+  { label: "Generate Report", icon: "bx bxs-bar-chart-alt-2", color: "#d97706", bg: "#fef3c7", path: "/" },
+];
+
 const upcomingExams = [
-  { subject: "Mathematics",    cls: "Class 10", date: "Dec 20", type: "Final",     color: ENG.navy    },
-  { subject: "Science",        cls: "Class 9",  date: "Dec 22", type: "Unit",      color: ENG.forest  },
-  { subject: "English",        cls: "Class 8",  date: "Dec 24", type: "Mid-term",  color: ENG.teal    },
-  { subject: "Social Studies", cls: "Class 7",  date: "Dec 26", type: "Unit",      color: ENG.burgundy},
-  { subject: "Hindi",          cls: "Class 10", date: "Dec 28", type: "Final",     color: ENG.gold    },
-  { subject: "Computer",       cls: "Class 6",  date: "Dec 30", type: "Practical", color: ENG.slate   },
+  { subject: "Mathematics", cls: "Class 10", date: "Dec 20", type: "Final", color: "#2D3A8C" },
+  { subject: "Science", cls: "Class 9", date: "Dec 22", type: "Unit", color: "#16a34a" },
+  { subject: "English", cls: "Class 8", date: "Dec 24", type: "Mid-term", color: "#0891b2" },
+  { subject: "Social Studies", cls: "Class 7", date: "Dec 26", type: "Unit", color: "#E8541A" },
+  { subject: "Hindi", cls: "Class 10", date: "Dec 28", type: "Final", color: "#d97706" },
 ];
 
 const recentActivity = [
-  { avatar: "AA", name: "Aarav Sharma",  action: "Enrolled in Class 10A",  time: "10 min ago", color: ENG.navy     },
-  { avatar: "PR", name: "Priya Nair",    action: "Fee payment received",   time: "32 min ago", color: ENG.forest   },
-  { avatar: "MK", name: "Mr. Karthik",   action: "Uploaded timetable",     time: "1 hr ago",   color: ENG.teal     },
-  { avatar: "SV", name: "Sneha Verma",   action: "Attendance marked — 9B", time: "2 hrs ago",  color: ENG.burgundy },
-  { avatar: "RG", name: "Rahul Gupta",   action: "Exam result published",  time: "Yesterday",  color: ENG.gold     },
+  { avatar: "AA", name: "Aarav Sharma", action: "Enrolled in Class 10A", time: "10 min ago", color: "#2D3A8C" },
+  { avatar: "PN", name: "Priya Nair", action: "Fee payment received", time: "30 min ago", color: "#16a34a" },
+  { avatar: "MK", name: "Mr. Karthik", action: "Uploaded timetable", time: "1 hr ago", color: "#0891b2" },
+  { avatar: "SV", name: "Sneha Verma", action: "Attendance marked - 9B", time: "2 hrs ago", color: "#7c3aed" },
+  { avatar: "RG", name: "Rahul Gupta", action: "Exam result published", time: "Yesterday", color: "#d97706" },
 ];
 
 const classAttendance = [
-  { cls: "Class 10", present: 118, total: 120, pct: 98, color: ENG.navy    },
-  { cls: "Class 9",  present: 112, total: 120, pct: 93, color: ENG.teal    },
-  { cls: "Class 8",  present: 108, total: 115, pct: 94, color: ENG.forest  },
-  { cls: "Class 7",  present: 105, total: 110, pct: 95, color: ENG.slate   },
-  { cls: "Class 6",  present: 98,  total: 108, pct: 91, color: ENG.gold    },
-  { cls: "Class 5",  present: 95,  total: 105, pct: 90, color: ENG.ochre   },
+  { cls: "Class 10", present: 118, total: 120, pct: 98, color: "#2D3A8C" },
+  { cls: "Class 9", present: 112, total: 120, pct: 93, color: "#0891b2" },
+  { cls: "Class 8", present: 104, total: 115, pct: 90, color: "#16a34a" },
+  { cls: "Class 7", present: 105, total: 110, pct: 95, color: "#E8541A" },
+  { cls: "Class 6", present: 90, total: 108, pct: 83, color: "#d97706" },
+  { cls: "Class 5", present: 85, total: 105, pct: 81, color: "#7c3aed" },
+];
+
+const notifications = [
+  { icon: "bx bxs-error-circle", color: "#E8541A", bg: "#fdf0eb", val: "42", label: "Fee defaulters" },
+  { icon: "bx bxs-notepad", color: "#d97706", bg: "#fef3c7", val: "6", label: "Exams this month" },
+  { icon: "bx bxs-user-x", color: "#2D3A8C", bg: "#eef0fb", val: "3", label: "Staff on leave" },
+  { icon: "bx bxs-user-plus", color: "#16a34a", bg: "#dcfce7", val: "18", label: "New admissions" },
+  { icon: "bx bxs-bus", color: "#0891b2", bg: "#e0f7fa", val: "2", label: "Transport alerts" },
 ];
 
 const fmt = (v) =>
   v >= 100000 ? `₹${(v / 100000).toFixed(1)}L` : `₹${(v / 1000).toFixed(0)}K`;
 
-const TICK = { fontSize: 12, fill: "#6b7280", fontFamily: "Poppins" };
-const TOOLTIP_STYLE = { borderRadius: 10, border: "none", boxShadow: "0 4px 14px rgba(0,0,0,0.09)", fontSize: 12, fontFamily: "Poppins" };
+const TICK = { fontSize: 11, fill: "#6b7280", fontFamily: "Inter" };
+const TT = { borderRadius: 10, border: "none", boxShadow: "0 4px 14px rgba(0,0,0,.09)", fontSize: 12 };
 
 const AdminDashboard = () => {
   const [attView, setAttView] = useState("week");
   const [feeView, setFeeView] = useState("pie");
+  const [summary, setSummary] = useState(null);
+  const navigate = useNavigate();
+  const userName = getUserData("adminName") || getUserData("staffName") || "Admin";
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    runApi(() => getAdminDashboardSummary(token), {
+      onSuccess: (res) => setSummary(res?.data || null),
+    });
+  }, []);
+
+  const statCards = useMemo(() => {
+    if (!summary) return DEFAULT_STAT_CARDS;
+    return DEFAULT_STAT_CARDS.map((card) => {
+      if (card.label === "Total Students" && summary.totalStudents != null) {
+        const sub = summary.newAdmissionsThisMonth != null
+          ? `↑ ${summary.newAdmissionsThisMonth} this month`
+          : card.sub;
+        return { ...card, value: fmtCount(summary.totalStudents), sub };
+      }
+      if (card.label === "Total Teachers" && summary.totalStaff != null) {
+        return { ...card, value: fmtCount(summary.totalStaff) };
+      }
+      if (card.label === "Upcoming Exams" && summary.upcomingExams != null) {
+        return { ...card, value: fmtCount(summary.upcomingExams) };
+      }
+      return card;
+    });
+  }, [summary]);
+
+  const welcomeStudents = summary?.totalStudents != null ? fmtCount(summary.totalStudents) : "1,240";
+  const welcomeTeachers = summary?.totalStaff != null ? fmtCount(summary.totalStaff) : "86";
   const totalFee = feeData.reduce((s, d) => s + d.value, 0);
+  const collectedAmt = feeData.find((d) => d.name === "Collected")?.value || 0;
+  const pendingAmt = feeData.find((d) => d.name === "Pending")?.value || 0;
+  const collectionRate = Math.round((collectedAmt / (collectedAmt + pendingAmt)) * 100);
+  const today = new Date();
+  const dateStr = today.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
+  const dayStr = today.toLocaleDateString("en-IN", { weekday: "long" });
 
   return (
     <div className="kst-dash">
 
-      {/* ── Row 1: 8 Stat Cards ── */}
-      <div className="kst-stat-row">
-        {statCards.map((c, i) => (
-          <div className="kst-stat-card" key={i} style={{ borderTop: `3px solid ${c.color}` }}>
-            <div className="kst-sc-top">
-              <div className="kst-stat-icon" style={{ background: c.bg, color: c.color }}>
+      <div className="kst-welcome-banner">
+        <div className="kst-welcome-text">
+          <h2>Welcome back, {userName}!</h2>
+          <p>Manage students, staff, exams &amp; fees - all in one place.</p>
+          <div className="kst-welcome-tags">
+            <span className="kst-welcome-tag"><i className="bx bxs-group"></i> {welcomeStudents} Students</span>
+            <span className="kst-welcome-tag"><i className="bx bxs-chalkboard"></i> {welcomeTeachers} Teachers</span>
+            <span className="kst-welcome-tag"><i className="bx bxs-calendar-check"></i> 94.6% Attendance</span>
+          </div>
+        </div>
+        <StudentMascot className="kst-welcome-art" width={130} />
+      </div>
+
+      {/*  Row 1: 5 stat cards + date/classes widget  */}
+      <div className="kst-r1">
+        <div className="kst-stat-row5">
+          {statCards.map((c, i) => (
+            <div className="kst-stat-card" key={i}>
+              <div className="kst-sc-icon" style={{ background: c.bg, color: c.color }}>
                 <i className={c.icon}></i>
               </div>
-              <span className={`kst-sc-trend ${c.up ? "up" : "down"}`}>
-                <i className={`bx ${c.up ? "bx-trending-up" : "bx-trending-down"}`}></i>
-                {c.trend}
-              </span>
+              <div className="kst-sc-body">
+                <div className="kst-stat-val">{c.value}</div>
+                <div className="kst-stat-label">{c.label}</div>
+                <div className="kst-stat-sub">{c.sub}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Date + classes widget */}
+        <div className="kst-date-widget">
+          <div className="kst-date-top">
+            <i className="bx bx-calendar" style={{ color: P, fontSize: 18 }}></i>
+            <div>
+              <div className="kst-date-val">{dateStr}</div>
+              <div className="kst-date-day">{dayStr}</div>
+            </div>
+          </div>
+          <div className="kst-date-divider"></div>
+          <div className="kst-classes-block">
+            <div className="kst-sc-icon" style={{ background: "#eef0fb", color: P }}>
+              <i className="bx bxs-school"></i>
+            </div>
+            <div>
+              <div className="kst-classes-val">32</div>
+              <div className="kst-classes-label">Total Classes</div>
+              <div className="kst-stat-sub">8 grades • 4 sections</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/*  Row 2: 3 more stat cards  */}
+      <div className="kst-stat-row3">
+        {row2Cards.map((c, i) => (
+          <div className="kst-stat-card kst-stat-card--wide" key={i}>
+            <div className="kst-sc-icon" style={{ background: c.bg, color: c.color }}>
+              <i className={c.icon}></i>
             </div>
             <div className="kst-sc-body">
               <div className="kst-stat-val">{c.value}</div>
@@ -135,7 +233,7 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      {/* ── Row 2: Attendance + Fee ── */}
+      {/*  Row 3: Attendance + Fee + Quick Actions  */}
       <div className="kst-chart-row">
 
         {/* Student Attendance */}
@@ -146,52 +244,57 @@ const AdminDashboard = () => {
               <p className="kst-chart-sub">Weekly present vs absent</p>
             </div>
             <div className="kst-tabs">
-              {["week", "trend"].map((v) => (
+              {["week", "trend"].map(v => (
                 <button key={v} className={`kst-tab${attView === v ? " active" : ""}`} onClick={() => setAttView(v)}>
                   {v === "week" ? "This Week" : "Monthly"}
                 </button>
               ))}
             </div>
           </div>
-
           {attView === "week" ? (
-            <ResponsiveContainer width="100%" height={230}>
-              <BarChart data={attendanceData} margin={{ top: 4, right: 10, left: -10, bottom: 0 }} barCategoryGap="30%">
-                <CartesianGrid strokeDasharray="3 3" stroke="#edf0f5" vertical={false} />
-                <XAxis dataKey="day" tick={TICK} axisLine={false} tickLine={false} />
-                <YAxis tick={TICK} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} />
-                <Legend iconType="square" iconSize={10} wrapperStyle={{ fontSize: 12, fontFamily: "Poppins" }} />
-                <Bar dataKey="present" name="Present" fill={ENG.navy}    radius={[5, 5, 0, 0]} />
-                <Bar dataKey="absent"  name="Absent"  fill={ENG.crimson} radius={[5, 5, 0, 0]} />
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={attendanceData} margin={{ top: 4, right: 8, left: -18, bottom: 0 }} barCategoryGap="30%">
+                <defs>
+                  <linearGradient id="gPresent" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#4F46E5" /><stop offset="100%" stopColor="#2D3A8C" />
+                  </linearGradient>
+                  <linearGradient id="gAbsent" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fca5a5" /><stop offset="100%" stopColor="#ef4444" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="#f1f5f9" strokeDasharray="3 3" />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={TICK} />
+                <YAxis axisLine={false} tickLine={false} tick={TICK} />
+                <Tooltip contentStyle={TT} cursor={{ fill: "rgba(79,70,229,.04)" }} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="Present" fill="url(#gPresent)" radius={[8, 8, 0, 0]} maxBarSize={32} />
+                <Bar dataKey="Absent" fill="url(#gAbsent)" radius={[8, 8, 0, 0]} maxBarSize={32} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <ResponsiveContainer width="100%" height={230}>
-              <AreaChart data={attendanceTrend} margin={{ top: 4, right: 10, left: -10, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={attendanceTrend} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="attGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={ENG.teal} stopOpacity={0.22} />
-                    <stop offset="95%" stopColor={ENG.teal} stopOpacity={0}    />
+                  <linearGradient id="gArea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={P} stopOpacity={0.18} />
+                    <stop offset="95%" stopColor={P} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#edf0f5" vertical={false} />
-                <XAxis dataKey="month" tick={TICK} axisLine={false} tickLine={false} />
-                <YAxis domain={[80, 100]} tick={TICK} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => `${v}%`} />
-                <Area type="monotone" dataKey="pct" name="Attendance %" stroke={ENG.teal} strokeWidth={2.5}
-                  fill="url(#attGrad)" dot={{ r: 4, fill: ENG.gold, stroke: "#fff", strokeWidth: 2 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={TICK} />
+                <YAxis domain={[80, 100]} axisLine={false} tickLine={false} tick={TICK} />
+                <Tooltip contentStyle={TT} formatter={v => `${v}%`} />
+                <Area type="monotone" dataKey="pct" name="Attendance %" stroke={P} strokeWidth={2.5}
+                  fill="url(#gArea)" dot={{ r: 4, fill: P, stroke: "#fff", strokeWidth: 2 }} />
               </AreaChart>
             </ResponsiveContainer>
           )}
-
-          {/* Stats strip */}
           <div className="kst-att-stats">
             {[
-              { label: "Present", val: "1,174", color: ENG.navy    },
-              { label: "Absent",  val: "66",    color: ENG.crimson },
-              { label: "Leave",   val: "12",    color: ENG.gold    },
-              { label: "Rate",    val: "94.6%", color: ENG.forest  },
+              { label: "Present", val: "1,174", color: "#2D3A8C" },
+              { label: "Absent", val: "66", color: "#ef4444" },
+              { label: "Leave", val: "12", color: "#d97706" },
+              { label: "Rate", val: "94.6%", color: "#16a34a" },
             ].map((s, i) => (
               <div className="kst-att-stat" key={i}>
                 <span className="kst-att-dot" style={{ background: s.color }}></span>
@@ -205,102 +308,114 @@ const AdminDashboard = () => {
         </div>
 
         {/* Fee Collection */}
-        <div className="kst-card">
+        <div className="kst-card kst-fee-card">
           <div className="kst-card-header">
             <div>
               <h3>Fee Collection</h3>
-              <p className="kst-chart-sub">Total: {fmt(totalFee)}</p>
+              <p className="kst-chart-sub">
+                Total: {fmt(totalFee)} · {collectionRate}% collected · 42 defaulters
+              </p>
             </div>
             <div className="kst-tabs">
-              {["pie", "bar"].map((v) => (
+              {["pie", "bar"].map(v => (
                 <button key={v} className={`kst-tab${feeView === v ? " active" : ""}`} onClick={() => setFeeView(v)}>
                   {v === "pie" ? "Breakdown" : "Monthly"}
                 </button>
               ))}
             </div>
           </div>
-
-          {feeView === "pie" ? (
-            <>
-              <ResponsiveContainer width="100%" height={230}>
-                <PieChart>
-                  <Pie
-                    data={feeData}
-                    cx="50%" cy="50%"
-                    innerRadius={0}
-                    outerRadius={105}
-                    paddingAngle={0}
-                    dataKey="value"
-                  >
-                    {feeData.map((d, i) => (
-                      <Cell key={i} fill={d.color} stroke="#fff" strokeWidth={2} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v) => fmt(v)} contentStyle={TOOLTIP_STYLE} />
-                </PieChart>
-              </ResponsiveContainer>
-
-              <div className="kst-fee-legend">
-                {feeData.map((d, i) => (
-                  <div className="kst-fee-leg-item" key={i}>
-                    <span className="kst-legend-dot" style={{ background: d.color }}></span>
-                    <span className="kst-fee-leg-name">{d.name}</span>
-                    <span className="kst-fee-leg-val">{fmt(d.value)}</span>
-                    <span className="kst-fee-leg-pct" style={{ color: d.color }}>
-                      {Math.round((d.value / totalFee) * 100)}%
-                    </span>
-                  </div>
-                ))}
+          <div className="kst-fee-body">
+            {feeView === "pie" ? (
+              <div className="kst-fee-wrap">
+                <ResponsiveContainer width="48%" height={270}>
+                  <PieChart>
+                    <Pie data={feeData} cx="50%" cy="50%" innerRadius={58} outerRadius={96}
+                      paddingAngle={3} dataKey="value">
+                      {feeData.map((d, i) => <Cell key={i} fill={d.color} stroke="#fff" strokeWidth={2} />)}
+                    </Pie>
+                    <Tooltip formatter={v => fmt(v)} contentStyle={TT} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="kst-fee-legend">
+                  {feeData.map((d, i) => (
+                    <div className="kst-fee-leg-item" key={i}>
+                      <span className="kst-legend-dot" style={{ background: d.color }}></span>
+                      <span className="kst-fee-leg-name">{d.name}</span>
+                      <div className="kst-fee-leg-right">
+                        <span className="kst-fee-leg-val">{fmt(d.value)}</span>
+                        <span className="kst-fee-leg-pct" style={{ color: d.color }}>
+                          ({Math.round((d.value / totalFee) * 100)}%)
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </>
-          ) : (
-            <ResponsiveContainer width="100%" height={230}>
-              <BarChart data={feeMonthly} margin={{ top: 4, right: 10, left: -10, bottom: 0 }} barCategoryGap="30%">
-                <CartesianGrid strokeDasharray="3 3" stroke="#edf0f5" vertical={false} />
-                <XAxis dataKey="month" tick={TICK} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={fmt} tick={{ ...TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={fmt} contentStyle={TOOLTIP_STYLE} />
-                <Legend iconType="square" iconSize={10} wrapperStyle={{ fontSize: 12, fontFamily: "Poppins" }} />
-                <Bar dataKey="collected" name="Collected" fill={ENG.navy}    radius={[5, 5, 0, 0]} />
-                <Bar dataKey="pending"   name="Pending"   fill={ENG.crimson} radius={[5, 5, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+            ) : (
+              <ResponsiveContainer width="100%" height={270}>
+                <BarChart data={feeMonthly} margin={{ top: 4, right: 8, left: -10, bottom: 0 }} barCategoryGap="30%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="month" tick={TICK} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={fmt} tick={{ ...TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={fmt} contentStyle={TT} />
+                  <Legend iconType="square" iconSize={9} wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="collected" name="Collected" fill="#4F46E5" radius={[5, 5, 0, 0]} />
+                  <Bar dataKey="pending" name="Pending" fill="#ef4444" radius={[5, 5, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="kst-card kst-quick-card">
+          <div className="kst-card-header">
+            <h3><i className="bx bxs-zap" style={{ color: O, marginRight: 6 }}></i>Quick Actions</h3>
+          </div>
+          <div className="kst-qa-grid">
+            {quickActions.map((a, i) => (
+              <button key={i} className="kst-qa-btn" onClick={() => navigate(a.path)}>
+                <div className="kst-qa-icon" style={{ background: a.bg, color: a.color }}>
+                  <i className={a.icon}></i>
+                </div>
+                <span className="kst-qa-label">{a.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* ── Row 3: Exams + Activity + Class Attendance ── */}
+      {/*  Row 4: Exams + Activity + Class Attendance  */}
       <div className="kst-bot-row">
 
         {/* Upcoming Exams */}
         <div className="kst-card">
           <div className="kst-card-header">
-            <h3>Upcoming Exams</h3>
+            <h3><i className="bx bxs-notepad" style={{ color: P, marginRight: 6 }}></i>Upcoming Exams</h3>
             <span className="kst-badge-pill">Next 2 weeks</span>
           </div>
           <div className="kst-exam-list">
             {upcomingExams.map((e, i) => (
               <div className="kst-exam-item" key={i}>
-                <div className="kst-exam-date-box" style={{ background: e.color + "18", borderLeft: `4px solid ${e.color}` }}>
-                  <span className="kst-exam-date">{e.date}</span>
+                <div className="kst-exam-date-box" style={{ background: e.color + "15", borderLeft: `3px solid ${e.color}` }}>
+                  <span className="kst-exam-date" style={{ color: e.color }}>{e.date}</span>
                 </div>
                 <div className="kst-exam-info">
                   <span className="kst-exam-subject">{e.subject}</span>
                   <span className="kst-exam-cls">{e.cls}</span>
                 </div>
-                <span className="kst-exam-type" style={{ background: e.color + "18", color: e.color }}>
-                  {e.type}
-                </span>
+                <span className="kst-exam-type" style={{ background: e.color + "15", color: e.color }}>{e.type}</span>
               </div>
             ))}
           </div>
+          <button className="kst-view-all">View all exams <i className="bx bx-chevron-right"></i></button>
         </div>
 
         {/* Recent Activity */}
         <div className="kst-card">
           <div className="kst-card-header">
-            <h3>Recent Activity</h3>
-            <span className="kst-badge-pill">Today</span>
+            <h3><i className="bx bx-pulse" style={{ color: P, marginRight: 6 }}></i>Recent Activity</h3>
+            <span className="kst-badge-pill kst-badge-green">Today</span>
           </div>
           <ul className="kst-activity-list">
             {recentActivity.map((a, i) => (
@@ -314,12 +429,13 @@ const AdminDashboard = () => {
               </li>
             ))}
           </ul>
+          <button className="kst-view-all">View all activity <i className="bx bx-chevron-right"></i></button>
         </div>
 
         {/* Class-wise Attendance */}
         <div className="kst-card">
           <div className="kst-card-header">
-            <h3>Class-wise Attendance</h3>
+            <h3><i className="bx bx-bar-chart" style={{ color: P, marginRight: 6 }}></i>Class-wise Attendance</h3>
             <span className="kst-badge-pill">Today</span>
           </div>
           <div className="kst-class-list">
@@ -338,9 +454,11 @@ const AdminDashboard = () => {
               </div>
             ))}
           </div>
+          <button className="kst-view-all">View full report <i className="bx bx-chevron-right"></i></button>
         </div>
-
       </div>
+
+
     </div>
   );
 };

@@ -1,7 +1,8 @@
 import { useFormik } from "formik";
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
+  API_BASE_URLS,
   createStudentImage,
   createStudentadhar,
   createStudentbirth,
@@ -11,21 +12,34 @@ import {
   deletetAadhar,
   getStudentlist,
 } from "../../services/api";
-import { TOKEN_KEY } from "../../services/auth";
+import { getToken } from "../../services/auth";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import "./StudentDummyList.css";
+import "./Studentinfo.css";
+
+const MAX_SIZE = 2 * 1024 * 1024;
+const NO_IMAGE = `${API_BASE_URLS.MASTER_URL}/uploads/noImage/men2.jpg`;
+
+const initials = (name) =>
+  (name || "?").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+
+const isUploaded = (preview, name) => !!(preview || name);
 
 export default function Studentinfo() {
   const navigate = useNavigate();
   const ids = useParams();
-  const [tcNo, setTcNo] = useState();
-  const [comNo, setComNo] = useState();
-  const [birthNo, setBirthNo] = useState();
+
+  const [loading, setLoading] = useState(true);
+  const [tcNo, setTcNo] = useState("");
+  const [comNo, setComNo] = useState("");
+  const [birthNo, setBirthNo] = useState("");
   const [photoPreviewURL, setPhotoPreviewURL] = useState("");
   const [aadharPreviewURL, setAadharPreviewURL] = useState("");
   const [communityCertUrl, setCommunityCertUrl] = useState("");
   const [tcCertificate, setTcCertificate] = useState("");
   const [studentName, setStudentName] = useState("");
+  const [admNo, setAdmNo] = useState("");
   const [photoName, setPhotoName] = useState("");
   const [aadarName, setAadarName] = useState("");
   const [commuName, setCommuName] = useState("");
@@ -33,158 +47,9 @@ export default function Studentinfo() {
   const [tcName, setTcName] = useState("");
   const [birthCertificatePreview, setBirthCertificatePreview] = useState(null);
   const [birthCertificate, setBirthCertificate] = useState(null);
-  const [communityCertificatePreview, setCommunityCertificatePreview] =
-    useState(null);
+  const [communityCertificatePreview, setCommunityCertificatePreview] = useState(null);
   const [certificatePhotoPreview, setCertificatePhotoPreview] = useState(null);
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    const maxSize = 2 * 1024 * 1024;
-
-    if (file && file.size > maxSize) {
-      event.target.value = null;
-      formik.setFieldError(
-        event.target.name,
-        `File size exceeds the limit (2MB). Please choose a smaller file for ${event.target.name === "photo" ? "photo" : "Aadhar card"
-        }.`
-      );
-      return;
-    } else {
-      formik.setFieldError(event.target.name, "");
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (event.target.name === "photo") {
-        setPhotoPreviewURL(reader.result);
-        const filename = file.name;
-        setPhotoName(filename);
-      } else if (event.target.name === "adharcardPhoto") {
-        setAadharPreviewURL(reader.result);
-        const filename = file.name;
-        setAadarName(filename);
-      }
-    };
-
-    if (file) {
-      reader.readAsDataURL(file);
-    } else {
-      if (event.target.name === "photo") {
-        setPhotoPreviewURL("");
-        setPhotoName("");
-      } else if (event.target.name === "adharcardPhoto") {
-        setAadharPreviewURL("");
-        setAadarName("");
-      }
-    }
-
-    formik.setFieldValue(event.target.name, file);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    console.log(name, "121");
-    if (name === "oldCertificate") {
-      formik.setFieldValue(name, value);
-      setTcNo(value);
-    }
-    if (name === "communityNo") {
-      formik.setFieldValue(name, value);
-      setComNo(value);
-    }
-    if (name === "birthNo") {
-      formik.setFieldValue(name, value);
-      setBirthNo(value);
-    }
-  };
-  const validate = (values) => {
-    console.log(values, "vALUES");
-    const errors = {};
-    if (!photoName && !values.photo) {
-      errors.photo = "Please upload photo";
-    }
-    if (!values.birthNo) {
-      errors.birthNo = "Please enter birth certificate no";
-    }
-    if (!birthCertificate && !values.birthcertificate) {
-      errors.birthcertificate = "Please upload birth certificate";
-    }
-    if (!values.communityNo) {
-      errors.communityNo = "Please enter community certificate no";
-    }
-    if (!tcCertificate && !values.communityCertificate) {
-      errors.communityCertificate = "Please upload community certificate";
-    }
-    return errors;
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (ids) {
-          const response = await getStudentlist(
-            { userName: ids.id },
-            TOKEN_KEY
-          );
-          const studentData = response.data[0];
-          setStudentName(studentData.studentName);
-          setPhotoPreviewURL(studentData.photoUrl === "http://49.207.183.18:8086/uploads/noImage/men2.jpg" ? "" : studentData.photoUrl);
-          setBirthCertificatePreview(studentData.birthCertificate);
-          setBirthCertificate(studentData.birthCertificate);
-          setAadharPreviewURL(studentData.adharCard);
-          setCommunityCertUrl(studentData.communityCertUrl);
-          setCommunityCertificatePreview(studentData.communityCertUrl);
-          setCertificatePhotoPreview(studentData.tcCertificate);
-          setTcCertificate(studentData.tcCertificate);
-
-          // setTransferCertificateNo(studentData.transferCertificateNo);
-          setPhotoName(studentData.photoUrl === "http://49.207.183.18:8086/uploads/noImage/men2.jpg" ? "" : studentData.photoName);
-          setAadarName(studentData.aadarName);
-          setCommuName(studentData.commuName);
-          setBirthName(studentData.birthName);
-          setTcName(studentData.tcName);
-          setComNo(studentData.communityCertNo);
-          setTcNo(studentData.OldTcNumber);
-          setBirthNo(studentData.birthCertNo);
-          formik.setValues({
-            oldCertificate: studentData.OldTcNumber,
-            communityNo: studentData.communityCertNo,
-            birthNo: studentData.birthCertNo,
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching student data:", error);
-      }
-    };
-    fetchData();
-    // const getStudentList = async () => {
-    //   try {
-    //     const response = await getStudentlist(
-    //       {
-    //         userName: ids.id,
-    //       },
-    //       TOKEN_KEY
-    //     );
-    //     if (response.data && response.data.length > 0) {
-    //       const studentData = response.data[0];
-    //       formik.setValues({
-    //         oldCertificate: studentData.OldTcNumber,
-    //         communityNo: studentData.communityCertNo,
-    //         birthNo: studentData.birthCertNo,
-    //       });
-    //     }
-    //   } catch (err) {
-    //     console.log(err);
-    //   }
-    // };
-    // getStudentList();
-    return () => { };
-  }, [ids]);
-
-  const handleBack = (ids) => {
-    console.log(ids, "ids");
-    navigate(`/studentlist/${ids.id}`);
-  };
   const formik = useFormik({
     initialValues: {
       photo: "",
@@ -196,68 +61,59 @@ export default function Studentinfo() {
       communityNo: "",
       communityCertificate: null,
     },
-    validate,
+    validate: (values) => {
+      const errors = {};
+      if (!photoName && !values.photo) errors.photo = "Please upload photo";
+      if (!values.birthNo) errors.birthNo = "Please enter birth certificate no";
+      if (!birthCertificate && !values.birthcertificate) {
+        errors.birthcertificate = "Please upload birth certificate";
+      }
+      if (!values.communityNo) errors.communityNo = "Please enter community certificate no";
+      if (!tcCertificate && !values.communityCertificate) {
+        errors.communityCertificate = "Please upload community certificate";
+      }
+      return errors;
+    },
     onSubmit: async (values, { setSubmitting }) => {
-      if(!aadharPreviewURL){
+      const token = getToken();
+      if (!aadharPreviewURL) {
         try {
-          const response = await deletetAadhar({ studentId: ids.id }, TOKEN_KEY);
-          console.log(response.data,"maram");
+          await deletetAadhar({ studentId: ids.id }, token);
         } catch (err) {
           console.log(err);
         }
       }
       if (formik.values.adharcardPhoto) {
-        createStudentadhar(
-          { id: ids.id, photoUrl: values.adharcardPhoto },
-          TOKEN_KEY
-        );
+        createStudentadhar({ id: ids.id, photoUrl: values.adharcardPhoto }, token);
       }
       if (formik.values.certificatephoto) {
-        createStudenttc(
-          { id: ids.id, photoUrl: values.certificatephoto },
-          TOKEN_KEY
-        );
+        createStudenttc({ id: ids.id, photoUrl: values.certificatephoto }, token);
       }
       if (formik.values.communityCertificate) {
-        createStudentcommuity(
-          { id: ids.id, photoUrl: values.communityCertificate },
-          TOKEN_KEY
-        );
+        createStudentcommuity({ id: ids.id, photoUrl: values.communityCertificate }, token);
       }
       if (formik.values.birthcertificate) {
-        createStudentbirth(
-          { id: ids.id, photoUrl: values.birthcertificate },
-          TOKEN_KEY
-        );
+        createStudentbirth({ id: ids.id, photoUrl: values.birthcertificate }, token);
       }
       if (formik.values.photo) {
-        createStudentImage({ id: ids.id, photoUrl: values.photo }, TOKEN_KEY);
+        createStudentImage({ id: ids.id, photoUrl: values.photo }, token);
       }
       try {
-        const responses = await Promise.all([
-          createStudentnumber(
-            {
-              studentId: ids.id,
-              tcNo: tcNo ? tcNo : "",
-              comNo: comNo ? comNo : "",
-              birthNo: birthNo ? birthNo : "",
-            },
-            TOKEN_KEY
-          ),
-        ]);
-
-        responses.forEach((response) => {
-          if (response.status === "Error" || response.status === "error") {
-            toast.error(response.data);
-            throw new Error(response.message);
-          }
-        });
-
-        // If all requests succeed
-        toast.success("Student details saved");
-        setTimeout(() => {
-          navigate("/list", { state: "Student List" });
-        }, 1500);
+        const response = await createStudentnumber(
+          {
+            studentId: ids.id,
+            tcNo: tcNo || "",
+            comNo: comNo || "",
+            birthNo: birthNo || "",
+          },
+          token
+        );
+        if (response.status === "Error" || response.status === "error") {
+          toast.error(response.data);
+          throw new Error(response.message);
+        }
+        toast.success("Student documents saved successfully");
+        setTimeout(() => navigate("/students"), 1500);
       } catch (error) {
         console.error("Error:", error);
       } finally {
@@ -266,874 +122,478 @@ export default function Studentinfo() {
     },
   });
 
-  const handleCloseAadharPreview = async () => {
-    console.log(ids, "ids");
-    setAadarName("");
-    setAadharPreviewURL("");
-    const inputElement = document.getElementsByName("adharcardPhoto")[0];
-    if (inputElement) {
-      inputElement.value = "";
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file && file.size > MAX_SIZE) {
+      event.target.value = null;
+      formik.setFieldError(
+        event.target.name,
+        `File exceeds 2MB limit for ${event.target.name === "photo" ? "photo" : "document"}.`
+      );
+      return;
+    }
+    formik.setFieldError(event.target.name, "");
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (event.target.name === "photo") {
+        setPhotoPreviewURL(reader.result);
+        setPhotoName(file?.name || "");
+      } else if (event.target.name === "adharcardPhoto") {
+        setAadharPreviewURL(reader.result);
+        setAadarName(file?.name || "");
+      }
+    };
+
+    if (file) {
+      reader.readAsDataURL(file);
+      formik.setFieldValue(event.target.name, file);
+    } else if (event.target.name === "photo") {
+      setPhotoPreviewURL("");
+      setPhotoName("");
+    } else if (event.target.name === "adharcardPhoto") {
+      setAadharPreviewURL("");
+      setAadarName("");
     }
   };
 
-  const handleClosePhotoPreview = () => {
-    setPhotoName("");
-    setPhotoPreviewURL("");
-    const inputElement = document.getElementsByName("photo")[0];
-    if (inputElement) {
-      inputElement.value = "";
-    }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    formik.setFieldValue(name, value);
+    if (name === "oldCertificate") setTcNo(value);
+    if (name === "communityNo") setComNo(value);
+    if (name === "birthNo") setBirthNo(value);
   };
+
   const handleFilePreview = (event, setPreview, setFileUrl) => {
     const file = event.target.files[0];
-    if (file) {
-      if (file.size <= 2 * 1024 * 1024) {
-        setPreview(file);
-        const fileUrl = URL.createObjectURL(file);
-        setFileUrl(fileUrl);
-      } else {
-        alert("File size exceeds 2MB limit.");
-      }
+    if (!file) return;
+    if (file.size > MAX_SIZE) {
+      alert("File size exceeds 2MB limit.");
+      event.target.value = null;
+      return;
     }
+    setPreview(file);
+    setFileUrl(URL.createObjectURL(file));
+    formik.setFieldValue(event.target.name, file);
   };
 
   const handlePreviewClick = (filePreview) => {
     if (filePreview) {
-      const fileUrl = URL.createObjectURL(filePreview);
-      window.open(fileUrl, "_blank");
-    } else {
-      alert("Please select a PDF file first.");
+      const url = typeof filePreview === "string" ? filePreview : URL.createObjectURL(filePreview);
+      window.open(url, "_blank");
     }
   };
-  return (
-    <>
-      <div className="table-container">
-        <div>
-          <ul
-            class="breadcrumb"
-            style={{ display: "flex", alignItems: "center" }}
-          >
-            <li>
-              <Link to={"/dashboard"}>
-                <a style={{ color: "#051F3E" }}>
-                  <h4>Student</h4>
-                </a>
-              </Link>
-            </li>
-            <li>
-              <a>Document Upload</a>
-            </li>
-          </ul>
-          <h3
-            style={{
-              float: "inline-end",
-              marginTop: "-10px",
-              fontWeight: "600",
-            }}
-          >
-            <span style={{ fontWeight: "300", color: "#646464" }}>
-              Student Name:
-            </span>{" "}
-            {studentName}
-          </h3>
+
+  const clearImage = (name) => {
+    const input = document.getElementsByName(name)[0];
+    if (input) input.value = "";
+    if (name === "photo") {
+      setPhotoName("");
+      setPhotoPreviewURL("");
+      formik.setFieldValue("photo", "");
+    } else {
+      setAadarName("");
+      setAadharPreviewURL("");
+      formik.setFieldValue("adharcardPhoto", "");
+    }
+  };
+
+  const clearPdf = (name, setPreview, setUrl, setFileName) => {
+    const input = document.getElementsByName(name)[0];
+    if (input) input.value = "";
+    setPreview(null);
+    setUrl("");
+    setFileName?.("");
+    formik.setFieldValue(name, null);
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const token = getToken();
+        const response = await getStudentlist({ userName: ids.id }, token);
+        const studentData = response?.data?.[0];
+        if (!studentData) return;
+
+        setStudentName(studentData.studentName || "");
+        setAdmNo(studentData.admissionNo || ids.id || "");
+        setPhotoPreviewURL(
+          studentData.photoUrl && studentData.photoUrl !== NO_IMAGE ? studentData.photoUrl : ""
+        );
+        setBirthCertificatePreview(studentData.birthCertificate);
+        setBirthCertificate(studentData.birthCertificate);
+        setAadharPreviewURL(studentData.adharCard || "");
+        setCommunityCertUrl(studentData.communityCertUrl || "");
+        setCommunityCertificatePreview(studentData.communityCertUrl);
+        setCertificatePhotoPreview(studentData.tcCertificate);
+        setTcCertificate(studentData.tcCertificate || "");
+        setPhotoName(
+          studentData.photoUrl && studentData.photoUrl !== NO_IMAGE ? studentData.photoName || "photo.jpg" : ""
+        );
+        setAadarName(studentData.aadarName || "");
+        setCommuName(studentData.commuName || "");
+        setBirthName(studentData.birthName || "");
+        setTcName(studentData.tcName || "");
+        setComNo(studentData.communityCertNo || "");
+        setTcNo(studentData.OldTcNumber || "");
+        setBirthNo(studentData.birthCertNo || "");
+        formik.setValues({
+          oldCertificate: studentData.OldTcNumber || "",
+          communityNo: studentData.communityCertNo || "",
+          birthNo: studentData.birthCertNo || "",
+        });
+      } catch (error) {
+        console.error("Error fetching student data:", error);
+        setStudentName("Student");
+        setAdmNo(ids.id || "");
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (ids?.id) fetchData();
+  }, [ids]);
+
+  const uploadedCount = [
+    isUploaded(photoPreviewURL, photoName),
+    isUploaded(aadharPreviewURL, aadarName),
+    !!formik.values.oldCertificate || isUploaded(tcCertificate, tcName),
+    !!formik.values.birthNo && isUploaded(birthCertificate, birthName),
+    !!formik.values.communityNo && isUploaded(communityCertUrl, commuName),
+  ].filter(Boolean).length;
+
+  const progressPct = Math.round((uploadedCount / 5) * 100);
+
+  const showError = (field) =>
+    (formik.touched[field] || formik.submitCount > 0) && formik.errors[field];
+
+  if (loading) {
+    return (
+      <div className="si-wrap">
+        <div className="si-loading">
+          <i className="bx bx-loader-alt bx-spin"></i>
+          Loading student documents…
         </div>
-        <form
-          className="ng-untouched ng-pristine ng-invalid"
-          onSubmit={formik.handleSubmit}
-        >
-          <div className="table-main" style={{ marginTop: "40px" }}>
-            <div
-              class="input-group"
-              style={{
-                gap: "10px",
-                display: "flex",
-                justifyContent: "space-around",
-                marginBottom: "5px",
-              }}
-            >
-              <div
-                className="input-container-registers"
-                style={{ marginBottom: "7px" }}
-              >
-                <div className="input-container">
-                  <label className="input-label" style={{ gap: "5px" }}>
-                    Photo Upload{" "}
-                    <span
-                      style={{
-                        color: "red",
-                        fontWeight: "400",
-                        fontFamily: "sans-serif",
-                      }}
-                    >
-                      *
-                    </span>
-                    <span
-                      style={{ color: "rgb(143, 143, 143)", fontSize: "11px" }}
-                    >
-                      ( jpg, png, jpeg, max-size 2MB )
-                    </span>
-                  </label>
-                  <input
-                    style={{
-                      padding: "3px",
-                      cursor: "pointer",
-                      border: `1px solid ${formik.errors.photo &&
-                          !photoPreviewURL &&
-                          formik.submitCount > 0
-                          ? "red"
-                          : "#cdcbcb"
-                        }`,
-                    }}
-                    className={`effect-3 size`}
-                    accept=".jpg ,.jpeg,.png"
-                    type="file"
-                    name="photo"
-                    onChange={handleFileChange}
-                  />
-                  {photoPreviewURL && (
-                    <>
-                      <span
-                        className="modal-clos2"
-                        onClick={handleClosePhotoPreview}
-                        style={{
-                          position: "absolute",
-                          top: "140px",
-                          right: "575px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <i
-                          className="bx bxs-x-circle"
-                          style={{ fontSize: "20px", color: "gray" }}
-                        ></i>
-                      </span>
-                      <img
-                        src={photoPreviewURL}
-                        alt="Photo Preview"
-                        style={{
-                          maxWidth: "90px",
-                          maxHeight: "100px",
-                          borderRadius: "5px",
-                          margin: "-70px 310px",
-                          border: "2px solid #c9c5c5",
-                          padding: "1px",
-                          objectFit: "fill",
-                        }}
-                      />
-                    </>
-                  )}
-                  {formik.errors.photo &&
-                    formik.submitCount > 0 &&
-                    !photoPreviewURL && (
-                      <div
-                        className="text-danger"
-                        style={{
-                          color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
-                        }}
-                      >
-                        {formik.errors.photo}
-                      </div>
-                    )}
-                  {photoName && (
-                    <div>
-                      <p
-                        style={{
-                          marginTop: "40px",
-                          marginLeft: "10px",
-                          color: "green",
-                        }}
-                      >
-                        {photoName}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div
-                className="input-container-registers"
-                style={{ marginBottom: "px" }}
-              >
-                <div className="input-container">
-                  <label className="input-label" style={{ gap: "5px" }}>
-                    Aadharcard Upload{" "}
-                    <span
-                      style={{ color: "rgb(143, 143, 143)", fontSize: "11px" }}
-                    >
-                      {" "}
-                      ( jpg, png, jpeg, max-size 2MP ){" "}
-                    </span>
-                  </label>
-                  <input
-                    style={{
-                      padding: "3px",
-                      cursor: "pointer",
-                      border: `1px solid ${formik.errors.adharcardPhoto && formik.submitCount > 0
-                          ? "red"
-                          : "#cdcbcb"
-                        }`,
-                    }}
-                    className={`effect-3 size`}
-                    accept=".jpg ,.jpeg,.png"
-                    type="file"
-                    name="adharcardPhoto"
-                    onChange={handleFileChange}
-                  />
-                  {aadharPreviewURL && (
-                    <>
-                      <span
-                        className="modal-clos2"
-                        onClick={handleCloseAadharPreview}
-                        style={{
-                          position: "absolute",
-                          top: "140px",
-                          right: "53px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <i
-                          className="bx bxs-x-circle"
-                          style={{ fontSize: "20px", color: "gray" }}
-                        ></i>
-                      </span>
-                      <img
-                        src={aadharPreviewURL}
-                        alt="Aadhar Preview"
-                        style={{
-                          maxWidth: "90px",
-                          maxHeight: "100px",
-                          borderRadius: "5px",
-                          margin: "-70px 310px -20px",
-                          border: "2px solid #c9c5c5",
-                          padding: "1px",
-                          objectFit: "fill",
-                        }}
-                      />
-                    </>
-                  )}
-                  {aadarName && (
-                    <div>
-                      <p
-                        style={{
-                          marginTop: "-10px",
-                          marginLeft: "10px",
-                          color: "green",
-                        }}
-                      >
-                        {aadarName}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div
-              class="input-group"
-              style={{ gap: "10px", justifyContent: "space-around" }}
-            >
-              <div
-                class="input-container-registers"
-                style={{ marginBottom: "5px" }}
-              >
-                <div class="input-container">
-                  <label class="input-label">
-                    Existing Transfer Certificate No
-                  </label>
-                  <input
-                    style={{
-                      border: `1px solid ${formik.touched.oldCertificate &&
-                          formik.errors.oldCertificate
-                          ? "red"
-                          : "#cdcbcb"
-                        }`,
-                    }}
-                    className={`effect-3 size ${formik.touched.oldCertificate &&
-                        formik.errors.oldCertificate
-                        ? "is-invalid"
-                        : ""
-                      }`}
-                    type="text"
-                    name="oldCertificate"
-                    onChange={handleInputChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.oldCertificate}
-                  />
-                  {formik.touched.oldCertificate &&
-                    formik.errors.oldCertificate ? (
-                    <div
-                      className="text-danger"
-                      style={{
-                        color: "red",
-                        fontSize: "12px",
-                        marginBottom: "-10px",
-                        marginTop: "1px",
-                      }}
-                    >
-                      {formik.errors.oldCertificate}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-              <div className="input-container-registers">
-                <div className="input-container">
-                  <label className="input-label" style={{ gap: "5px" }}>
-                    Existing Transfer Certificate Upload{" "}
-                    <span
-                      style={{ color: "rgb(143, 143, 143)", fontSize: "11px" }}
-                    >
-                      {" "}
-                      (pdf size-2MB){" "}
-                    </span>{" "}
-                  </label>
-                  <input
-                    style={{
-                      padding: "3px",
-                      border: `1px solid ${formik.touched.certificatephoto &&
-                          formik.errors.certificatephoto
-                          ? "red"
-                          : "#cdcbcb"
-                        }`,
-                    }}
-                    className={`effect-3 size ${formik.touched.certificatephoto &&
-                        formik.errors.certificatephoto
-                        ? "is-invalid"
-                        : ""
-                      }`}
-                    type="file"
-                    name="certificatephoto"
-                    accept="application/pdf"
-                    onChange={(event) => {
-                      handleFilePreview(
-                        event,
-                        setCertificatePhotoPreview,
-                        setTcCertificate
-                      );
-                      handleFileChange(event);
-                    }}
-                    onBlur={formik.handleBlur}
-                  />
-
-                  {formik.touched.certificatephoto &&
-                    formik.errors.certificatephoto ? (
-                    <div
-                      className="text-danger"
-                      style={{
-                        color: "red",
-                        fontSize: "12px",
-                        marginBottom: "-10px",
-                        marginTop: "1px",
-                      }}
-                    >
-                      {formik.errors.certificatephoto}
-                    </div>
-                  ) : null}
-
-                  {certificatePhotoPreview && (
-                    <>
-                      {tcCertificate ? (
-                        <a
-                          style={{
-                            marginLeft: "310px",
-                            marginTop: "-23px",
-                            marginBottom: "5px",
-                            background: "none ",
-                            textDecoration: "underline",
-                            color: "blue",
-                            display: "flex",
-                            alignItems: "center",
-                            textDecorationLine: "none",
-                            gap: "5px",
-                            fontSize: "13px",
-                          }}
-                          href={tcCertificate}
-                          target="_blank"
-                        >
-                          <i className="fa fa-eye"></i>
-                          <span
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "5px",
-                            }}
-                          >
-                            {" "}
-                            Preview
-                          </span>
-                        </a>
-                      ) : (
-                        <button
-                          style={{
-                            marginLeft: "290px",
-                            marginTop: "-32px",
-                            background: "none ",
-                            textDecoration: "underline",
-                            color: "blue",
-                            display: "flex",
-                            alignItems: "center",
-                            textDecorationLine: "none",
-                            gap: "5px",
-                          }}
-                          onClick={() =>
-                            handlePreviewClick(certificatePhotoPreview)
-                          }
-                        >
-                          <i className="fa fa-eye"></i>
-                          <span
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "5px",
-                            }}
-                          >
-                            {" "}
-                            Preview
-                          </span>
-                        </button>
-                      )}
-                    </>
-                  )}
-                  {tcName && (
-                    <div>
-                      <p style={{ marginLeft: "10px", color: "green" }}>
-                        {tcName}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div
-              class="input-group"
-              style={{ gap: "10px", justifyContent: "space-around" }}
-            >
-              <div
-                class="input-container-registers"
-                style={{ marginBottom: "5px" }}
-              >
-                <div class="input-container">
-                  <label class="input-label" style={{ gap: "5px" }}>
-                    Birth Certificate No{" "}
-                    <span
-                      style={{
-                        color: "red",
-                        fontWeight: "400",
-                        fontFamily: "sans-serif",
-                      }}
-                    >
-                      *
-                    </span>
-                  </label>
-                  <input
-                    style={{
-                      border: `1px solid ${formik.touched.birthNo && formik.errors.birthNo
-                          ? "red"
-                          : "#cdcbcb"
-                        }`,
-                    }}
-                    className={`effect-3 size ${formik.touched.birthNo && formik.errors.birthNo
-                        ? "is-invalid"
-                        : ""
-                      }`}
-                    type="text"
-                    name="birthNo"
-                    onChange={handleInputChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.birthNo}
-                  />
-                  {formik.touched.birthNo && formik.errors.birthNo ? (
-                    <div
-                      className="text-danger"
-                      style={{
-                        color: "red",
-                        fontSize: "12px",
-                        marginBottom: "-10px",
-                        marginTop: "1px",
-                      }}
-                    >
-                      {formik.errors.birthNo}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-              <div className="input-container-registers">
-                <div className="input-container">
-                  <label className="input-label" style={{ gap: "5px" }}>
-                    Birth Certificate Upload{" "}
-                    <span
-                      style={{
-                        color: "red",
-                        fontWeight: "400",
-                        fontFamily: "sans-serif",
-                      }}
-                    >
-                      *
-                    </span>
-                    <span
-                      style={{ color: "rgb(143, 143, 143)", fontSize: "11px" }}
-                    >
-                      {" "}
-                      (pdf size-2MB){" "}
-                    </span>{" "}
-                  </label>
-                  <input
-                    style={{
-                      padding: "3px",
-                      border: `1px solid ${formik.errors.birthcertificate &&
-                          formik.submitCount > 0 &&
-                          !birthCertificatePreview
-                          ? "red"
-                          : "#cdcbcb"
-                        }`,
-                    }}
-                    className={`effect-3 size ${formik.touched.birthcertificate &&
-                        formik.errors.birthcertificate
-                        ? "is-invalid"
-                        : ""
-                      }`}
-                    type="file"
-                    name="birthcertificate"
-                    accept="application/pdf"
-                    onChange={(event) => {
-                      handleFilePreview(
-                        event,
-                        setBirthCertificatePreview,
-                        setBirthCertificate
-                      );
-                      handleFileChange(event);
-                      formik.setFieldTouched("birthcertificate", true);
-                      if (event.currentTarget.files.length > 0) {
-                        formik.setFieldValue(
-                          "birthcertificate",
-                          event.currentTarget.files[0]
-                        );
-                      } else {
-                        formik.setFieldValue("birthcertificate", null);
-                      }
-                    }}
-                    onBlur={formik.handleBlur}
-                  />
-                  {formik.errors.birthcertificate &&
-                    formik.submitCount > 0 &&
-                    !birthCertificatePreview && (
-                      <div
-                        className="text-danger"
-                        style={{
-                          color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
-                        }}
-                      >
-                        {formik.errors.birthcertificate}
-                      </div>
-                    )}
-
-                  {birthCertificatePreview && (
-                    <>
-                      {birthCertificate ? (
-                        <a
-                          style={{
-                            marginLeft: "310px",
-                            marginTop: "-23px",
-                            marginBottom: "5px",
-                            background: "none ",
-                            textDecoration: "underline",
-                            color: "blue",
-                            display: "flex",
-                            alignItems: "center",
-                            textDecorationLine: "none",
-                            gap: "5px",
-                            fontSize: "13px",
-                          }}
-                          href={birthCertificate}
-                          target="_blank"
-                        >
-                          <i className="fa fa-eye"></i>
-                          <span
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "5px",
-                            }}
-                          >
-                            {" "}
-                            Preview
-                          </span>
-                        </a>
-                      ) : (
-                        <button
-                          style={{
-                            marginLeft: "300px",
-                            marginTop: "-32px",
-                            background: "none ",
-                            textDecoration: "underline",
-                            color: "blue",
-                            display: "flex",
-                            alignItems: "center",
-                            textDecorationLine: "none",
-                            gap: "5px",
-                          }}
-                          onClick={() =>
-                            handlePreviewClick(birthCertificatePreview)
-                          }
-                        >
-                          <i className="fa fa-eye"></i>
-                          <span
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "5px",
-                            }}
-                          >
-                            {" "}
-                            Preview
-                          </span>
-                        </button>
-                      )}
-                    </>
-                  )}
-                  {birthName && (
-                    <div>
-                      <p style={{ marginLeft: "10px", color: "green" }}>
-                        {birthName}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div
-              class="input-group"
-              style={{ gap: "10px", justifyContent: "space-around" }}
-            >
-              <div
-                class="input-container-registers"
-                style={{ marginBottom: "5px" }}
-              >
-                <div class="input-container">
-                  <label class="input-label" style={{ gap: "5px" }}>
-                    Community Certificate No{" "}
-                    <span
-                      style={{
-                        color: "red",
-                        fontWeight: "400",
-                        fontFamily: "sans-serif",
-                      }}
-                    >
-                      *
-                    </span>
-                  </label>
-                  <input
-                    style={{
-                      border: `1px solid ${formik.touched.communityNo && formik.errors.communityNo
-                          ? "red"
-                          : "#cdcbcb"
-                        }`,
-                    }}
-                    className={`effect-3 size ${formik.touched.communityNo && formik.errors.communityNo
-                        ? "is-invalid"
-                        : ""
-                      }`}
-                    type="text"
-                    name="communityNo"
-                    onChange={handleInputChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.communityNo}
-                  />
-                  {formik.touched.communityNo && formik.errors.communityNo ? (
-                    <div
-                      className="text-danger"
-                      style={{
-                        color: "red",
-                        fontSize: "12px",
-                        marginBottom: "-10px",
-                        marginTop: "1px",
-                      }}
-                    >
-                      {formik.errors.communityNo}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-              <div className="input-container-registers">
-                <div className="input-container">
-                  <label className="input-label" style={{ gap: "5px" }}>
-                    Community Certificate Upload{" "}
-                    <span
-                      style={{
-                        color: "red",
-                        fontWeight: "400",
-                        fontFamily: "sans-serif",
-                      }}
-                    >
-                      *
-                    </span>
-                    <span
-                      style={{ color: "rgb(143, 143, 143)", fontSize: "11px" }}
-                    >
-                      {" "}
-                      (pdf size-2MB){" "}
-                    </span>{" "}
-                  </label>
-                  <input
-                    style={{
-                      padding: "3px",
-                      border: `1px solid ${formik.errors.communityCertificate &&
-                          formik.submitCount > 0 &&
-                          !communityCertificatePreview
-                          ? "red"
-                          : "#cdcbcb"
-                        }`,
-                    }}
-                    className={`effect-3 size ${formik.touched.communityCertificate &&
-                        formik.errors.communityCertificate
-                        ? "is-invalid"
-                        : ""
-                      }`}
-                    type="file"
-                    name="communityCertificate"
-                    accept=".pdf"
-                    onChange={(event) => {
-                      handleFilePreview(
-                        event,
-                        setCommunityCertificatePreview,
-                        setCommunityCertUrl
-                      );
-                      handleFileChange(event);
-                      formik.setFieldTouched("communityCertificate", true);
-                      if (event.currentTarget.files.length > 0) {
-                        formik.setFieldValue(
-                          "communityCertificate",
-                          event.currentTarget.files[0]
-                        );
-                      } else {
-                        formik.setFieldValue("communityCertificate", null);
-                      }
-                    }}
-                    onBlur={formik.handleBlur}
-                  />
-                  {formik.errors.communityCertificate &&
-                    formik.submitCount > 0 &&
-                    !communityCertificatePreview && (
-                      <div
-                        className="text-danger"
-                        style={{
-                          color: "red",
-                          fontSize: "12px",
-                          marginBottom: "-10px",
-                          marginTop: "1px",
-                        }}
-                      >
-                        {formik.errors.communityCertificate}
-                      </div>
-                    )}
-
-                  {communityCertificatePreview && (
-                    <>
-                      {communityCertUrl ? (
-                        <a
-                          style={{
-                            marginLeft: "310px",
-                            marginTop: "-23px",
-                            marginBottom: "5px",
-                            background: "none ",
-                            textDecoration: "underline",
-                            color: "blue",
-                            display: "flex",
-                            alignItems: "center",
-                            textDecorationLine: "none",
-                            gap: "5px",
-                            fontSize: "13px",
-                          }}
-                          href={communityCertUrl}
-                          target="_blank"
-                        >
-                          <i className="fa fa-eye"></i>
-                          <span
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "5px",
-                            }}
-                          >
-                            {" "}
-                            Preview
-                          </span>
-                        </a>
-                      ) : (
-                        <button
-                          style={{
-                            marginLeft: "300px",
-                            marginTop: "-32px",
-                            background: "none ",
-                            textDecoration: "underline",
-                            color: "blue",
-                            display: "flex",
-                            alignItems: "center",
-                            textDecorationLine: "none",
-                            gap: "5px",
-                          }}
-                          onClick={() =>
-                            handlePreviewClick(communityCertificatePreview)
-                          }
-                        >
-                          <i className="fa fa-eye"></i>
-                          <span
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "5px",
-                            }}
-                          >
-                            {" "}
-                            Preview
-                          </span>
-                        </button>
-                      )}
-                    </>
-                  )}
-                  {commuName && (
-                    <div>
-                      <p style={{ marginLeft: "10px", color: "green" }}>
-                        {commuName}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            class="btn-style-registration"
-            style={{ gap: "10px", marginBottom: "12px" }}
-          >
-            <button
-              type="button"
-              class="cancel-button"
-              onClick={() => handleBack(ids)}
-            >
-              Back
-            </button>
-            <button class="custom-button" type="submit">
-              Submit
-            </button>
-          </div>
-        </form>
       </div>
-      <ToastContainer
-        position="top-right"
-        autoClose={2000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        style={{ fontSize: "14px" }}
-      />
-    </>
+    );
+  }
+
+  return (
+    <div className="si-wrap">
+      {/* Header */}
+      <div className="si-header">
+        <div className="si-header-left">
+          <button type="button" className="si-back-btn" onClick={() => navigate("/students")} title="Back to list">
+            <i className="bx bx-arrow-back"></i>
+          </button>
+          <div className="si-avatar">{initials(studentName)}</div>
+          <div>
+            <h1 className="si-title">Document Upload</h1>
+            <p className="si-subtitle">
+              <strong>{studentName}</strong> · {admNo}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress */}
+      <div className="si-progress-card">
+        <div className="si-progress-top">
+          <span className="si-progress-label">Upload progress</span>
+          <span className="si-progress-pct">{uploadedCount}/5 complete ({progressPct}%)</span>
+        </div>
+        <div className="si-progress-bar">
+          <div className="si-progress-fill" style={{ width: `${progressPct}%` }}></div>
+        </div>
+      </div>
+
+      <form onSubmit={formik.handleSubmit}>
+        <div className="si-grid">
+
+          {/* Photo */}
+          <div className={`si-doc-card ${isUploaded(photoPreviewURL, photoName) ? "si-done" : showError("photo") ? "si-error" : ""}`}>
+            <div className="si-doc-top">
+              <div className="si-doc-icon" style={{ background: "#eef0fb", color: "#2D3A8C" }}>
+                <i className="bx bxs-camera"></i>
+              </div>
+              <div className="si-doc-meta">
+                <p className="si-doc-name">Student Photo <span className="si-req">*</span></p>
+                <p className="si-doc-hint">JPG, PNG, JPEG · max 2MB</p>
+              </div>
+              <span className={`si-badge ${isUploaded(photoPreviewURL, photoName) ? "done" : "pending"}`}>
+                {isUploaded(photoPreviewURL, photoName) ? "Uploaded" : "Required"}
+              </span>
+            </div>
+            {photoPreviewURL ? (
+              <div className="si-preview-row">
+                <img src={photoPreviewURL} alt="Student" className="si-preview-thumb" />
+                <div className="si-preview-info">
+                  <p className="si-preview-name">{photoName || "photo.jpg"}</p>
+                  <p className="si-preview-type">Image file</p>
+                </div>
+                <div className="si-preview-actions">
+                  <button type="button" className="si-icon-btn view" onClick={() => window.open(photoPreviewURL, "_blank")}>
+                    <i className="bx bx-show"></i>
+                  </button>
+                  <button type="button" className="si-icon-btn remove" onClick={() => clearImage("photo")}>
+                    <i className="bx bx-trash"></i>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="si-upload-zone">
+                <input accept=".jpg,.jpeg,.png" type="file" name="photo" onChange={handleFileChange} />
+                <i className="bx bx-cloud-upload si-upload-icon"></i>
+                <p className="si-upload-text">Click to upload photo</p>
+                <p className="si-upload-sub">or drag and drop here</p>
+              </div>
+            )}
+            {showError("photo") && !photoPreviewURL && (
+              <p className="si-error-msg">{formik.errors.photo}</p>
+            )}
+          </div>
+
+          {/* Aadhar */}
+          <div className={`si-doc-card ${isUploaded(aadharPreviewURL, aadarName) ? "si-done" : ""}`}>
+            <div className="si-doc-top">
+              <div className="si-doc-icon" style={{ background: "#fdf0eb", color: "#E8541A" }}>
+                <i className="bx bxs-id-card"></i>
+              </div>
+              <div className="si-doc-meta">
+                <p className="si-doc-name">Aadhar Card</p>
+                <p className="si-doc-hint">JPG, PNG, JPEG · max 2MB</p>
+              </div>
+              <span className={`si-badge ${isUploaded(aadharPreviewURL, aadarName) ? "done" : "optional"}`}>
+                {isUploaded(aadharPreviewURL, aadarName) ? "Uploaded" : "Optional"}
+              </span>
+            </div>
+            {aadharPreviewURL ? (
+              <div className="si-preview-row">
+                <img src={aadharPreviewURL} alt="Aadhar" className="si-preview-thumb" />
+                <div className="si-preview-info">
+                  <p className="si-preview-name">{aadarName || "aadhar.jpg"}</p>
+                  <p className="si-preview-type">Image file</p>
+                </div>
+                <div className="si-preview-actions">
+                  <button type="button" className="si-icon-btn view" onClick={() => window.open(aadharPreviewURL, "_blank")}>
+                    <i className="bx bx-show"></i>
+                  </button>
+                  <button type="button" className="si-icon-btn remove" onClick={() => clearImage("adharcardPhoto")}>
+                    <i className="bx bx-trash"></i>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="si-upload-zone">
+                <input accept=".jpg,.jpeg,.png" type="file" name="adharcardPhoto" onChange={handleFileChange} />
+                <i className="bx bx-cloud-upload si-upload-icon"></i>
+                <p className="si-upload-text">Click to upload Aadhar</p>
+                <p className="si-upload-sub">or drag and drop here</p>
+              </div>
+            )}
+          </div>
+
+          {/* Transfer Certificate */}
+          <div className={`si-doc-card ${isUploaded(tcCertificate, tcName) ? "si-done" : ""}`}>
+            <div className="si-doc-top">
+              <div className="si-doc-icon" style={{ background: "#f5f3ff", color: "#7c3aed" }}>
+                <i className="bx bxs-file-pdf"></i>
+              </div>
+              <div className="si-doc-meta">
+                <p className="si-doc-name">Transfer Certificate</p>
+                <p className="si-doc-hint">PDF · max 2MB</p>
+              </div>
+              <span className={`si-badge ${isUploaded(tcCertificate, tcName) ? "done" : "optional"}`}>
+                {isUploaded(tcCertificate, tcName) ? "Uploaded" : "Optional"}
+              </span>
+            </div>
+            <div className="si-field">
+              <label>Existing TC Number</label>
+              <input
+                type="text"
+                name="oldCertificate"
+                placeholder="Enter TC number"
+                value={formik.values.oldCertificate}
+                onChange={handleInputChange}
+                onBlur={formik.handleBlur}
+              />
+            </div>
+            {certificatePhotoPreview || tcCertificate ? (
+              <div className="si-pdf-preview">
+                <i className="bx bxs-file-pdf"></i>
+                <span>{tcName || "transfer-certificate.pdf"}</span>
+                <button type="button" className="si-icon-btn view" onClick={() => handlePreviewClick(tcCertificate || certificatePhotoPreview)}>
+                  <i className="bx bx-show"></i>
+                </button>
+                <button type="button" className="si-icon-btn remove" onClick={() => {
+                  clearPdf("certificatephoto", setCertificatePhotoPreview, setTcCertificate, setTcName);
+                }}>
+                  <i className="bx bx-trash"></i>
+                </button>
+              </div>
+            ) : (
+              <div className="si-upload-zone">
+                <input
+                  type="file"
+                  name="certificatephoto"
+                  accept="application/pdf"
+                  onChange={(e) => {
+                    handleFilePreview(e, setCertificatePhotoPreview, setTcCertificate);
+                    if (e.target.files[0]) setTcName(e.target.files[0].name);
+                  }}
+                />
+                <i className="bx bx-cloud-upload si-upload-icon"></i>
+                <p className="si-upload-text">Upload TC document</p>
+                <p className="si-upload-sub">PDF only · max 2MB</p>
+              </div>
+            )}
+          </div>
+
+          {/* Birth Certificate */}
+          <div className={`si-doc-card ${isUploaded(birthCertificate, birthName) && formik.values.birthNo ? "si-done" : showError("birthNo") || showError("birthcertificate") ? "si-error" : ""}`}>
+            <div className="si-doc-top">
+              <div className="si-doc-icon" style={{ background: "#dcfce7", color: "#16a34a" }}>
+                <i className="bx bxs-certification"></i>
+              </div>
+              <div className="si-doc-meta">
+                <p className="si-doc-name">Birth Certificate <span className="si-req">*</span></p>
+                <p className="si-doc-hint">PDF · max 2MB</p>
+              </div>
+              <span className={`si-badge ${isUploaded(birthCertificate, birthName) && formik.values.birthNo ? "done" : "pending"}`}>
+                {isUploaded(birthCertificate, birthName) && formik.values.birthNo ? "Uploaded" : "Required"}
+              </span>
+            </div>
+            <div className="si-field">
+              <label>Certificate Number <span className="si-req">*</span></label>
+              <input
+                type="text"
+                name="birthNo"
+                placeholder="Enter birth certificate no"
+                className={showError("birthNo") ? "si-invalid" : ""}
+                value={formik.values.birthNo}
+                onChange={handleInputChange}
+                onBlur={formik.handleBlur}
+              />
+              {showError("birthNo") && <p className="si-error-msg">{formik.errors.birthNo}</p>}
+            </div>
+            {birthCertificatePreview || birthCertificate ? (
+              <div className="si-pdf-preview">
+                <i className="bx bxs-file-pdf"></i>
+                <span>{birthName || "birth-certificate.pdf"}</span>
+                <button type="button" className="si-icon-btn view" onClick={() => handlePreviewClick(birthCertificate || birthCertificatePreview)}>
+                  <i className="bx bx-show"></i>
+                </button>
+                <button type="button" className="si-icon-btn remove" onClick={() => {
+                  clearPdf("birthcertificate", setBirthCertificatePreview, setBirthCertificate, setBirthName);
+                }}>
+                  <i className="bx bx-trash"></i>
+                </button>
+              </div>
+            ) : (
+              <div className="si-upload-zone">
+                <input
+                  type="file"
+                  name="birthcertificate"
+                  accept="application/pdf"
+                  onChange={(e) => {
+                    handleFilePreview(e, setBirthCertificatePreview, setBirthCertificate);
+                    formik.setFieldTouched("birthcertificate", true);
+                    if (e.target.files[0]) {
+                      setBirthName(e.target.files[0].name);
+                      formik.setFieldValue("birthcertificate", e.target.files[0]);
+                    }
+                  }}
+                  onBlur={formik.handleBlur}
+                />
+                <i className="bx bx-cloud-upload si-upload-icon"></i>
+                <p className="si-upload-text">Upload birth certificate</p>
+                <p className="si-upload-sub">PDF only · max 2MB</p>
+              </div>
+            )}
+            {showError("birthcertificate") && !birthCertificatePreview && (
+              <p className="si-error-msg">{formik.errors.birthcertificate}</p>
+            )}
+          </div>
+
+          {/* Community Certificate */}
+          <div className={`si-doc-card ${isUploaded(communityCertUrl, commuName) && formik.values.communityNo ? "si-done" : showError("communityNo") || showError("communityCertificate") ? "si-error" : ""}`}>
+            <div className="si-doc-top">
+              <div className="si-doc-icon" style={{ background: "#fef3c7", color: "#d97706" }}>
+                <i className="bx bxs-file-doc"></i>
+              </div>
+              <div className="si-doc-meta">
+                <p className="si-doc-name">Community Certificate <span className="si-req">*</span></p>
+                <p className="si-doc-hint">PDF · max 2MB</p>
+              </div>
+              <span className={`si-badge ${isUploaded(communityCertUrl, commuName) && formik.values.communityNo ? "done" : "pending"}`}>
+                {isUploaded(communityCertUrl, commuName) && formik.values.communityNo ? "Uploaded" : "Required"}
+              </span>
+            </div>
+            <div className="si-field">
+              <label>Certificate Number <span className="si-req">*</span></label>
+              <input
+                type="text"
+                name="communityNo"
+                placeholder="Enter community certificate no"
+                className={showError("communityNo") ? "si-invalid" : ""}
+                value={formik.values.communityNo}
+                onChange={handleInputChange}
+                onBlur={formik.handleBlur}
+              />
+              {showError("communityNo") && <p className="si-error-msg">{formik.errors.communityNo}</p>}
+            </div>
+            {communityCertificatePreview || communityCertUrl ? (
+              <div className="si-pdf-preview">
+                <i className="bx bxs-file-pdf"></i>
+                <span>{commuName || "community-certificate.pdf"}</span>
+                <button type="button" className="si-icon-btn view" onClick={() => handlePreviewClick(communityCertUrl || communityCertificatePreview)}>
+                  <i className="bx bx-show"></i>
+                </button>
+                <button type="button" className="si-icon-btn remove" onClick={() => {
+                  clearPdf("communityCertificate", setCommunityCertificatePreview, setCommunityCertUrl, setCommuName);
+                }}>
+                  <i className="bx bx-trash"></i>
+                </button>
+              </div>
+            ) : (
+              <div className="si-upload-zone">
+                <input
+                  type="file"
+                  name="communityCertificate"
+                  accept=".pdf"
+                  onChange={(e) => {
+                    handleFilePreview(e, setCommunityCertificatePreview, setCommunityCertUrl);
+                    formik.setFieldTouched("communityCertificate", true);
+                    if (e.target.files[0]) {
+                      setCommuName(e.target.files[0].name);
+                      formik.setFieldValue("communityCertificate", e.target.files[0]);
+                    }
+                  }}
+                  onBlur={formik.handleBlur}
+                />
+                <i className="bx bx-cloud-upload si-upload-icon"></i>
+                <p className="si-upload-text">Upload community certificate</p>
+                <p className="si-upload-sub">PDF only · max 2MB</p>
+              </div>
+            )}
+            {showError("communityCertificate") && !communityCertificatePreview && (
+              <p className="si-error-msg">{formik.errors.communityCertificate}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="si-footer">
+          <button type="button" className="si-btn-cancel" onClick={() => navigate("/students")}>
+            Cancel
+          </button>
+          <button type="submit" className="si-btn-submit" disabled={formik.isSubmitting}>
+            {formik.isSubmitting ? "Saving…" : "Save Documents"}
+          </button>
+        </div>
+      </form>
+
+      <ToastContainer position="top-right" autoClose={2000} style={{ fontSize: "14px" }} />
+    </div>
   );
 }

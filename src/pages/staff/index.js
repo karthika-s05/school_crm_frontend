@@ -45,7 +45,7 @@ import {
   createExamReport,
   getExamResultlist,
 } from "../../services/api";
-import { STAFF_KEY, TOKEN_KEY } from "../../services/auth";
+import { getToken } from "../../services/auth";
 // import './Staff.css';
 import "../../App.css";
 import Table from "../../component/Table";
@@ -113,7 +113,7 @@ const Staff = () => {
         if (formData.subjectName && formData.subjectCode) {
           const postSubjectDetails = async () => {
             try {
-              const response = await postSubject(formData, TOKEN_KEY);
+              const response = await postSubject(formData, getToken());
               console.log(response.data);
               showMessage(response);
             } catch (err) {
@@ -130,7 +130,7 @@ const Staff = () => {
         console.log("Calling Community function");
         const postClassDetails = async () => {
           try {
-            const response = await postClass(formData, TOKEN_KEY);
+            const response = await postClass(formData, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -143,7 +143,7 @@ const Staff = () => {
         console.log("Calling Community function");
         const postSectionDetails = async () => {
           try {
-            const response = await postSection(formData, TOKEN_KEY);
+            const response = await postSection(formData, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -178,7 +178,7 @@ const Staff = () => {
         const assignment = async () => {
           try {
             console.log("hello", formData);
-            const response = await createAssignment(formData, STAFF_KEY);
+            const response = await createAssignment(formData, getToken());
             console.log(response.data);
             if (response.status === "Error") {
               toast.error(response.message);
@@ -214,7 +214,7 @@ const Staff = () => {
         const homework = async () => {
           try {
             console.log("hello", formData);
-            const response = await createHomework(formData, STAFF_KEY);
+            const response = await createHomework(formData, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -245,7 +245,7 @@ const Staff = () => {
         const exams = async () => {
           try {
             console.log("hello", formData);
-            const response = await createExam(formData, STAFF_KEY);
+            const response = await createExam(formData, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -290,7 +290,7 @@ const Staff = () => {
         const examportion = async () => {
           try {
             console.log("hello", formData);
-            const response = await createExamportion(formData, STAFF_KEY);
+            const response = await createExamportion(formData, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -333,7 +333,7 @@ const Staff = () => {
               console.log("hello", formData.photoUrl);
               const response = await createEventImage(
                 { id: formData.id, photoUrl: formData.photoUrl },
-                STAFF_KEY
+                getToken()
               );
               console.log("123", response.data);
              
@@ -347,7 +347,7 @@ const Staff = () => {
         const events = async () => {
           try {
             console.log("hello", formData);
-            const response = await createEvent(formData, STAFF_KEY);
+            const response = await createEvent(formData, getToken());
             console.log(response.data);
             if (response.status === "error") {
               toast.error(response.message);
@@ -384,7 +384,7 @@ const Staff = () => {
         const AllGrade = async () => {
           try {
             console.log("hello", formData);
-            const response = await createOverallgrade(formData, STAFF_KEY);
+            const response = await createOverallgrade(formData, getToken());
             console.log(response);
             if (response.status === "error") {
               toast.error(response.message);
@@ -420,7 +420,7 @@ const Staff = () => {
         const CreateSubjectgrade = async () => {
           try {
             console.log("hello", formData);
-            const response = await createSubjectgrade(formData, STAFF_KEY);
+            const response = await createSubjectgrade(formData, getToken());
             console.log(response);
             if (response.status === "error") {
               toast.error(response.message);
@@ -473,7 +473,7 @@ const Staff = () => {
               subjectId: parseInt(formData.subjectId),
             };
             console.log("hello", formData);
-            const response = await createExamReport(sendData, STAFF_KEY);
+            const response = await createExamReport(sendData, getToken());
             console.log(response);
             showMessage(response);
           } catch (err) {
@@ -497,7 +497,7 @@ const Staff = () => {
       case "Class":
         const getClassDetails = async () => {
           try {
-            const response = await getClass(id, TOKEN_KEY);
+            const response = await getClass(id, getToken());
             setFormData({ id: response[0].id, name: response[0].name });
             setEditData([{ name: "name", data: response[0].name }]);
           } catch (err) {
@@ -510,7 +510,7 @@ const Staff = () => {
       case "Section":
         const getSectionDetails = async () => {
           try {
-            const response = await getSection(id, TOKEN_KEY);
+            const response = await getSection(id, getToken());
             console.log(response);
             setFormData({ id: response[0].id, name: response[0].name });
             setEditData([{ name: "name", data: response[0].name }]);
@@ -524,7 +524,7 @@ const Staff = () => {
       case "Subject":
         const getSubjectDetails = async () => {
           try {
-            const response = await getSubject(id, TOKEN_KEY);
+            const response = await getSubject(id, getToken());
             console.log("subject", response);
             setFormData({
               id: response[0].id,
@@ -552,7 +552,7 @@ const Staff = () => {
               subjectId: 1,
               pageNo: 1,
             },
-            STAFF_KEY
+            getToken()
           );
           console.log("subjectttt", response.data[0].subjectIt);
           setFormData({
@@ -586,7 +586,7 @@ const Staff = () => {
               classId: 1,
               sectionId: 1,
             },
-            STAFF_KEY
+            getToken()
           );
           console.log("subjectttt", response.data[0].subjectId);
           setFormData({
@@ -616,7 +616,7 @@ const Staff = () => {
               {
                 id,
               },
-              STAFF_KEY
+              getToken()
             );
             setFormData({
               id: response.data[0].id,
@@ -649,7 +649,7 @@ const Staff = () => {
                 classId: 1,
                 sectionId: 1,
               },
-              STAFF_KEY
+              getToken()
             );
 
             const formatTime = (timeString) => {
@@ -709,7 +709,7 @@ const Staff = () => {
       case "Events":
         const getEvents = async () => {
           try {
-            const response = await getbyidEvents({ id }, STAFF_KEY);
+            const response = await getbyidEvents({ id }, getToken());
 
             const formatTime = (timeString) => {
               const [hours, minutes, seconds] = timeString.split(":");
@@ -759,7 +759,7 @@ const Staff = () => {
         const GetOverallgeade = async () => {
           try {
             console.log("i  djda'hjg", id);
-            const response = await getOverallgeade({ id }, STAFF_KEY);
+            const response = await getOverallgeade({ id }, getToken());
             setFormData({
               id: response.data[0].id,
               mark: response.data[0].mark,
@@ -787,7 +787,7 @@ const Staff = () => {
         const getsubjectgeade = async () => {
           try {
             console.log("i  djda'hjg", id);
-            const response = await getSubjectgrade({ id }, STAFF_KEY);
+            const response = await getSubjectgrade({ id }, getToken());
             setFormData({
               id: response.data[0].id,
               mark: response.data[0].mark,
@@ -823,7 +823,7 @@ const Staff = () => {
                 classId: 1,
                 sectionId: 1,
               },
-              STAFF_KEY
+              getToken()
             );
             setFormData({
               id: response.data[0].id,
@@ -865,7 +865,7 @@ const Staff = () => {
         console.log("Calling Community function");
         const deleteSubjectDetails = async () => {
           try {
-            const response = await deleteSubject(id, TOKEN_KEY);
+            const response = await deleteSubject(id, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -877,7 +877,7 @@ const Staff = () => {
       case "Class":
         const deleteClassDetails = async () => {
           try {
-            const response = await deleteClass(id, TOKEN_KEY);
+            const response = await deleteClass(id, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -889,7 +889,7 @@ const Staff = () => {
       case "Section":
         const deleteSectionDetails = async () => {
           try {
-            const response = await deleteSection(id, TOKEN_KEY);
+            const response = await deleteSection(id, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -901,7 +901,7 @@ const Staff = () => {
       case "Assignment":
         const DeletetAssignment = async () => {
           try {
-            const response = await deletetAssignment(id, STAFF_KEY);
+            const response = await deletetAssignment(id, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -913,7 +913,7 @@ const Staff = () => {
       case "Homework":
         const Deletethomework = async () => {
           try {
-            const response = await deleteHomework(id, STAFF_KEY);
+            const response = await deleteHomework(id, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -925,7 +925,7 @@ const Staff = () => {
       case "Exam":
         const DeletetExam = async () => {
           try {
-            const response = await deletetExam(id, STAFF_KEY);
+            const response = await deletetExam(id, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -937,7 +937,7 @@ const Staff = () => {
       case "Exam Portion":
         const DeletetExamportion = async () => {
           try {
-            const response = await deletetExamportion(id, STAFF_KEY);
+            const response = await deletetExamportion(id, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -949,7 +949,7 @@ const Staff = () => {
       case "Events":
         const DeletetEvents = async () => {
           try {
-            const response = await deletetEvents(id, STAFF_KEY);
+            const response = await deletetEvents(id, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -961,7 +961,7 @@ const Staff = () => {
       case "Overall grade":
         const Deleteovergrade = async () => {
           try {
-            const response = await deletetOvergrade(id, STAFF_KEY);
+            const response = await deletetOvergrade(id, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -973,7 +973,7 @@ const Staff = () => {
       case "Subject grade":
         const DeleteSubjectgrade = async () => {
           try {
-            const response = await deletetSubjectgrade(id, STAFF_KEY);
+            const response = await deletetSubjectgrade(id, getToken());
             console.log(response.data);
             showMessage(response);
           } catch (err) {
@@ -994,7 +994,7 @@ const Staff = () => {
       case "Subject":
         const getSubjectDetails = async () => {
           try {
-            const response = await getSubject(0, STAFF_KEY);
+            const response = await getSubject(0, getToken());
             console.log(response);
             setData(response);
           } catch (err) {
@@ -1007,7 +1007,7 @@ const Staff = () => {
       case "Class":
         const getClassDetails = async () => {
           try {
-            const response = await getClass(0, TOKEN_KEY);
+            const response = await getClass(0, getToken());
             console.log(response);
             setData(response);
           } catch (err) {
@@ -1020,7 +1020,7 @@ const Staff = () => {
       case "Section":
         const getSectionDetails = async () => {
           try {
-            const response = await getSection(0, TOKEN_KEY);
+            const response = await getSection(0, getToken());
             console.log(response);
             setData(response);
           } catch (err) {
@@ -1040,7 +1040,7 @@ const Staff = () => {
                 sectionId: 1,
                 pageNo: 1,
               },
-              STAFF_KEY
+              getToken()
             );
             console.log("new", response.data);
             const resultData = response.data.map((item) => ({
@@ -1076,7 +1076,7 @@ const Staff = () => {
                 sectionId: 1,
                 subjectId: 1,
               },
-              STAFF_KEY
+              getToken()
             );
             const resultData = response.data.map((item) => ({
               id: item.id,
@@ -1097,7 +1097,7 @@ const Staff = () => {
       case "Exam Type":
         const Getexam = async () => {
           try {
-            const response = await getExam({}, STAFF_KEY);
+            const response = await getExam({}, getToken());
             const resultData = response.data.map((item) => ({
               id: item.id,
               class: item.className,
@@ -1123,7 +1123,7 @@ const Staff = () => {
                 sectionId: 1,
                 classId: 1,
               },
-              STAFF_KEY
+              getToken()
             );
             const resultData = response.data.map((item) => ({
               id: item.id,
@@ -1149,7 +1149,7 @@ const Staff = () => {
       case "Events":
         const Getevent = async () => {
           try {
-            const response = await getEvent({ id: 0 }, STAFF_KEY);
+            const response = await getEvent({ id: 0 }, getToken());
             const resultData = response.data.map((item) => ({
               id: item.id,
               class: item.class,
@@ -1171,7 +1171,7 @@ const Staff = () => {
       case "Overall grade":
         const getOverall = async () => {
           try {
-            const response = await getOverallgeade({ id: 0 }, STAFF_KEY);
+            const response = await getOverallgeade({ id: 0 }, getToken());
             const resultData = response.data.map((item) => ({
               id: item.id,
               mark: item.mark,
@@ -1190,7 +1190,7 @@ const Staff = () => {
       case "Subject grade":
         const GetSubjectgrade = async () => {
           try {
-            const response = await getSubjectgrade({ id: 0 }, STAFF_KEY);
+            const response = await getSubjectgrade({ id: 0 }, getToken());
             const resultData = response.data.map((item) => ({
               id: item.id,
               grade: item.gradeName,
@@ -1211,7 +1211,7 @@ const Staff = () => {
           try {
             const response = await getExamreport(
               { examId: 1, studentId: "All", classId: 1, sectionId: 1 },
-              STAFF_KEY
+              getToken()
             );
             const resultData = response.data[0].map((item) => ({
               id: item.id,
@@ -1238,7 +1238,7 @@ const Staff = () => {
           try {
             const response = await getExamResultlist(
               { examId: 1, studentId: "All", classId: 1, sectionId: 1 },
-              STAFF_KEY
+              getToken()
             );
             const resultData = response.data.map((item) => ({
               id: item.id,

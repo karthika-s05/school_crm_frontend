@@ -1,0 +1,553 @@
+/*  Tabs  */
+.svc-tabs {
+  display: flex;
+  gap: 4px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 12px;
+  width: fit-content;
+}
+
+.svc-tab {
+  padding: 8px 20px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+
+.svc-tab.active {
+  background: linear-gradient(135deg, #2D3A8C, #3b82f6);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(45,58,140,.25);
+}
+
+.svc-tab:hover:not(.active) { background: #e2e8f0; color: #1e293b; }
+
+/*  Filter Select  */
+.svc-select {
+  height: 40px;
+  padding: 0 32px 0 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: "Poppins", sans-serif;
+  color: #374151;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%236b7280'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color .18s;
+}
+
+.svc-select:focus { border-color: #2D3A8C; }
+
+/*  Bus Card Grid  */
+.svc-bus-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+}
+
+.svc-bus-card {
+  background: #fff;
+  border: 1px solid #e9ebf0;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 2px 8px rgba(45,58,140,.06);
+  transition: transform .2s, box-shadow .2s;
+}
+
+.svc-bus-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(45,58,140,.1); }
+
+.svc-bus-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.svc-bus-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #eef0fb;
+  color: #2D3A8C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.svc-bus-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.svc-active  { background: #f0fdf4; color: #16a34a; }
+.svc-maint   { background: #fef3c7; color: #d97706; }
+
+.svc-bus-no {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+
+.svc-bus-route {
+  font-size: 12px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.svc-bus-route i { color: #E8541A; font-size: 14px; }
+
+.svc-bus-meta {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.svc-bus-meta span { display: flex; align-items: center; gap: 4px; }
+.svc-bus-meta i { font-size: 14px; color: #2D3A8C; }
+
+/*  Capacity Bar  */
+.svc-cap-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.svc-cap-bar {
+  flex: 1;
+  height: 7px;
+  background: #e9ebf0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.svc-cap-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #2D3A8C;
+  transition: width .4s;
+}
+
+.svc-cap-txt {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+/*  Stops  */
+.svc-stops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.svc-stop-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+/*  Route Badge  */
+.svc-route-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  background: #eef0fb;
+  color: #2D3A8C;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/*  Fee Summary Cards  */
+.svc-fee-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.svc-fee-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1.5px solid #e9ebf0;
+  box-shadow: 0 2px 8px rgba(45,58,140,.05);
+}
+
+.svc-fee-card i { font-size: 28px; flex-shrink: 0; }
+
+.svc-fee-val {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.svc-fee-lbl {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 3px;
+}
+
+/*  Toggle Fee Button  */
+.svc-toggle-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: all .15s;
+  background: #fff;
+  white-space: nowrap;
+}
+
+.svc-toggle-paid   { border-color: #16a34a; color: #16a34a; }
+.svc-toggle-paid:hover { background: #16a34a; color: #fff; }
+.svc-toggle-unpaid { border-color: #ef4444; color: #ef4444; }
+.svc-toggle-unpaid:hover { background: #ef4444; color: #fff; }
+
+/*  Modal  */
+.svc-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(3px);
+  animation: svc-fade 0.2s ease;
+}
+
+@keyframes svc-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.svc-modal {
+  background: #fff;
+  border-radius: 18px;
+  width: 600px;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.22);
+  animation: svc-up 0.25s ease;
+}
+
+.svc-modal-sm { width: 400px; }
+.svc-modal-lg { width: 720px; }
+
+@keyframes svc-up { from { transform: translateY(20px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+
+.svc-modal-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #f0f4f8;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.svc-modal-hdr-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.svc-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.svc-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.svc-modal-close:hover { background: #fee2e2; color: #ef4444; }
+
+.svc-modal-body {
+  padding: 20px 22px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.svc-modal .sdl-table-card {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.svc-modal .sdl-table {
+  min-width: 520px;
+}
+
+.svc-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 18px;
+}
+
+.svc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.svc-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.svc-field input,
+.svc-field select,
+.svc-field textarea {
+  height: 40px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-family: "Poppins", sans-serif;
+  color: #1e293b;
+  background: #fff;
+  outline: none;
+  transition: border-color .18s;
+}
+
+.svc-field input:focus,
+.svc-field select:focus { border-color: #2D3A8C; }
+
+.svc-err {
+  font-size: 11px;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.svc-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid #f0f4f8;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.svc-btn-cancel {
+  padding: 9px 20px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: background .15s;
+}
+
+.svc-btn-cancel:hover { background: #f1f5f9; }
+
+.svc-btn-save {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 22px;
+  background: linear-gradient(135deg, #2D3A8C, #3b82f6);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: opacity .18s;
+}
+
+.svc-btn-save:hover { opacity: .9; }
+
+.svc-btn-danger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 22px;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: background .15s;
+}
+
+.svc-btn-danger:hover { background: #dc2626; }
+
+/*  View grid  */
+.svc-view-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.svc-view-row { display: flex; flex-direction: column; gap: 3px; }
+.svc-view-key { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; }
+.svc-view-val { font-size: 13px; font-weight: 600; color: #1e293b; }
+
+/*  Delete body  */
+.svc-delete-body {
+  padding: 28px 22px 10px;
+  text-align: center;
+}
+
+.svc-delete-icon {
+  font-size: 48px;
+  color: #ef4444;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.svc-delete-body p {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+/*  Stationery specific  */
+.svc-prod-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.svc-cat-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 6px;
+}
+
+.svc-stock-ok   { font-weight: 700; color: #16a34a; }
+.svc-stock-low  { font-weight: 700; color: #d97706; }
+.svc-stock-zero { font-weight: 700; color: #ef4444; }
+
+/*  Issue tracker items cell  */
+.svc-items-cell {
+  position: relative;
+  font-size: 12px;
+  color: #2D3A8C;
+  font-weight: 600;
+  cursor: default;
+}
+
+.svc-items-tip {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 22px;
+  background: #1e293b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 400;
+  padding: 6px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+}
+
+.svc-items-cell:hover .svc-items-tip { display: block; }
+
+/*  Add product form card  */
+.svc-add-form-card {
+  background: #fff;
+  border: 1px solid #e9ebf0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(45,58,140,.06);
+}
+
+.svc-add-form-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #2D3A8C;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f0f4f8;
+}
+
+.svc-add-form-title i { font-size: 20px; }
+
+/*  Responsive  */
+@media (max-width: 768px) {
+  .svc-bus-grid { grid-template-columns: 1fr; }
+  .svc-fee-summary { grid-template-columns: 1fr; }
+  .svc-modal-grid { grid-template-columns: 1fr; }
+  .svc-view-grid  { grid-template-columns: 1fr; }
+  .svc-tabs { width: 100%; overflow-x: auto; }
+  .svc-overlay { padding: 12px; }
+  .svc-modal { max-height: calc(100vh - 24px); }
+}

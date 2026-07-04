@@ -1,416 +1,320 @@
-import React, { useEffect, useState } from "react";
-import {
-  getClass,
-  getExam,
-  getExamreport,
-  getSection,
-  getStudentlist,
-  getSubject,
-} from "../../services/api";
-import { STAFF_KEY, TOKEN_KEY } from "../../services/auth";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import '../exam/exam.css'
-const Examresult = () => {
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "../List/StudentDummyList.css";
+import "../services/services.css";
+import "./exam.css";
+import TableActionMenu from "../../component/Table/TableActionMenu";
+import { getExamResultlist, getExam, getClass, getSection } from "../../services/api";
+import { getToken } from "../../services/auth";
+import { runApi } from "../../utils/apiHelper";
+
+const PER_PAGE = 10;
+const AV_COLORS = ["#2D3A8C", "#E8541A", "#22c55e", "#8b5cf6", "#f59e0b", "#06b6d4"];
+const initials = (n) =>
+  (n || "")
+    .split(" ")
+    .map((x) => x[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+const mapResultItem = (item) => ({
+  id: item.id,
+  student: item.studentName,
+  admNo: item.admissionNo || item.registrationNo || "—",
+  examName: item.examName,
+  className: item.className,
+  sectionName: item.sectionName,
+  subjectName: item.subjectName || "—",
+  mark: item.obtainedMark ?? item.mark ?? 0,
+  total: item.totalMark ?? item.total ?? 0,
+  remarks: item.remarks || "—",
+  result:
+    item.result ||
+    (Number(item.obtainedMark) >= Number(item.passMark ?? 40) ? "Pass" : "Fail"),
+});
+
+export default function Examresult() {
   const navigate = useNavigate();
+  const token = getToken();
   const [data, setData] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
+  const [classes, setClasses] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [exams, setExams] = useState([]);
   const [search, setSearch] = useState("");
-  const [originalData, setOriginalData] = useState([]);
-  const [dropDown, setDropDown] = useState({});
-  const [selectedClassId, setSelectedClassId] = useState(0);
-  const [selectedSectionId, setSelectedSectionId] = useState(0);
-  const [selectedExamId, setSelectedExamId] = useState(0);
-  const [selectedStudentId, setSelectedStudentId] = useState("All");
+  const [page, setPage] = useState(1);
+  const [clsFilter, setClsFilter] = useState("");
+  const [sectionFilter, setSectionFilter] = useState("");
+  const [examFilter, setExamFilter] = useState("");
+  const [resultFilter, setResultFilter] = useState("All");
+  const [loading, setLoading] = useState(true);
 
-  const handleAdd = () => {
-    navigate("/exam");
-  };
-
-  const handleEdit = () => {
-    navigate("/exam");
-  };
-
-  useEffect(() => {
-    const getExamreportlist = async () => {
-      try {
-        const response = await getExamreport(
+  const loadResults = useCallback(async () => {
+    if (!clsFilter || !sectionFilter || !examFilter) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    await runApi(
+      () =>
+        getExamResultlist(
           {
-            examId: selectedExamId,
-            studentId: selectedStudentId,
-            classId: selectedClassId,
-            sectionId: selectedSectionId,
+            examId: parseInt(examFilter, 10),
+            studentId: "All",
+            classId: parseInt(clsFilter, 10),
+            sectionId: parseInt(sectionFilter, 10),
           },
-          STAFF_KEY
-        );
-
-        const resultData = response.data[0].map((item) => ({
-          id: item.id,
-          student: item.studentName,
-          examName: item.examName,
-          className: item.className,
-          mark: item.mark,
-          result: item.result,
-          sectionName: item.sectionName,
-          subjectName: item.subjectName,
-          remarks: item.remarks,
-          total: item.total,
-        }));
-        setOriginalData(resultData);
-        setData(resultData);
-        setTotalPages(Math.ceil(resultData.length / pageSize));
-      } catch (err) {
-        console.log(err);
+          token
+        ),
+      {
+        onSuccess: (res) => {
+          const list = Array.isArray(res.data) ? res.data.map(mapResultItem) : [];
+          setData(list);
+        },
+        onError: () => setData([]),
       }
-    };
-
-    getExamreportlist();
-  }, [
-    pageSize,
-    selectedClassId,
-    selectedSectionId,
-    selectedExamId,
-    selectedStudentId,
-  ]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (name === "classId") {
-      setSelectedClassId(value);
-    } else if (name === "sectionId") {
-      setSelectedSectionId(value);
-    } else if (name === "examId") {
-      setSelectedExamId(value);
-    } else if (name === "studentId") {
-      setSelectedStudentId(value);
-    }
-  };
-
-  useEffect(() => {
-    const filteredData = originalData.filter((item) =>
-      Object.values(item).some((value) =>
-        search
-          ? value.toString().toUpperCase().includes(search.toUpperCase())
-          : true
-      )
     );
+    setLoading(false);
+  }, [clsFilter, sectionFilter, examFilter, token]);
 
-    setTotalPages(Math.ceil(filteredData.length / pageSize));
-    setData(search ? filteredData : originalData);
-  }, [search, pageSize, originalData]);
-
-  const handlePageClick = (pageNumber) => {
-    if (pageNumber === "prev" && currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    } else if (pageNumber === "next" && currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    } else if (
-      typeof pageNumber === "number" &&
-      pageNumber >= 1 &&
-      pageNumber <= totalPages
-    ) {
-      setCurrentPage(pageNumber);
-    }
-  };
-
-  const renderPaginationButtons = () => {
-    const maxButtonsToShow = 3;
-    const buttons = [];
-
-    if (totalPages <= maxButtonsToShow) {
-      for (let i = 1; i <= totalPages; i++) {
-        buttons.push(i);
-      }
-    } else {
-      const startPage = Math.max(
-        1,
-        Math.min(
-          currentPage - Math.floor(maxButtonsToShow / 2),
-          totalPages - maxButtonsToShow + 1
-        )
-      );
-      const endPage = Math.min(startPage + maxButtonsToShow - 1, totalPages);
-
-      if (startPage > 1) {
-        buttons.push(1);
-        if (startPage > 2) {
-          buttons.push("...");
-        }
-      }
-
-      for (let i = startPage; i <= endPage; i++) {
-        buttons.push(i);
-      }
-
-      if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-          buttons.push("...");
-        }
-        buttons.push(totalPages);
-      }
-    }
-
-    return buttons.map((pageNumber, index) => (
-      <button
-        key={index}
-        onClick={() => handlePageClick(pageNumber)}
-        className={`pagination-button ${
-          currentPage === pageNumber ? "active-page" : ""
-        }`}
-      >
-        {pageNumber === "..." ? "..." : pageNumber}
-      </button>
-    ));
-  };
   useEffect(() => {
-    const getDropdownData = async (funcName, id, name) => {
+    const loadMeta = async () => {
       try {
-        const response = await funcName(id, TOKEN_KEY);
-        const data = response.map((value, index) => ({
-          id: value.id,
-          value: value.name,
-        }));
-        setDropDown((prevData) => ({
-          ...prevData,
-          [name]: data,
-        }));
-      } catch (err) {
-        console.log(err);
+        const [cls, sec, examRes] = await Promise.all([
+          getClass(0, token),
+          getSection(0, token),
+          getExam({}, token),
+        ]);
+        const classList = Array.isArray(cls) ? cls : [];
+        const sectionList = Array.isArray(sec) ? sec : [];
+        const examList = Array.isArray(examRes?.data) ? examRes.data : [];
+        setClasses(classList);
+        setSections(sectionList);
+        setExams(examList);
+        if (classList.length && !clsFilter) setClsFilter(String(classList[0].id));
+        if (sectionList.length && !sectionFilter) setSectionFilter(String(sectionList[0].id));
+        if (examList.length && !examFilter) setExamFilter(String(examList[0].id));
+      } catch {
+        setClasses([]);
+        setSections([]);
+        setExams([]);
       }
     };
-    const getStudent = async () => {
-      try {
-        const response = await getStudentlist({userName:0}, TOKEN_KEY);
-        console.log(response);
-        const studentlist = response.data.map((value, index) => ({
-          id: value.admissionNo,
-          value: value.studentName,
-        }));
-        setDropDown((prevData) => ({
-          ...prevData,
-          studentId: studentlist,
-        }));
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    const getSubject1 = async () => {
-      try {
-        const response = await getSubject(0, TOKEN_KEY);
-        const subjects = response.map((value, index) => ({
-          id: value.id,
-          value: value.name,
-        }));
-        setDropDown((prevData) => ({
-          ...prevData,
-          subjectId: subjects,
-        }));
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    const getExamstaffExam1 = async () => {
-      try {
-        const response = await getExam({}, STAFF_KEY);
-        const examName = response.data.map((value, index) => ({
-          id: value.id,
-          value: value.exam,
-        }));
-        setDropDown((prevData) => ({
-          ...prevData,
-          examId: examName,
-        }));
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    getStudent();
-    getSubject1();
-    getExamstaffExam1();
-    getDropdownData(getClass, 0, "classId");
-    getDropdownData(getSection, 0, "sectionId");
-  }, []);
+    loadMeta();
+  }, [token]);
+
+  useEffect(() => {
+    if (clsFilter && sectionFilter && examFilter) loadResults();
+  }, [clsFilter, sectionFilter, examFilter, loadResults]);
+
+  const filtered = data.filter((item) => {
+    const ms =
+      item.student?.toLowerCase().includes(search.toLowerCase()) ||
+      item.subjectName?.toLowerCase().includes(search.toLowerCase()) ||
+      item.admNo?.toLowerCase().includes(search.toLowerCase());
+    const mr = resultFilter === "All" || item.result === resultFilter;
+    return ms && mr;
+  });
+
+  const totalPgs = Math.ceil(filtered.length / PER_PAGE);
+  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  const passCount = data.filter((r) => r.result === "Pass").length;
+  const failCount = data.filter((r) => r.result === "Fail").length;
+  const avgMark = data.length
+    ? Math.round(data.reduce((s, r) => s + (Number(r.mark) || 0), 0) / data.length)
+    : 0;
+  const avgTotal = data.length ? Math.max(...data.map((r) => Number(r.total) || 100)) : 100;
+
+  const reset = () => {
+    setSearch("");
+    setResultFilter("All");
+    setPage(1);
+  };
+
   return (
-    <div>
-      {/* <h3>Exam Result</h3> */}
-      <ul class="breadcrumb" style={{display:'flex'}}>
-        <li>
-          <a href="/dashboard">
-            <a style={{color: "#051F3E"}}><h4>Home</h4></a>
-          </a>
-        </li>
-        <li>
-          <a>Exam Result</a>
-        </li>
-      </ul>
-      <div className="table-container">
-        <div className="table-main">
-          <h3 style={{color: "#051F3E"}}>Student Exam Result</h3>
-          <div class="form-group">
-            <div class="search-input">
-              <i
-                class="bx bx-search"
-                style={{ padding: "10px", color: "gray" }}
-              ></i>
-              <input
-                type="text"
-                placeholder="Search..."
-                class="form-control"
-                onChange={(e) => setSearch(e.target.value)}
-              />
+    <div className="sdl-wrap">
+      <ToastContainer position="top-right" autoClose={2000} style={{ fontSize: "14px" }} />
+
+      <div className="sdl-stats" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+        {[
+          { label: "Total Records", val: data.length, icon: "bx bxs-spreadsheet", color: "#2D3A8C", bg: "#eef0fb" },
+          { label: "Pass", val: passCount, icon: "bx bxs-check-circle", color: "#16a34a", bg: "#dcfce7" },
+          { label: "Fail", val: failCount, icon: "bx bxs-x-circle", color: "#ef4444", bg: "#fef2f2" },
+          { label: "Avg Mark", val: data.length ? `${avgMark}/${avgTotal}` : "—", icon: "bx bxs-bar-chart-alt-2", color: "#d97706", bg: "#fef3c7" },
+        ].map((s, i) => (
+          <div className="sdl-stat-card" key={i}>
+            <div className="sdl-stat-icon" style={{ background: s.bg, color: s.color }}>
+              <i className={s.icon}></i>
             </div>
-            <button
-              type="submit"
-              class="fw-btn-fill btn-gradient-add"
-              onClick={handleAdd}
-            >
-              <i class="bx bx-plus"></i>ADD{" "}
+            <div>
+              <div className="sdl-stat-val">{s.val}</div>
+              <div className="sdl-stat-label">{s.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="sdl-header">
+        <div className="sdl-search" style={{ maxWidth: 320 }}>
+          <i className="bx bx-search"></i>
+          <input
+            placeholder="Search student, subject, admission no…"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <select
+            className="svc-select"
+            value={clsFilter}
+            onChange={(e) => {
+              setClsFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Select Class</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>Class {c.name}</option>
+            ))}
+          </select>
+          <select
+            className="svc-select"
+            value={sectionFilter}
+            onChange={(e) => {
+              setSectionFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Select Section</option>
+            {sections.map((s) => (
+              <option key={s.id} value={s.id}>Section {s.name}</option>
+            ))}
+          </select>
+          <select
+            className="svc-select"
+            value={examFilter}
+            onChange={(e) => {
+              setExamFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Select Exam</option>
+            {exams.map((e) => (
+              <option key={e.id} value={e.id}>{e.exam}</option>
+            ))}
+          </select>
+          <select className="svc-select" value={resultFilter} onChange={(e) => { setResultFilter(e.target.value); setPage(1); }}>
+            <option value="All">All Results</option>
+            <option value="Pass">Pass</option>
+            <option value="Fail">Fail</option>
+          </select>
+          {(search || resultFilter !== "All") && (
+            <button className="svc-btn-cancel" onClick={reset} style={{ height: 40, padding: "0 14px", fontSize: 12 }}>
+              <i className="bx bx-x"></i> Clear
             </button>
-          </div>
-          <div>
-            <select
-              className="effect-1"
-              style={{ marginRight: "10px",width:'120px' }}
-              name="classId"
-              value={selectedClassId}
-              onChange={handleInputChange}
-            >
-              <option value="">Class</option>
-              {dropDown["classId"] &&
-                dropDown["classId"].map((option, index) => (
-                  <option key={index} value={option.id}>
-                    {option.value}
-                  </option>
-                ))}
-            </select>
-            <select
-              className="effect-1"
-              style={{ marginRight: "10px",width:'120px' }}
-              name="sectionId"
-              value={selectedSectionId}
-              onChange={handleInputChange}
-            >
-              <option value="">Section</option>
-              {dropDown["sectionId"] &&
-                dropDown["sectionId"].map((option, index) => (
-                  <option key={index} value={option.id}>
-                    {option.value}
-                  </option>
-                ))}
-            </select>
-            <select
-              className="effect-1"
-              style={{ marginRight: "10px",width:'120px' }}
-              name="examId"
-              value={selectedExamId}
-              onChange={handleInputChange}
-            >
-              <option value="">Exam</option>
-              {dropDown["examId"] &&
-                dropDown["examId"].map((option, index) => (
-                  <option key={index} value={option.id}>
-                    {option.value}
-                  </option>
-                ))}
-            </select>
-            <select
-              className="effect-1"
-              name="studentId"
-              // style={{ marginRight: "10px",width:'120px' }}
-              value={selectedStudentId}
-              onChange={handleInputChange}
-            >
-              <option value="">Student</option>
-              {dropDown["studentId"] &&
-                dropDown["studentId"].map((option, index) => (
-                  <option key={index} value={option.id}>
-                    {option.value}
-                  </option>
-                ))}
-            </select>
-          </div>
-          <table className="table">
-            <thead>
-              {selectedClassId === 0 ||
-              selectedSectionId === 0 ||
-              selectedExamId === 0  ? (
-                <tr>
-                  <th colSpan="11" style={{ textAlign: "center" }}>
-                    Please select all options
-                  </th>
-                </tr>
-              ) : (
-                <tr>
-                  {/* <th>ID</th> */}
-                  <th>STUDENT</th>
-                  <th>EXAM</th>
-                  <th>CLASS</th>
-                  <th>SECTION</th>
-                  <th>SUBJECT</th>
-                  <th>MARK</th>
-                  <th>REMARK</th>
-                  <th>TOTAL</th>
-                  <th>RESULT</th>
-                  {/* <th style={{ textAlign: "center" }}>EDIT</th> */}
-                  <th style={{ textAlign: "center" }}>DELETE</th>
-                </tr>
-              )}
-            </thead>
-            <tbody>
-              {data
-                .slice((currentPage - 1) * pageSize, currentPage * pageSize)
-                .map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.student}</td>
-                    <td>{item.examName}</td>
-                    <td>{item.className}</td>
-                    <td>{item.sectionName}</td>
-                    <td>{item.subjectName}</td>
-                    <td>{item.mark}</td>
-                    <td>{item.remarks}</td>
-                    <td>{item.total}</td>
-                    <td>{item.result}</td>
-                    {/* <td style={{ textAlign: "center" }}>
-                      <button
-                        class="edit-button"
-                        onClick={() => handleEdit(item.id)}
-                      >
-                        <i class="bx bxs-pencil"></i>
-                      </button>
-                    </td> */}
-                    <td style={{ textAlign: "center" }}>
-                      <button class="delete-button">
-                        <i class="bx bxs-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-          <div className="pagination">
-            {currentPage > 1 && (
-              <button
-                onClick={() => handlePageClick("prev")}
-                disabled={currentPage === 1}
-              >
-                &laquo; Prev
-              </button>
-            )}
-            {renderPaginationButtons()}
-            {currentPage < totalPages && (
-              <button
-                onClick={() => handlePageClick("next")}
-                disabled={currentPage === totalPages}
-              >
-                Next &raquo;
-              </button>
-            )}
-          </div>
+          )}
+          <button className="sdl-add-btn" onClick={() => navigate("/subjectmark")}>
+            <i className="bx bx-plus"></i> Add Marks
+          </button>
         </div>
       </div>
+
+      <div className="sdl-table-card">
+        {loading ? (
+          <div style={{ padding: "60px 0", textAlign: "center", color: "#64748b" }}>
+            <i className="bx bx-loader-alt bx-spin" style={{ fontSize: 36, display: "block", marginBottom: 10, color: "#2D3A8C" }}></i>
+            Loading exam results…
+          </div>
+        ) : (
+          <table className="sdl-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Student</th>
+                <th>Exam</th>
+                <th>Class</th>
+                <th>Subject</th>
+                <th>Mark</th>
+                <th>Total</th>
+                <th>Remark</th>
+                <th>Result</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="sdl-empty">
+                    <i className="bx bx-search-alt"></i>
+                    <span>No exam results found</span>
+                  </td>
+                </tr>
+              ) : (
+                paged.map((item, i) => (
+                  <tr key={item.id ?? i}>
+                    <td className="sdl-num">{(page - 1) * PER_PAGE + i + 1}</td>
+                    <td>
+                      <div className="sdl-student-cell">
+                        <div className="sdl-avatar" style={{ background: AV_COLORS[(item.id || i) % AV_COLORS.length] }}>
+                          {initials(item.student)}
+                        </div>
+                        <div>
+                          <div className="sdl-name">{item.student}</div>
+                          <div className="sdl-email">{item.admNo}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="sdl-mobile">{item.examName}</td>
+                    <td><span className="sdl-class-badge">Class {item.className}-{item.sectionName}</span></td>
+                    <td><span className="svc-cat-badge">{item.subjectName}</span></td>
+                    <td>
+                      <strong style={{ color: item.mark >= 75 ? "#16a34a" : item.mark >= 50 ? "#d97706" : "#ef4444" }}>
+                        {item.mark}
+                      </strong>
+                    </td>
+                    <td className="sdl-mobile">{item.total}</td>
+                    <td className="sdl-mobile">{item.remarks}</td>
+                    <td>
+                      <span className={`sdl-status ${(item.result || "").toLowerCase()}`}>{item.result}</span>
+                    </td>
+                    <td>
+                      <TableActionMenu onEdit={() => navigate("/subjectmark")} onDelete={() => {}} />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {totalPgs > 1 && (
+        <div className="sdl-pagination">
+          <span className="sdl-page-info">
+            Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
+          </span>
+          <div className="sdl-page-btns">
+            <button className="sdl-page-btn" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+              <i className="bx bx-chevron-left"></i>
+            </button>
+            {Array.from({ length: totalPgs }, (_, i) => i + 1).map((p) => (
+              <button key={p} className={`sdl-page-btn${page === p ? " active" : ""}`} onClick={() => setPage(p)}>
+                {p}
+              </button>
+            ))}
+            <button className="sdl-page-btn" disabled={page === totalPgs} onClick={() => setPage((p) => p + 1)}>
+              <i className="bx bx-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-export default Examresult;
+}

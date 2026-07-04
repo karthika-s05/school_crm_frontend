@@ -73,7 +73,7 @@
   background: #f8f9ff;
   transition: border-color 0.2s;
   cursor: pointer;
-  width: 100%;
+  width: 230px;
 }
 
 .effect-3:focus { border-color: #1C3659; background: #fff; }

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import "./profile.css";
-import { STAFF_KEY, TOKEN_KEY } from "../../services/auth";
+import { getToken } from "../../services/auth";
 import { getStafflist, getStudentlist } from "../../services/api";
 
 const Profile = () => {
@@ -23,7 +23,7 @@ const Profile = () => {
   //     case "Student List":
   //       const getStudentList = async () => {
   //         try {
-  //           const response = await getStudentlist({ userName: id }, TOKEN_KEY);
+  //           const response = await getStudentlist({ userName: id }, getToken());
   //           console.log("responsedata list", response.data[0]);
   //           console.log("responsedata list", response.data[0].image);
   //           let detail = {
@@ -62,7 +62,7 @@ const Profile = () => {
   //       const getStaffList = async () => {
   //         try {
   //           console.log(id);
-  //           const response = await getStafflist(id, TOKEN_KEY);
+  //           const response = await getStafflist(id, getToken());
   //           console.log("responsedata list", response.data[0]);
   //           console.log("responsedata list", response.data[0].image);
   //           let detail = {
@@ -97,7 +97,7 @@ const Profile = () => {
       case "Student List":
         const fetchData = async () => {
           try {
-            const response = await getStudentlist({ userName: id }, TOKEN_KEY);
+            const response = await getStudentlist({ userName: id }, getToken());
             setStudentData(response.data);
           } catch (error) {
             console.error("Error fetching student data:", error);
@@ -108,7 +108,7 @@ const Profile = () => {
       case "Staff List":
         const fetchDatas = async () => {
           try {
-            const response = await getStafflist(id, TOKEN_KEY);
+            const response = await getStafflist(id, getToken());
             setStaffData(response.data);
           } catch (error) {
             console.error("Error fetching student data:", error);
@@ -130,10 +130,12 @@ const Profile = () => {
             style={{ display: "flex", alignItems: "center" }}
           >
             <li>
-              <Link to={"/list"} state={props=='Student details'?"Student List":"Staff List"}>
-                <a style={{ color: "#051F3E" }}>
-                  <h4>{props=='Student details'?"Student":"Staff"}</h4>
-                </a>
+              <Link
+                to={props === "Student details" ? "/students" : "/list"}
+                state={props === "Student details" ? undefined : "Staff List"}
+                style={{ color: "#051F3E" }}
+              >
+                <h4 style={{ margin: 0 }}>{props === "Student details" ? "Student" : "Staff"}</h4>
               </Link>
             </li>
             <li>

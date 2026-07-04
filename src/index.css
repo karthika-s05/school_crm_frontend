@@ -16,6 +16,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #f5f7ff 0%, #f4f6f9 60%);
+}
+
 a {
   font-family: 'Poppins', sans-serif;
   font-size: 13px;
@@ -25,3 +30,4 @@ a {
   background-color: transparent;
   letter-spacing: 0.01em;
 }
+

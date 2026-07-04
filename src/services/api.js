@@ -1,15 +1,22 @@
 import axios from "axios";
 
-const MASTER_URL = "http://192.168.2.114:8086";
-const DAILY_URL = "http://192.168.2.114:8090";
-// const DAILY_URL = "http://192.168.0.119:6010";
-const LOGIN_URL = "http://192.168.2.114:8084";
-const ADMIN_URL = "http://192.168.2.114:8096";
-// const ADMIN_URL = "http://49.207.183.18:8086";
-const STATIONERY_URL = "http://192.168.2.114:8091";
-const STAFF_URL = "http://192.168.2.114:8091";
-const EXAM_URL = "http://192.168.2.114:8090";
-const GRADE_URL = "http://192.168.2.114:8084";
+const MASTER_URL = process.env.REACT_APP_MASTER_URL || "http://localhost:8086";
+const DAILY_URL = process.env.REACT_APP_DAILY_URL || "http://localhost:8090";
+const LOGIN_URL = process.env.REACT_APP_LOGIN_URL || "http://localhost:8084";
+const ADMIN_URL = process.env.REACT_APP_ADMIN_URL || "http://localhost:8096";
+const STATIONERY_URL = process.env.REACT_APP_FEES_URL || "http://localhost:8092";
+const STAFF_URL = process.env.REACT_APP_DAILY_URL || "http://localhost:8090";
+const EXAM_URL = process.env.REACT_APP_EXAM_URL || "http://localhost:8091";
+const GRADE_URL = process.env.REACT_APP_MASTER_URL || "http://localhost:8086";
+
+export const API_BASE_URLS = {
+  MASTER_URL,
+  DAILY_URL,
+  LOGIN_URL,
+  ADMIN_URL,
+  STATIONERY_URL,
+  EXAM_URL,
+};
 
 export const getClassSectionMap = async (id, token) => {
   try {
@@ -513,12 +520,11 @@ export const postSection = async (body, token) => {
 };
 export const postClassSection = async (body, token) => {
   const data = {
-    id: body.id,
-    classId: body.classId,
-    sectionId: body.sectionId,
-    totalCount: parseInt(body.totalCount),
+    id: body.id !== undefined && body.id !== null ? Number(body.id) : 0,
+    classId: Number(body.classId),
+    sectionId: Number(body.sectionId),
+    totalCount: parseInt(body.totalCount, 10),
   };
-  console.log(body, "0000");
   try {
     const response = await axios.post(
       `${MASTER_URL}/academic/post_classSectionMap`,
@@ -530,10 +536,9 @@ export const postClassSection = async (body, token) => {
         },
       }
     );
-    console.log(response.data);
     return response.data;
   } catch (error) {
-    console.error("Error fetching data:", error);
+    console.error("Error posting class section map:", error);
     throw error;
   }
 };
@@ -755,7 +760,7 @@ export const deleteNationality = async (body, token) => {
       {},
       {
         headers: {
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyTmFtZSI6IktTVDFBMDAwMDEiLCJhZG1pbmlzdHJhdGlvbklkIjoxLCJyb2xlIjoiQWRtaW4iLCJhZG1pc3Npb25ObyI6IktTVCIsInJlZ2lzdHJhdGlvbk5vIjoiLSIsImlhdCI6MTY5NTk4OTU0MSwiZXhwIjoxNzI3NTI1NTQxfQ.Wqmhh483_FSqYJeHlYi8AXDIlqdy0W6ChQoAuK1XfG8`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }
@@ -996,6 +1001,25 @@ export const registerStaff = async (body, token) => {
     throw error;
   }
 };
+export const updateStaff = async (body, token) => {
+  try {
+    const response = await axios.put(
+      `${ADMIN_URL}/admin/registration/staff_update`,
+      body,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    console.log(response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating staff:", error);
+    throw error;
+  }
+};
 export const studentStaff = async (body, token) => {
   try {
     const response = await axios.post(
@@ -1015,14 +1039,46 @@ export const studentStaff = async (body, token) => {
     throw error;
   }
 };
+const flattenStudentRows = (rows) => {
+  let list = Array.isArray(rows) ? [...rows] : [];
+  while (list.length === 1 && Array.isArray(list[0])) {
+    list = list[0];
+  }
+  return list.filter((row) => row && typeof row === "object" && !Array.isArray(row));
+};
+
+const normalizeStudentListResponse = (raw) => {
+  if (!raw) return { status: "error", message: "", data: [] };
+
+  let rows = [];
+  if (Array.isArray(raw)) {
+    rows = flattenStudentRows(raw);
+  } else if (Array.isArray(raw.data)) {
+    rows = flattenStudentRows(raw.data);
+  } else if (Array.isArray(raw?.data?.data)) {
+    rows = flattenStudentRows(raw.data.data);
+  } else if (raw.data && typeof raw.data === "object") {
+    rows = flattenStudentRows(Object.values(raw.data));
+  } else if (raw.id || raw.admissionNo || raw.studentName) {
+    rows = [raw];
+  }
+
+  const status = String(raw.status || (rows.length ? "success" : "")).toLowerCase();
+
+  return {
+    status: status || (rows.length ? "success" : "error"),
+    message: raw.message || "",
+    data: rows,
+  };
+};
+
 export const getStudentlist = async (data, token) => {
   try {
-    let body = {
-      userName: data.userName? data.userName : "",
-      classId: data.classId ? data.classId : 1,
-      sectionId: data.sectionId ? data.sectionId : 1,
+    const body = {
+      userName: data?.userName !== undefined && data?.userName !== null ? data.userName : 0,
+      classId: data?.classId !== undefined && data?.classId !== null ? data.classId : 0,
+      sectionId: data?.sectionId !== undefined && data?.sectionId !== null ? data.sectionId : 0,
     };
-    console.log(body);
     const response = await axios.post(
       `${ADMIN_URL}/admin/registration/get_student`,
       body,
@@ -1033,8 +1089,7 @@ export const getStudentlist = async (data, token) => {
         },
       }
     );
-    console.log(response.data);
-    return response.data;
+    return normalizeStudentListResponse(response.data);
   } catch (error) {
     console.error("Error fetching data:", error);
     throw error;
@@ -1986,10 +2041,9 @@ export const getsectionList = async (body, token) => {
   }
 };
 export const createStudent = async (body, token) => {
-  console.log(body);
   try {
     const response = await axios.post(
-      `http://192.168.0.11:1010/admin/registration/studentRegistration`,
+      `${ADMIN_URL}/admin/registration/studentRegistration`,
       body,
       {
         headers: {
@@ -1998,7 +2052,6 @@ export const createStudent = async (body, token) => {
         },
       }
     );
-
     return response.data;
   } catch (error) {
     console.error("Error fetching data:", error);
@@ -2047,9 +2100,15 @@ export const createStudentnumber = async (body, token) => {
 
 export const createStudentImage = async (body, token) => {
   try {
+    let data = body;
+    if (!(body instanceof FormData)) {
+      data = new FormData();
+      data.append("id", body.id);
+      data.append("photoUrl", body.photoUrl);
+    }
     const response = await axios.post(
       `${ADMIN_URL}/uploadImage/studentImage`,
-      body,
+      data,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -2065,9 +2124,15 @@ export const createStudentImage = async (body, token) => {
 };
 export const createStudentcommuity = async (body, token) => {
   try {
+    let data = body;
+    if (!(body instanceof FormData)) {
+      data = new FormData();
+      data.append("id", body.id);
+      data.append("photoUrl", body.photoUrl);
+    }
     const response = await axios.post(
       `${ADMIN_URL}/uploadImage/studentCommunityCert`,
-      body,
+      data,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -2083,9 +2148,15 @@ export const createStudentcommuity = async (body, token) => {
 };
 export const createStudentadhar = async (body, token) => {
   try {
+    let data = body;
+    if (!(body instanceof FormData)) {
+      data = new FormData();
+      data.append("id", body.id);
+      data.append("photoUrl", body.photoUrl);
+    }
     const response = await axios.post(
       `${ADMIN_URL}/uploadImage/studentAdharCard`,
-      body,
+      data,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -2101,9 +2172,15 @@ export const createStudentadhar = async (body, token) => {
 };
 export const createStudentbirth = async (body, token) => {
   try {
+    let data = body;
+    if (!(body instanceof FormData)) {
+      data = new FormData();
+      data.append("id", body.id);
+      data.append("photoUrl", body.photoUrl);
+    }
     const response = await axios.post(
       `${ADMIN_URL}/uploadImage/studentBirthCertificate`,
-      body,
+      data,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -2119,9 +2196,15 @@ export const createStudentbirth = async (body, token) => {
 };
 export const createStudenttc = async (body, token) => {
   try {
+    let data = body;
+    if (!(body instanceof FormData)) {
+      data = new FormData();
+      data.append("id", body.id);
+      data.append("photoUrl", body.photoUrl);
+    }
     const response = await axios.post(
-      `${ADMIN_URL}/uploadImage/studentTcCertificate `,
-      body,
+      `${ADMIN_URL}/uploadImage/studentTcCertificate`,
+      data,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -2138,7 +2221,7 @@ export const createStudenttc = async (body, token) => {
 export const getQualification = async (body, token) => {
   try {
     const response = await axios.post(
-      "http://localhost:8089/religion_master/get_qualification",
+      `${MASTER_URL}/religion_master/get_qualification`,
       body,
       {
         headers: {
@@ -2174,4 +2257,465 @@ export const deletetAadhar = async (id, token) => {
     console.error("Error fetching data:", error);
     throw error;
   }
+};
+
+// ─── Dashboard ───────────────────────────────────────────────────────────────
+export const getAdminDashboardSummary = async (token) => {
+  const response = await axios.get(`${ADMIN_URL}/admin/dashboard/get_summary`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getStaffDashboardSummary = async (token) => {
+  const response = await axios.get(`${DAILY_URL}/dashboard/get_staff_summary`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+// ─── Academic Year ─────────────────────────────────────────────────────────────
+export const getAcademicYear = async (token) => {
+  const response = await axios.post(
+    `${ADMIN_URL}/admin/academicYear/get_academicYear`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const createAcademicYear = async (body, token) => {
+  const response = await axios.post(
+    `${ADMIN_URL}/admin/academicYear/create_academicYear`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const updateAcademicYear = async (body, token) => {
+  const response = await axios.post(
+    `${ADMIN_URL}/admin/academicYear/update_academicYear`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+export const getNotifications = async (token) => {
+  const response = await axios.get(`${DAILY_URL}/notification/get_notification`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const createNotification = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/notification/create_notification`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const deleteNotification = async (id, token) => {
+  const response = await axios.delete(
+    `${DAILY_URL}/notification/delete_notification/${id}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const updateNotificationTime = async (token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/notification/update_notification`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+// ─── Leave Management ────────────────────────────────────────────────────────
+export const getLeaveTypes = async (token) => {
+  const response = await axios.get(`${DAILY_URL}/leave/get_leaveType`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const createLeaveType = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/leave/create_leaveType`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const deleteLeaveType = async (id, token) => {
+  const response = await axios.delete(
+    `${DAILY_URL}/leave/delete_leaveType/${id}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const getStudentLeave = async (token) => {
+  const response = await axios.get(`${DAILY_URL}/leave/get_student_leave`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const createStudentLeave = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/leave/create_student_leave`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const updateStudentLeaveStatus = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/leave/update_student_leave_status`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const deleteStudentLeave = async (body, token) => {
+  const response = await axios.delete(`${DAILY_URL}/leave/delete_student_leave`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: body,
+  });
+  return response.data;
+};
+
+export const getStaffLeave = async (token) => {
+  const response = await axios.get(`${DAILY_URL}/leave/get_staff_leave`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const createStaffLeave = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/leave/create_staff_leave`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const deleteStaffLeave = async (body, token) => {
+  const response = await axios.delete(`${DAILY_URL}/leave/delete_staff_leave`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: body,
+  });
+  return response.data;
+};
+
+export const updateStaffLeaveStatus = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/leave/update_staff_leave_status`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+// ─── Teacher ─────────────────────────────────────────────────────────────────
+export const getTeacher = async (token) => {
+  const response = await axios.get(`${DAILY_URL}/teacher/get_Teacher`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getTeacherClass = async (token) => {
+  const response = await axios.get(`${DAILY_URL}/teacher/get_Teacher_class`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getSubjectClass = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/teacher/get_Subject_class`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+// ─── Staff Timetable ─────────────────────────────────────────────────────────
+export const getStaffTimetable = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/timetable/get_staff_timetable`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+// ─── Student Attendance (monthly) ────────────────────────────────────────────
+export const getStdAttendance = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/attendance/get_student_attendance`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+// ─── Auth / Menu ───────────────────────────────────────────────────────────────
+export const forgotPassword = async (userName) => {
+  const response = await axios.post(`${LOGIN_URL}/user/forgotPassword`, { userName });
+  return response.data;
+};
+
+export const verifyOtp = async (body) => {
+  const response = await axios.post(`${LOGIN_URL}/user/verifyOtp`, body);
+  return response.data;
+};
+
+export const updatePassword = async (body) => {
+  const response = await axios.post(`${LOGIN_URL}/user/updatePassword`, body);
+  return response.data;
+};
+
+export const changePassword = async (body, token) => {
+  const response = await axios.post(`${LOGIN_URL}/password/changePassword`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getMenu = async (token) => {
+  const response = await axios.get(`${LOGIN_URL}/menu/getMenu`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getSubMenu = async (id, token) => {
+  const response = await axios.get(`${LOGIN_URL}/menu/getSubMenu/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+// ─── Transport Extended ───────────────────────────────────────────────────────
+export const getFleetOverview = async (token) => {
+  const response = await axios.get(`${STATIONERY_URL}/transport/fleet/get_overview`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getTransportRoutes = async (token) => {
+  const response = await axios.get(`${STATIONERY_URL}/transport/route/get_routes`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const postTransportRoute = async (body, token) => {
+  const response = await axios.post(`${STATIONERY_URL}/transport/route/post_route`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const deleteTransportRoute = async (id, token) => {
+  const response = await axios.post(`${STATIONERY_URL}/transport/route/delete_route/${id}`, {}, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const postTransportVehicle = async (body, token) => {
+  const response = await axios.post(`${STATIONERY_URL}/transport/vehicle/post_vehicle`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const deleteTransportVehicle = async (id, token) => {
+  const response = await axios.post(`${STATIONERY_URL}/transport/vehicle/delete_vehicle/${id}`, {}, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const postTransportDriver = async (body, token) => {
+  const response = await axios.post(`${STATIONERY_URL}/transport/driver/post_driver`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getStudentTransportAllocations = async (body, token) => {
+  const response = await axios.post(`${STATIONERY_URL}/transport/student/get_allocations`, body || {}, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const postStudentTransportAllocation = async (body, token) => {
+  const response = await axios.post(`${STATIONERY_URL}/transport/student/post_allocation`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const deleteStudentTransportAllocation = async (id, token) => {
+  const response = await axios.post(`${STATIONERY_URL}/transport/student/delete_allocation/${id}`, {}, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getTransportFeeSummary = async (token) => {
+  const response = await axios.get(`${STATIONERY_URL}/transport/fee/get_summary`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const updateTransportFeeStatus = async (body, token) => {
+  const response = await axios.post(`${STATIONERY_URL}/transport/fee/update_status`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+// ─── Reports ──────────────────────────────────────────────────────────────────
+export const getExamReportData = async (body, token) => {
+  const response = await axios.post(`${EXAM_URL}/reports/exam/get_report`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getExamReportStudentWise = async (body, token) => {
+  const response = await axios.post(`${EXAM_URL}/reports/exam/get_student_wise`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getExamReportClassWise = async (body, token) => {
+  const response = await axios.post(`${EXAM_URL}/reports/exam/get_class_wise`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getExamReportSubjectWise = async (body, token) => {
+  const response = await axios.post(`${EXAM_URL}/reports/exam/get_subject_wise`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const exportExamReportCsv = async (body, token) => {
+  const response = await axios.post(`${EXAM_URL}/reports/exam/export`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getAssignmentReportData = async (body, token) => {
+  const response = await axios.post(`${DAILY_URL}/reports/assignment/get_report`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const exportAssignmentReportCsv = async (body, token) => {
+  const response = await axios.post(`${DAILY_URL}/reports/assignment/export`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getAssignmentReportClassWise = async (body, token) => {
+  const response = await axios.post(`${DAILY_URL}/reports/assignment/get_class_wise`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getAssignmentReportSubjectWise = async (body, token) => {
+  const response = await axios.post(`${DAILY_URL}/reports/assignment/get_subject_wise`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getAssignmentReportStudentWise = async (body, token) => {
+  const response = await axios.post(`${DAILY_URL}/reports/assignment/get_student_wise`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getReportsOverview = async (body, token) => {
+  const response = await axios.post(`${DAILY_URL}/reports/get_overview`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getAttendanceMonthlyReport = async (body, token) => {
+  const response = await axios.post(`${DAILY_URL}/reports/attendance/get_student_monthly`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getAttendanceDailyReport = async (body, token) => {
+  const response = await axios.post(`${DAILY_URL}/reports/attendance/get_class_daily`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const exportAttendanceReportCsv = async (body, token) => {
+  const response = await axios.post(`${DAILY_URL}/reports/attendance/export`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getHomeworkReportData = async (body, token) => {
+  const response = await axios.post(`${DAILY_URL}/reports/homework/get_report`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const exportHomeworkReportCsv = async (body, token) => {
+  const response = await axios.post(`${DAILY_URL}/reports/homework/export`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getExamMarkReportData = async (body, token) => {
+  const response = await axios.post(`${EXAM_URL}/reports/exam/get_mark_report`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getExamReportFilters = async (body, token) => {
+  const response = await axios.post(`${EXAM_URL}/reports/exam/get_filters`, body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
 };

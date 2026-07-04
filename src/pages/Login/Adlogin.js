@@ -7,6 +7,8 @@ import { login } from "../../services/api";
 import { setToken, setUserData } from "../../services/auth";
 import { ToastContainer, toast } from "react-toastify";
 import "./adlogin.css";
+import "../../assets/illustrations/schoolTheme.css";
+import { SchoolCampusScene } from "../../assets/illustrations/SchoolIllustrations";
 
 export default function Adlogin() {
   const navigate = useNavigate();
@@ -29,6 +31,7 @@ export default function Adlogin() {
     try {
       const { username, password } = values;
       const token = await login(username, password);
+      console.log(token)
       setToken(token.token.accessToken);
       setUserData("role", token.data[0].role);
       setUserData("adminName", token.data[0].adminName);
@@ -62,16 +65,14 @@ export default function Adlogin() {
     <div className="adlogin-wrapper">
       {/* Left Panel */}
       <div className="adlogin-left">
+        <span className="adlogin-float-deco d1"><i className="bx bxs-book-open"></i></span>
+        <span className="adlogin-float-deco d2"><i className="bx bxs-star"></i></span>
+        <span className="adlogin-float-deco d3"><i className="bx bxs-graduation"></i></span>
+        <span className="adlogin-float-deco d4"><i className="bx bxs-pencil"></i></span>
+        <span className="adlogin-float-deco d5"><i className="bx bxs-backpack"></i></span>
         <div className="adlogin-left-content">
-          <div className="adlogin-logo-ring">
-            <div className="adlogin-logo-inner">
-              <div className="adlogin-sun"></div>
-              <div className="adlogin-book">
-                <div className="adlogin-book-left"></div>
-                <div className="adlogin-book-right"></div>
-                <div className="adlogin-pen"></div>
-              </div>
-            </div>
+          <div className="adlogin-scene-wrap">
+            <SchoolCampusScene width={320} />
           </div>
           <h1 className="adlogin-school-name">KST InfoTech</h1>
           <p className="adlogin-tagline">Empowering Education, Shaping Futures</p>
@@ -86,6 +87,9 @@ export default function Adlogin() {
       <div className="adlogin-right">
         <div className="adlogin-form-card">
           <div className="adlogin-form-header">
+            <div style={{ fontSize: 36, color: "#2D3A8C", marginBottom: 8 }}>
+              <i className="bx bxs-school"></i>
+            </div>
             <h2>Welcome Back</h2>
             <p>Sign in to your account to continue</p>
           </div>

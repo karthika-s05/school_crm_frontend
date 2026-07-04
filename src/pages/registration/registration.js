@@ -24,7 +24,7 @@ import {
   relieveStud,
   studentStaff,
 } from "../../services/api";
-import { TOKEN_KEY } from "../../services/auth";
+import { getToken } from "../../services/auth";
 import {
   splitArrayIntoPairs,
   splitArrayIntoPairs2,
@@ -32,12 +32,67 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+function InputField({ data, formData, handleInputChange, validationErrors, disabledId }) {
+  const isIdField = data.name === "studentID" || data.name === "staffId";
+  return (
+    <>
+      <div className="input-container">
+        <label className="input-label">
+          {data.label} &nbsp; <span style={{ color: "red" }}>*</span>
+        </label>
+        <input
+          style={{
+            border: `1px solid ${validationErrors[data.name] ? "red" : "#cdcbcb"}`,
+          }}
+          className="effect-1"
+          type={data.type}
+          name={data.name}
+          value={isIdField ? disabledId : formData[data.name] || ""}
+          disabled={isIdField}
+          onChange={handleInputChange}
+        />
+      </div>
+      {validationErrors[data.name] && (
+        <div className="error-message1">{validationErrors[data.name]}</div>
+      )}
+    </>
+  );
+}
+
+function SelectField({ data, dropDown, handleInputChange, validationErrors, formData }) {
+  return (
+    <>
+      <div className="input-container">
+        <label className="input-label">{data.label}</label>
+        <select
+          className="effect-1"
+          name={data.name}
+          value={formData?.[data.name] ?? ""}
+          onChange={handleInputChange}
+        >
+          <option value="">Select an option</option>
+          {dropDown[data.name] &&
+            dropDown[data.name].map((option, index) => (
+              <option key={index} value={option.id}>
+                {option.value}
+              </option>
+            ))}
+        </select>
+      </div>
+      {validationErrors[data.name] && (
+        <div className="error-message1">{validationErrors[data.name]}</div>
+      )}
+    </>
+  );
+}
+
 const Registration = () => {
   const ids = useParams();
-  console.log(ids.id, "love");
   const location = useLocation();
   const navigate = useNavigate();
-  const propsData = location.state;
+  const propsData =
+    location.state ||
+    (location.pathname.startsWith("/releiving") ? "Student Relieving" : undefined);
   const [formData, setFormData] = useState({});
   const [dropDown, SetDropDown] = useState({
     genderId: [
@@ -53,10 +108,18 @@ const Registration = () => {
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
+    if (propsData === "Student Relieving" && ids.id) {
+      setFormData((prev) => ({ ...prev, studentID: ids.id }));
+    } else if (propsData === "Staff Relieving" && ids.id) {
+      setFormData((prev) => ({ ...prev, staffId: ids.id }));
+    }
+  }, [propsData, ids.id]);
+
+  useEffect(() => {
     const getDropdownData = async (funcName, id, name) => {
       console.log(funcName);
       try {
-        const response = await funcName(id, TOKEN_KEY);
+        const response = await funcName(id, getToken());
         console.log(`${name} dropdown:`, response);
         const data = response.map((value, index) => ({
           id: value.id,
@@ -72,7 +135,7 @@ const Registration = () => {
     };
     const getStatedata = async () => {
       try {
-        const response = await getState({ id: 0, nationId: state }, TOKEN_KEY);
+        const response = await getState({ id: 0, nationId: state }, getToken());
         console.log("dropdown ", response);
         const data = response.map((value, index) => ({
           id: value.id,
@@ -89,7 +152,7 @@ const Registration = () => {
     getStatedata();
     const getCitydata = async () => {
       try {
-        const response = await getCity({ id: 0, stateId: city }, TOKEN_KEY);
+        const response = await getCity({ id: 0, stateId: city }, getToken());
         console.log("Citydropdown ", response);
         const data = response.map((value, index) => ({
           id: value.id,
@@ -217,7 +280,7 @@ const Registration = () => {
       }
       errorMessage = `${title} is required.`;
     }
-    setValidationErrors({ ...validationErrors, [name]: errorMessage });
+    setValidationErrors((prev) => ({ ...prev, [name]: errorMessage }));
 
     // const parsedValue = name === "stateId" ? parseInt(value, 10) : value;
     setFormData((prevInputValue) => ({
@@ -245,7 +308,7 @@ const Registration = () => {
             const missingKeys = findMissingKeys(data, formData);
             console.log(missingKeys);
             if (missingKeys.length === 0) {
-              const response = await registerStaff(formData, TOKEN_KEY);
+              const response = await registerStaff(formData, getToken());
               if (response.status === "success") {
                 setFormData({});
               }
@@ -264,9 +327,15 @@ const Registration = () => {
             let data = StudentRegistration.map((value) => value.name);
             const missingKeys = findMissingKeys(data, formData);
             if (missingKeys.length === 0) {
-              const response = await studentStaff(formData, TOKEN_KEY);
+              const response = await studentStaff(formData, getToken());
               if (response.status === "success") {
                 setFormData({});
+              } else {
+                const errMsg =
+                  response.message ||
+                  response.data?.sqlMessage ||
+                  (typeof response.data === "string" ? response.data : "Registration failed");
+                toast.error(errMsg);
               }
             } else {
               showMessages(missingKeys);
@@ -285,13 +354,13 @@ const Registration = () => {
             const missingKeys = findMissingKeys(data, formData);
             handleValidationErrors(missingKeys)
             if (missingKeys.length === 0) {
-              const response = await relieveStud(formData, TOKEN_KEY);
+              const response = await relieveStud(formData, getToken());
               console.log(response,"love")
               if (response.status === "success") {
                 setFormData({});
                 toast.success(response.message, {
                   onClose: () => {
-                    navigate("/list", { state: "Student List" });
+                    navigate("/students");
                   },
                 });
               }else{
@@ -323,7 +392,7 @@ const Registration = () => {
             const missingKeys = findMissingKeys(data, formData);
             handleValidationErrors(missingKeys)
             if (missingKeys.length === 0) {
-              const response = await relieveStaff(formData, TOKEN_KEY);
+              const response = await relieveStaff(formData, getToken());
               if (response.status === "success") {
                 setFormData({});
                 toast.success(response.message, {
@@ -380,138 +449,75 @@ const Registration = () => {
       arrayOfPairs = splitArrayIntoPairs(StudentRegistration);
   }
 
-  function InputField({ data, formData, handleInputChange }) {
-    return (
-      <>
-        <div className="input-container">
-          <label className="input-label">{data.label} &nbsp; <span style={{color:'red'}}>*</span></label>
-          <input
-           style={{
-            border: `1px solid ${validationErrors[data.name]
-              ? "red"
-              : "#cdcbcb"
-              }`
-          }}
-            className="effect-1"
-            type={data.type}
-            name={data.name}
-            value={data.name=='studentID'||data.name=='staffId'?ids.id:formData[data.name] || ""}
-            disabled={data.name=='studentID'||data.name=='staffId'?true:false}
-            onChange={handleInputChange}
-          />
-        </div>
-        {validationErrors[data.name] && (
-          <div className="error-message1">{validationErrors[data.name]}</div>
-        )}
-      </>
-    );
-  }
-  function SelectField({ data, dropDown, handleInputChange }) {
-    return (
-      <>
-        {" "}
-        <div className="input-container">
-          <label className="input-label">{data.label}</label>
-          <select
-            className="effect-1"
-            name={data.name}
-            value={data.value}
-            onChange={handleInputChange}
-          >
-            {data.value ? (
-              <option value={data.value}>{data.value}</option>
-            ) : (
-              <option value="">Select an option</option>
-            )}
-            {dropDown[data.name] && (
-              <>
-                {dropDown[data.name].map((option, index) => (
-                  <option key={index} value={option.id}>
-                    {option.value}
-                  </option>
-                ))}
-              </>
-            )}
-          </select>
-        </div>
-        {validationErrors[data.name] && (
-          <div className="error-message1">{validationErrors[data.name]}</div>
-        )}
-      </>
-    );
-  }
-
-  console.log(propsData,"898989");
-
   return (
     <>
       <div>{/* <h3>{propsData}</h3> */}</div>
       <div className="table-container">
         <ul
-          class="breadcrumb"
+          className="breadcrumb"
           style={{ display: "flex", alignItems: "center" }}
         >
+
           <li>
-          <Link to={"/list"} state={propsData=='Student Relieving'?"Student List":"Staff List"}>
-                <a style={{ color: "#051F3E" }}>
-                  <h4>{propsData=='Student Relieving'?"Student":"Staff"}</h4>
-                </a>
-              </Link>
+            <Link
+              to={propsData === "Student Relieving" ? "/students" : "/list"}
+              state={propsData === "Student Relieving" ? undefined : "Staff List"}
+              style={{ color: "#051F3E" }}
+            >
+              <h4 style={{ margin: 0 }}>{propsData === "Student Relieving" ? "Student" : "Staff"}</h4>
+            </Link>
           </li>
           <li>
             <a>{propsData}</a>
           </li>
         </ul>
         {/* {isSuccessVisible && <h1 className="success-message">{message}</h1>} */}
-        <div style={{border:'1px solid rgb(207, 207, 207)',borderRadius:'7px',width:'50%',marginLeft:'250px'}}>
-        {arrayOfPairs.map((value, index) => (
-          <div
-            className="input-group"
-            key={index}
-            style={{ gap: "13px", marginTop: "10px",display:"flex",justifyContent:"center" }}
-          >
-            {value.map((data, dataIndex) => (
-              <div className="input-container-registers" key={dataIndex}>
-                {data.type === "select"
-                  ? SelectField({ data, dropDown, handleInputChange })
-                  : InputField({ data, formData, handleInputChange })}
+        <div className="register-card register-card--student">
+          <div className="register-header" />
 
-                {/* <label className="input-label">{data.label}</label>
-                                <input 
-                                    className="effect-1"
-                                    type={data.type}
-                                    name={data.name}
-                                    value={formData[data.name] || ''} 
-                                    onChange={handleInputChange}
-                                /> */}
-
-                {/* <label className="input-label">{data.label}</label>
-                                <select
-                                    className="effect-1"
-                                    name={data.name}
-                                    defaultValue={data.value}
-                                    onChange={handleInputChange}
-                                >
-                                    {data.value ? <option value={data.value}>{data.value}</option> : <option value="">Select an option</option>
-                                    }
-                                    {dropDown.map((option, index) => (
-                                        <option key={index} value={option.id}>
-                                            {option.value}
-                                        </option>
-                                    ))}
-                                </select> */}
+          <div className="register-grid">
+            {arrayOfPairs.flat().map((data) => (
+              <div className="input-container-registers" key={data.name}>
+                {data.type === "select" ? (
+                  <SelectField
+                    data={data}
+                    dropDown={dropDown}
+                    handleInputChange={handleInputChange}
+                    validationErrors={validationErrors}
+                    formData={formData}
+                  />
+                ) : (
+                  <InputField
+                    data={data}
+                    formData={formData}
+                    handleInputChange={handleInputChange}
+                    validationErrors={validationErrors}
+                    disabledId={ids.id}
+                  />
+                )}
               </div>
             ))}
           </div>
-        ))}
-       
-        <div className="btn-style-registration" style={{padding:'10px'}}>
-          <button class="cancel-button">Cancel</button>&nbsp;&nbsp;
-          <button class="custom-button" onClick={handleSubmit}>
-            Submit
-          </button>
+
+          <div className="btn-style-registration">
+            <button
+              className="cancel-button"
+              type="button"
+              onClick={() =>
+                navigate(
+                  propsData === "Student Relieving" ? "/students" : "/list",
+                  propsData === "Student Relieving" ? undefined : { state: "Staff List" }
+                )
+              }
+            >
+              Cancel
+            </button>
+            <button className="custom-button" type="button" onClick={handleSubmit}>
+              Submit
+            </button>
+          </div>
         </div>
-        </div>
+
         <ToastContainer
         position="top-right"
         autoClose={2000}

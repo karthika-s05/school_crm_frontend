@@ -54,7 +54,7 @@ import {
   deleteTransportApi,
   createAssignment,
 } from "../../services/api";
-import { TOKEN_KEY } from "../../services/auth";
+import { getToken } from "../../services/auth";
 import "./master.css";
 import "../../App.css";
 import Table from "../../component/Table";
@@ -78,6 +78,12 @@ import {
 } from "../../assets/constant";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import {
+  PERIOD_SLOT_DUMMY,
+  CLASS_TIMETABLE_DUMMY,
+  mapPeriodSlotRows,
+  mapClassTimetableRows,
+} from "./masterDummyData";
 
 const Master = () => {
   const location = useLocation();
@@ -92,14 +98,20 @@ const Master = () => {
   const [load, setLoad] = useState(true);
   console.log("datsdsdsda", inputData);
 
-  const openModal = (id) => {
-    console.log("inputData", inputData);
-    setEditData();
+  const openModal = () => {
+    setEditData(null);
+    setFormData({ id: 0 });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = () => {
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setEditData(null);
+    setFormData({});
   };
   function showMessage(response, duration = 3000) {
     setMessage(response.message);
@@ -133,7 +145,7 @@ const Master = () => {
         const getData = async () => {
           try {
             console.log(formData);
-            const response = await postState(formData, TOKEN_KEY);
+            const response = await postState(formData, getToken());
             const responseValue = response.status.toString().toLowerCase();
             const responseMessage =
               responseValue === "error" &&
@@ -168,7 +180,7 @@ const Master = () => {
         console.log("form", formData);
         const postCitydetail = async () => {
           try {
-            const response = await postCity(formData, TOKEN_KEY);
+            const response = await postCity(formData, getToken());
             console.log("City API response:", response.data);
             const responseValue = response.status.toString().toLowerCase();
             const responseMessage =
@@ -200,7 +212,7 @@ const Master = () => {
         console.log("Calling BloodGroup function");
         const postBlood = async () => {
           try {
-            const response = await postBloodGroup(formData, TOKEN_KEY);
+            const response = await postBloodGroup(formData, getToken());
             console.log(response.data);
             const responseValue = response.status.toString().toLowerCase();
             const responseMessage =
@@ -231,7 +243,7 @@ const Master = () => {
         console.log("Calling Community function");
         const postCommunityDetails = async () => {
           try {
-            const response = await postCommunity(formData, TOKEN_KEY);
+            const response = await postCommunity(formData, getToken());
             console.log(response.data);
             const responseValue = response.status.toString().toLowerCase();
             const responseMessage =
@@ -262,7 +274,7 @@ const Master = () => {
         }
         const postNationalityDetails = async () => {
           try {
-            const response = await postNationality(formData, TOKEN_KEY);
+            const response = await postNationality(formData, getToken());
             const responseValue = response.status.toString().toLowerCase();
             const responseMessage =
               responseValue === "error" &&
@@ -293,7 +305,7 @@ const Master = () => {
         console.log("Calling Community function");
         const postReligionDetails = async () => {
           try {
-            const response = await postReligion(formData, TOKEN_KEY);
+            const response = await postReligion(formData, getToken());
             console.log(response.data);
             const responseValue = response.status.toString().toLowerCase();
             const responseMessage =
@@ -326,7 +338,7 @@ const Master = () => {
         const postSubjectDetails = async () => {
           try {
             console.log("first", formData);
-            const response = await postSubject(formData, TOKEN_KEY);
+            const response = await postSubject(formData, getToken());
             console.log(response.data);
             const responseValue = response.status.toString().toLowerCase();
             const responseMessage =
@@ -358,7 +370,7 @@ const Master = () => {
         }
         const postClassDetails = async () => {
           try {
-            const response = await postClass(formData, TOKEN_KEY);
+            const response = await postClass(formData, getToken());
             console.log(response.data);
             const responseValue = response.status.toString().toLowerCase();
             const responseMessage =
@@ -390,7 +402,7 @@ const Master = () => {
         console.log("Calling Community function");
         const postSectionDetails = async () => {
           try {
-            const response = await postSection(formData, TOKEN_KEY);
+            const response = await postSection(formData, getToken());
             console.log(response.data);
             const responseValue = response.status.toString().toLowerCase();
             const responseMessage =
@@ -412,38 +424,62 @@ const Master = () => {
         };
         postSectionDetails();
         break;
-      case "Class & Section":
+      case "Class & Section": {
+        const DUPLICATE_CLASS_SECTION_MSG =
+          "Class or section already exists for this class-section combination.";
+        const { classId, sectionId, totalCount } = formData;
+
+        if (!classId || !sectionId || totalCount === "" || totalCount == null) {
+          toast.error("Please select class, section, and total count.");
+          return;
+        }
+
         const classSection = async () => {
           try {
-            console.log(formData);
-            const response = await postClassSection(formData, TOKEN_KEY);
-            console.log(response.data);
-            const responseValue = response.status.toString().toLowerCase();
-            const responseMessage =
-              responseValue === "error" &&
-                response.data ===
-                "Class or section already exists for this class-section combination."
-                ? response.data
-                : response.message;
+            const existing = await getClassSectionMap(0, getToken());
+            const rows = Array.isArray(existing) ? existing : [];
+            const isDuplicate = rows.some(
+              (row) =>
+                Number(row.classId) === Number(classId) &&
+                Number(row.sectionId) === Number(sectionId) &&
+                Number(formData.id || 0) !== Number(row.id)
+            );
 
-            if (responseValue === "error") {
-              toast.error(responseMessage);
+            if (isDuplicate) {
+              toast.error(DUPLICATE_CLASS_SECTION_MSG);
+              return;
+            }
+
+            const response = await postClassSection(formData, getToken());
+            const responseValue = String(response?.status || "").toLowerCase();
+            const duplicateData =
+              response?.data === DUPLICATE_CLASS_SECTION_MSG ||
+              String(response?.data || "").includes("already exists");
+
+            if (responseValue === "error" || duplicateData) {
+              toast.error(
+                duplicateData
+                  ? DUPLICATE_CLASS_SECTION_MSG
+                  : response?.message || "Failed to save class section mapping."
+              );
             } else if (responseValue === "success") {
-              toast.success(response.message);
+              toast.success(response.message || "Class section map created success");
+              setLoad(false);
             }
             showMessage(response);
-            setLoad(false);
           } catch (err) {
-            console.log(err);
+            console.error(err);
+            toast.error("Failed to save class section mapping.");
           }
         };
         classSection();
         break;
+      }
       case "Class Teacher":
         const classTeachers = async () => {
           try {
             console.log(formData);
-            const response = await postClassTeacherMap(formData, TOKEN_KEY);
+            const response = await postClassTeacherMap(formData, getToken());
             console.log(response.data);
             const responseValue = response.status.toString().toLowerCase();
             const responseMessage =
@@ -486,7 +522,7 @@ const Master = () => {
         const subjectTeachers = async () => {
           try {
             console.log(formData);
-            const response = await postSubjectTeacherMap(formData, TOKEN_KEY);
+            const response = await postSubjectTeacherMap(formData, getToken());
             console.log(response.data);
             const responseValue = response.status.toString().toLowerCase();
             const responseMessage =
@@ -533,8 +569,8 @@ const Master = () => {
             console.log("hello", formData);
             const response =
               formData.id == 0
-                ? await postStationery(formData, TOKEN_KEY)
-                : await updateStationery(formData, TOKEN_KEY);
+                ? await postStationery(formData, getToken())
+                : await updateStationery(formData, getToken());
             console.log(response.data);
             showMessage(response);
             if (response.status === "error" || response.status === "Error") {
@@ -568,7 +604,7 @@ const Master = () => {
         const period = async () => {
           try {
             console.log("hello", formData);
-            const response = await postTimeSlot(formData, TOKEN_KEY);
+            const response = await postTimeSlot(formData, getToken());
             console.log(response.data);
             showMessage(response);
             if (response.status === "error" || response.status === "Error") {
@@ -613,7 +649,7 @@ const Master = () => {
         const timeTable = async () => {
           try {
             console.log("hello", formData);
-            const response = await postTimeTable(formData, TOKEN_KEY);
+            const response = await postTimeTable(formData, getToken());
             console.log(response.data);
             showMessage(response);
             if (response.status === "error" || response.status === "Error") {
@@ -653,7 +689,7 @@ const Master = () => {
         const transport = async () => {
           try {
             console.log("hello", formData);
-            const response = await postTransport(formData, TOKEN_KEY);
+            const response = await postTransport(formData, getToken());
             console.log(response.data);
             showMessage(response);
             if (response.status === "error" || response.status === "Error") {
@@ -678,398 +714,190 @@ const Master = () => {
     closeModal();
     setFormData({});
   };
-  const handleEdit = (id) => {
-    console.log("id", id);
-    formData.id = id;
-    switch (propsData) {
-      case "State":
-        const getData = async () => {
-          try {
-            const response = await getState({ id, nationId: 0 }, TOKEN_KEY);
-            setFormData({
-              id: response[0].id,
-              code: response[0].State_Code,
-              nationId: response[0].nationalityId,
-              name: response[0].State,
-            });
-            setEditData([
-              { name: "code", data: response[0].State_Code },
-              { name: "name", data: response[0].State },
-              { name: "nationId", data: response[0].Nationality },
-            ]);
-            // showMessage(response)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getData();
-        setInputData(StateInputDetails);
-        break;
-      case "City":
-        const getCityDetails = async () => {
-          try {
-            const response = await getCity({ id, stateId: 0 }, TOKEN_KEY);
-            console.log(response, 'vcity');
-            // setData(response)
-            setFormData({
-              id: response[0].id,
-              code: response[0].code,
-              stateId: response[0].stateId,
-              name: response[0].name,
-            });
-            setEditData([
-              { name: "code", data: response[0].code },
-              { name: "name", data: response[0].name },
-              { name: "stateId", data: response[0].state },
-            ]);
-            // showMessage(response)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getCityDetails();
-        setInputData(CityInputDetails);
-        break;
-      case "Class":
-        const getClassDetails = async () => {
-          try {
-            const response = await getClass(id, TOKEN_KEY);
-            setFormData({ id: response[0].id, name: response[0].name });
-            setEditData([{ name: "name", data: response[0].name }]);
-            // showMessage(response)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getClassDetails();
-        setInputData(ReligionInputDetails);
-        break;
-      case "Section":
-        const getSectionDetails = async () => {
-          try {
-            const response = await getSection(id, TOKEN_KEY);
-            console.log(response);
-            setFormData({ id: response[0].id, name: response[0].name });
-            setEditData([{ name: "name", data: response[0].name }]);
-            // showMessage(response)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getSectionDetails();
-        setInputData(ReligionInputDetails);
-        break;
-      case "Class & Section":
-        const getClassSectionDetails = async () => {
-          try {
-            const response = await getClassSectionMap(id, TOKEN_KEY);
-            console.log("responseClassSection", response);
-            setFormData({
-              id: response[0].id,
-              classId: response[0].classId,
-              sectionId: response[0].sectionId,
-              totalCount: response[0].totalCount,
-            });
-            setEditData([
-              { name: "classId", data: response[0].className },
-              { name: "sectionId", data: response[0].sectionName },
-              { name: "totalCount", data: response[0].totalCount },
-            ]);
-            // showMessage(response)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getClassSectionDetails();
-        setInputData(classSection);
-        break;
-      case "BloodGroup":
-        const getBloodDetails = async () => {
-          try {
-            const response = await getBloodGroup(id, TOKEN_KEY);
-            console.log("response.................", response);
-            setFormData({ id: response[0].id, name: response[0].name });
-            setEditData([{ name: "name", data: response[0].name }]);
-            // showMessage(response)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getBloodDetails();
-        setInputData(BloodInputDetails);
-        break;
-      case "Community":
-        const getCommunityDetails = async () => {
-          try {
-            const response = await getCommunity(id, TOKEN_KEY);
-            console.log(response);
-            setFormData({
-              id: response[0].id,
-              code: response[0].code,
-              nationId: 1,
-              name: response[0].name,
-            });
-            setEditData([
-              { name: "code", data: response[0].code },
-              { name: "name", data: response[0].name },
-            ]);
-            // showMessage(response)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getCommunityDetails();
-        setInputData(CommunityInputDetails);
-        break;
-      case "Nationality":
-        const getNationalityDetails = async () => {
-          try {
-            const response = await getNationality(id, TOKEN_KEY);
-            console.log("Nationality API response:", response);
-            setFormData({
-              id: response[0].id,
-              code: response[0].code,
-              nationId: 1,
-              name: response[0].name,
-            });
-            setEditData([
-              { name: "code", data: response[0].code },
-              { name: "name", data: response[0].name },
-            ]);
-            // showMessage(response)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getNationalityDetails();
-        setInputData(NationalityInputDetails);
-        break;
-      case "Religion":
-        const getReligionDetails = async () => {
-          try {
-            const response = await getReligion(id, TOKEN_KEY);
-            console.log("response.............", response);
-            setFormData({ id: response[0].id, name: response[0].name });
-            setEditData([{ name: "name", data: response[0].name }]);
-            // showMessage(response)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getReligionDetails();
-        setInputData(ReligionInputDetails);
-        break;
-      case "Subject":
-        const getSubjectDetails = async () => {
-          try {
-            const response = await getSubject(id, TOKEN_KEY);
-            console.log("subject", response);
-            setFormData({
-              id: response[0].id,
-              code: response[0].code,
-              name: response[0].name,
-            });
-            setEditData([
-              { name: "name", data: response[0].name },
-              { name: "code", data: response[0].code },
-            ]);
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getSubjectDetails();
-        setInputData(SubjectInputDetails);
-        break;
-      case "Class Teacher":
-        const getClassTeahcerDetails = async () => {
-          try {
-            console.log("idjda'hjg", id);
-            const response = await getClassTeacherMap(
-              { id, classId: "0", sectionId: "0", staffId: "0" },
-              TOKEN_KEY
-            );
-            console.log("responseClassTeacher", response);
-            setFormData({
-              id: response[0].id,
-              staffId: response[0].staffId,
-              sectionId: response[0].sectionId,
-              classId: response[0].classId,
-            });
-            setEditData([
-              { name: "staffId", data: response[0].ClassTeacherName },
-              { name: "classId", data: response[0].className },
-              { name: "sectionId", data: response[0].sectionName },
-            ]);
-            // showMessage(response)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getClassTeahcerDetails();
-        setInputData(classTeacher);
-        break;
-      case "Subject Teacher":
-        const getSubjectTeachers = async () => {
-          try {
-            console.log("idjda'hjg", id);
-            const response = await getSubjectTeacherMap(
-              {
-                id,
-                classId: "0",
-                sectionId: "0",
-                staffId: "0",
-                subjectId: "0",
-              },
-              TOKEN_KEY
-            );
-            console.log("subjectttt", response);
-            setFormData({
-              id: response[0].id,
-              staffId: response[0].staffId,
-              sectionId: response[0].sectionId,
-              classId: response[0].classId,
-              subjectId: response[0].subjectId,
-            });
-            setEditData([
-              { name: "staffId", data: response[0].ClassTeacherName },
-              { name: "classId", data: response[0].className },
-              { name: "sectionId", data: response[0].sectionName },
-              { name: "subjectId", data: response[0].subject },
-            ]);
-            // showMessage(response)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getSubjectTeachers();
-        setInputData(subjectTeacher);
-        break;
-      case "Products":
-        const getStationery1 = async () => {
-          try {
-            console.log("idjda'hjg", id);
-            const response = await getStationery(
-              {
-                id,
-                classId: 1,
-                sectionId: 1,
-              },
-              TOKEN_KEY
-            );
-            console.log("subjectttt", response);
-            setFormData({
-              id: response.data[0].id,
-              product: response.data[0].product,
-              total: response.data[0].total,
-              classId: parseInt(response.data[0].classId),
-              sectionId: parseInt(response.data[0].sectionId),
-            });
-            setEditData([
-              { name: "product", data: response.data[0].product },
-              { name: "total", data: response.data[0].total },
-              { name: "classId", data: response.data[0].class },
-              { name: "sectionId", data: response.data[0].section },
-            ]);
-            // showMessage(response.data)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        getStationery1();
-        setInputData(stationary);
-        break;
-      case "Period Slot":
-        const periodGet = async () => {
-          try {
-            const response = await getPeriodSlotbyID(id, TOKEN_KEY);
-            console.log("subjectttt", response);
-            setFormData({
-              id: response[0].id,
-              classId: response[0].classId,
-              startTime: response[0].startTime,
-              endTime: response[0].endTime,
-            });
-            setEditData([
-              { name: "classId", data: response[0].className },
-              { name: "startTime", data: response[0].startTime },
-              { name: "endTime", data: response[0].endTime },
-            ]);
-            // showMessage(response.data)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        periodGet();
-        setInputData(periodSlot);
-        break;
-      case "Class Time Table":
-        const timetableGet = async () => {
-          try {
-            const response = await getTimeTableByID(
-              id,
-              { dayId: 0, classId: 1, sectionId: 1 },
-              TOKEN_KEY
-            );
-            console.log("subjectttt", response);
-            setFormData({
-              id: response[0].id,
-              classId: response[0].classId,
-              dayId: response[0].dayId,
-              subjectId: response[0].subjectId,
-              periodSlotId: response[0].slotId,
-              sectionId: response[0].sectionId,
-            });
-            setEditData([
-              { name: "periodSlotId", data: response[0].slotName },
-              { name: "dayId", data: response[0].day },
-              { name: "subjectId", data: response[0].subject },
-              { name: "classId", data: response[0].class },
-              { name: "sectionId", data: response[0].section },
-            ]);
-            // showMessage(response.data)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        timetableGet();
-        setInputData(classTimeTable);
-        break;
-      case "Transport":
-        const transports = async () => {
-          try {
-            const response = await getTransport(formData, TOKEN_KEY);
-            console.log("subjectttt", response);
-            setFormData({
-              id: response.data[0].id,
-              busNo: response.data[0].busNo,
-              busRegNo: response.data[0].busRegNo,
-              busRoute: response.data[0].busRoute,
-              busTiming: response.data[0].busTiming,
-              driverName: response.data[0].driverName,
-              driverPhoneNo: response.data[0].driverPhoneNo,
-            });
-            setEditData([
-              { name: "driverName", data: response.data[0].driverName },
-              { name: "busNo", data: response.data[0].busNo },
-              { name: "busRegNo", data: response.data[0].busRegNo },
-              { name: "driverPhoneNo", data: response.data[0].driverPhoneNo },
-              { name: "busRoute", data: response.data[0].busRoute },
-              { name: "busTiming", data: response.data[0].busTiming },
-            ]);
-            // showMessage(response.data)
-          } catch (err) {
-            console.log(err);
-          }
-        };
-        transports();
-        setInputData(transport);
-        break;
-
-      default:
-        setData("");
-        console.log("No matching data scenario");
+  const handleEdit = async (id) => {
+    const token = getToken();
+    try {
+      switch (propsData) {
+        case "State": {
+          const response = await getState({ id, nationId: 0 }, token);
+          setFormData({
+            id: response[0].id,
+            code: response[0].State_Code,
+            nationId: response[0].nationalityId,
+            name: response[0].State,
+          });
+          setInputData(StateInputDetails);
+          break;
+        }
+        case "City": {
+          const response = await getCity({ id, stateId: 0 }, token);
+          setFormData({
+            id: response[0].id,
+            code: response[0].code,
+            stateId: response[0].stateId,
+            name: response[0].name,
+          });
+          setInputData(CityInputDetails);
+          break;
+        }
+        case "Class": {
+          const response = await getClass(id, token);
+          setFormData({ id: response[0].id, name: response[0].name });
+          setInputData(ReligionInputDetails);
+          break;
+        }
+        case "Section": {
+          const response = await getSection(id, token);
+          setFormData({ id: response[0].id, name: response[0].name });
+          setInputData(ReligionInputDetails);
+          break;
+        }
+        case "Class & Section": {
+          const response = await getClassSectionMap(id, token);
+          setFormData({
+            id: response[0].id,
+            classId: response[0].classId,
+            sectionId: response[0].sectionId,
+            totalCount: response[0].totalCount,
+          });
+          setInputData(classSection);
+          break;
+        }
+        case "BloodGroup": {
+          const response = await getBloodGroup(id, token);
+          setFormData({ id: response[0].id, name: response[0].name });
+          setInputData(BloodInputDetails);
+          break;
+        }
+        case "Community": {
+          const response = await getCommunity(id, token);
+          setFormData({
+            id: response[0].id,
+            code: response[0].code,
+            name: response[0].name,
+          });
+          setInputData(CommunityInputDetails);
+          break;
+        }
+        case "Nationality": {
+          const response = await getNationality(id, token);
+          setFormData({
+            id: response[0].id,
+            code: response[0].code,
+            name: response[0].name,
+          });
+          setInputData(NationalityInputDetails);
+          break;
+        }
+        case "Religion": {
+          const response = await getReligion(id, token);
+          setFormData({ id: response[0].id, name: response[0].name });
+          setInputData(ReligionInputDetails);
+          break;
+        }
+        case "Subject": {
+          const response = await getSubject(id, token);
+          setFormData({
+            id: response[0].id,
+            code: response[0].code,
+            name: response[0].name,
+          });
+          setInputData(SubjectInputDetails);
+          break;
+        }
+        case "Class Teacher": {
+          const response = await getClassTeacherMap(
+            { id, classId: "0", sectionId: "0", staffId: "0" },
+            token
+          );
+          setFormData({
+            id: response[0].id,
+            staffId: response[0].staffId,
+            sectionId: response[0].sectionId,
+            classId: response[0].classId,
+          });
+          setInputData(classTeacher);
+          break;
+        }
+        case "Subject Teacher": {
+          const response = await getSubjectTeacherMap(
+            { id, classId: "0", sectionId: "0", staffId: "0", subjectId: "0" },
+            token
+          );
+          setFormData({
+            id: response[0].id,
+            staffId: response[0].staffId,
+            sectionId: response[0].sectionId,
+            classId: response[0].classId,
+            subjectId: response[0].subjectId,
+          });
+          setInputData(subjectTeacher);
+          break;
+        }
+        case "Products": {
+          const response = await getStationery({ id, classId: 1, sectionId: 1 }, token);
+          setFormData({
+            id: response.data[0].id,
+            product: response.data[0].product,
+            total: response.data[0].total,
+            classId: parseInt(response.data[0].classId, 10),
+            sectionId: parseInt(response.data[0].sectionId, 10),
+          });
+          setInputData(stationary);
+          break;
+        }
+        case "Period Slot": {
+          const response = await getPeriodSlotbyID(id, token);
+          setFormData({
+            id: response[0].id,
+            classId: response[0].classId,
+            startTime: response[0].startTime,
+            endTime: response[0].endTime,
+          });
+          setInputData(periodSlot);
+          break;
+        }
+        case "Class Time Table": {
+          const response = await getTimeTableByID(
+            id,
+            { dayId: 0, classId: 1, sectionId: 1 },
+            token
+          );
+          setFormData({
+            id: response[0].id,
+            classId: response[0].classId,
+            dayId: response[0].dayId,
+            subjectId: response[0].subjectId,
+            periodSlotId: response[0].slotId,
+            sectionId: response[0].sectionId,
+          });
+          setInputData(classTimeTable);
+          break;
+        }
+        case "Transport": {
+          const response = await getTransport({ id }, token);
+          setFormData({
+            id: response.data[0].id,
+            busNo: response.data[0].busNo,
+            busRegNo: response.data[0].busRegNo,
+            busRoute: response.data[0].busRoute,
+            busTiming: response.data[0].busTiming,
+            driverName: response.data[0].driverName,
+            driverPhoneNo: response.data[0].driverPhoneNo,
+          });
+          setInputData(transport);
+          break;
+        }
+        default:
+          console.log("No matching data scenario");
+          return;
+      }
+      setEditData({ id });
+      openEditModal();
+    } catch (err) {
+      console.log(err);
+      toast.error("Failed to load record for edit");
     }
-    openModal(id);
   };
   const handleDelete = (id) => {
     console.log(id);
@@ -1077,7 +905,7 @@ const Master = () => {
       case "State":
         const deleteStatedetails = async () => {
           try {
-            const response = await deleteState(id, TOKEN_KEY);
+            const response = await deleteState(id, getToken());
             showMessage(response);
             let value =
               response.status === "Error" ||
@@ -1101,7 +929,7 @@ const Master = () => {
       case "City":
         const deleteCitydetail = async () => {
           try {
-            const response = await deleteCity(id, TOKEN_KEY);
+            const response = await deleteCity(id, getToken());
             console.log(response.data);
             let value =
               response.status === "error" ||
@@ -1125,7 +953,7 @@ const Master = () => {
       case "BloodGroup":
         const deleteBlood = async () => {
           try {
-            const response = await deleteBloodGroup(id, TOKEN_KEY);
+            const response = await deleteBloodGroup(id, getToken());
             console.log(response.data);
             let value =
               response.status === "error" ||
@@ -1150,7 +978,7 @@ const Master = () => {
         console.log("Calling Community function");
         const deleteCommunityDetails = async () => {
           try {
-            const response = await deleteCommunity(id, TOKEN_KEY);
+            const response = await deleteCommunity(id, getToken());
             console.log(response.data);
             let value =
               response.status === "error" ||
@@ -1174,7 +1002,7 @@ const Master = () => {
       case "Nationality":
         const deleteNationalityDetails = async () => {
           try {
-            let response = await deleteNationality(id, TOKEN_KEY);
+            let response = await deleteNationality(id, getToken());
             let value =
               response.status === "error" ||
                 response.data === "Nationality already assigned!"
@@ -1197,7 +1025,7 @@ const Master = () => {
       case "Religion":
         const deleteReligionDetails = async () => {
           try {
-            const response = await deleteReligion(id, TOKEN_KEY);
+            const response = await deleteReligion(id, getToken());
             console.log(response.data);
             let value =
               response.status === "error" ||
@@ -1222,7 +1050,7 @@ const Master = () => {
         console.log("Calling Community function");
         const deleteSubjectDetails = async () => {
           try {
-            const response = await deleteSubject(id, TOKEN_KEY);
+            const response = await deleteSubject(id, getToken());
             console.log(response.data);
             let value =
               response.status === "error" ||
@@ -1246,7 +1074,7 @@ const Master = () => {
       case "Class":
         const deleteClassDetails = async () => {
           try {
-            const response = await deleteClass(id, TOKEN_KEY);
+            const response = await deleteClass(id, getToken());
             console.log(response.data);
             let value =
               response.status === "error" ||
@@ -1270,7 +1098,7 @@ const Master = () => {
       case "Section":
         const deleteSectionDetails = async () => {
           try {
-            const response = await deleteSection(id, TOKEN_KEY);
+            const response = await deleteSection(id, getToken());
             console.log(response.data);
             let value =
               response.status === "error" ||
@@ -1294,7 +1122,7 @@ const Master = () => {
       case "Class & Section":
         const deleteClassSectionDetails = async () => {
           try {
-            const response = await deleteClassSection(id, TOKEN_KEY);
+            const response = await deleteClassSection(id, getToken());
             console.log(response.data);
             showMessage(response);
             if (response.status === "error" || response.status === "Error") {
@@ -1316,7 +1144,7 @@ const Master = () => {
       case "Class Teacher":
         const deleteClassTeacherDetails = async () => {
           try {
-            const response = await deleteClassTeacher(id, TOKEN_KEY);
+            const response = await deleteClassTeacher(id, getToken());
             console.log(response.data);
             showMessage(response);
             if (response.status === "error" || response.status === "Error") {
@@ -1338,7 +1166,7 @@ const Master = () => {
       case "Subject Teacher":
         const deleteSubjectTeachers = async () => {
           try {
-            const response = await deleteSubjectTeacher(id, TOKEN_KEY);
+            const response = await deleteSubjectTeacher(id, getToken());
             console.log(response.data);
             showMessage(response);
             if (response.status === "error" || response.status === "Error") {
@@ -1360,7 +1188,7 @@ const Master = () => {
       case "Products":
         const deleteProduct = async () => {
           try {
-            const response = await deleteStationery(id, TOKEN_KEY);
+            const response = await deleteStationery(id, getToken());
             console.log(response.data);
             showMessage(response);
             if (response.status === "error" || response.status === "Error") {
@@ -1382,7 +1210,7 @@ const Master = () => {
       case "Period Slot":
         const deletePeriod = async () => {
           try {
-            const response = await deletePeriodSlot(id, TOKEN_KEY);
+            const response = await deletePeriodSlot(id, getToken());
             console.log(response.data);
             showMessage(response);
             if (response.status === "error" || response.status === "Error") {
@@ -1404,7 +1232,7 @@ const Master = () => {
       case "Class Time Table":
         const deletetimetable = async () => {
           try {
-            const response = await deletetimetableApi(id, TOKEN_KEY);
+            const response = await deletetimetableApi(id, getToken());
             console.log(response.data);
             showMessage(response);
             if (response.status === "error" || response.status === "Error") {
@@ -1426,7 +1254,7 @@ const Master = () => {
       case "Transport":
         const deletetransport = async () => {
           try {
-            const response = await deleteTransportApi(id, TOKEN_KEY);
+            const response = await deleteTransportApi(id, getToken());
             console.log(response);
             showMessage(response);
             if (response.status === "error" || response.status === "Error") {
@@ -1457,7 +1285,7 @@ const Master = () => {
       case "State":
         const getData = async () => {
           try {
-            const response = await getState({ id: 0, nationId: 0 }, TOKEN_KEY);
+            const response = await getState({ id: 0, nationId: 0 }, getToken());
             const resultData = response.map((item) => ({
               id: item.id,
               state: item.name,
@@ -1475,7 +1303,7 @@ const Master = () => {
       case "City":
         const getCityDetails = async () => {
           try {
-            const response = await getCity({ id: 0, stateId: 0 }, TOKEN_KEY);
+            const response = await getCity({ id: 0, stateId: 0 }, getToken());
             console.log(response);
             const resultData = response.map((item) => ({
               id: item.id,
@@ -1494,7 +1322,7 @@ const Master = () => {
       case "Class":
         const getClassDetails = async () => {
           try {
-            const response = await getClass(0, TOKEN_KEY);
+            const response = await getClass(0, getToken());
             console.log(response);
             setData(response);
           } catch (err) {
@@ -1507,7 +1335,7 @@ const Master = () => {
       case "Section":
         const getSectionDetails = async () => {
           try {
-            const response = await getSection(0, TOKEN_KEY);
+            const response = await getSection(0, getToken());
             console.log(response);
             setData(response);
           } catch (err) {
@@ -1520,7 +1348,7 @@ const Master = () => {
       case "Class & Section":
         const getClassSectionDetails = async () => {
           try {
-            const response = await getClassSectionMap(0, TOKEN_KEY);
+            const response = await getClassSectionMap(0, getToken());
             console.log(response);
             const resultData = response.map((item) => ({
               id: item.id,
@@ -1539,7 +1367,7 @@ const Master = () => {
       case "BloodGroup":
         const getBloodDetails = async () => {
           try {
-            const response = await getBloodGroup(0, TOKEN_KEY);
+            const response = await getBloodGroup(0, getToken());
             console.log(response);
             setData(response);
           } catch (err) {
@@ -1552,7 +1380,7 @@ const Master = () => {
       case "Community":
         const getCommunityDetails = async () => {
           try {
-            const response = await getCommunity(0, TOKEN_KEY);
+            const response = await getCommunity(0, getToken());
             const resultData = response.map((item) => ({
               id: item.id,
               Name: item.name,
@@ -1569,7 +1397,7 @@ const Master = () => {
       case "Nationality":
         const getNationalityDetails = async () => {
           try {
-            const response = await getNationality(0, TOKEN_KEY);
+            const response = await getNationality(0, getToken());
             console.log(response, "ijyuy");
             const resultData = response.map((item) => ({
               id: item.id,
@@ -1588,7 +1416,7 @@ const Master = () => {
       case "Religion":
         const getReligionDetails = async () => {
           try {
-            const response = await getReligion(0, TOKEN_KEY);
+            const response = await getReligion(0, getToken());
             console.log(response);
             setData(response);
           } catch (err) {
@@ -1601,7 +1429,7 @@ const Master = () => {
       case "Subject":
         const getSubjectDetails = async () => {
           try {
-            const response = await getSubject(0, TOKEN_KEY);
+            const response = await getSubject(0, getToken());
             console.log(response);
             const resultData = response.map((item) => ({
               id: item.id,
@@ -1621,7 +1449,7 @@ const Master = () => {
           try {
             const response = await getClassTeacherMap(
               { id: 0, classId: "0", sectionId: "0" },
-              TOKEN_KEY
+              getToken()
             );
             console.log(response);
             const resultData = response.map((item) => ({
@@ -1643,7 +1471,7 @@ const Master = () => {
           try {
             const response = await getSubjectTeacherMap(
               { id: 0, classId: "0", sectionId: "0", subjectId: "0" },
-              TOKEN_KEY
+              getToken()
             );
             console.log(response);
             const resultData = response.map((item) => ({
@@ -1671,7 +1499,7 @@ const Master = () => {
                 classId: 1,
                 sectionId: 1,
               },
-              TOKEN_KEY
+              getToken()
             );
             console.log(response);
             const resultData = response.data.map((item) => ({
@@ -1692,17 +1520,14 @@ const Master = () => {
       case "Period Slot":
         const getperiodSlot = async () => {
           try {
-            const response = await getPeriodSlot(TOKEN_KEY);
-            console.log(response);
-            const resultData = response.map((item) => ({
-              id: item.id,
-              "class Name": item.className,
-              "start Time": item.startTime,
-              "end Time": item.endTime,
-            }));
-            setData(resultData);
+            const response = await getPeriodSlot(getToken());
+            const list = Array.isArray(response) ? response : [];
+            setData(list.length ? mapPeriodSlotRows(list) : PERIOD_SLOT_DUMMY);
           } catch (err) {
             console.log(err);
+            setData(PERIOD_SLOT_DUMMY);
+          } finally {
+            setLoad(false);
           }
         };
         getperiodSlot();
@@ -1713,21 +1538,15 @@ const Master = () => {
           try {
             const response = await getTimeTable(
               { dayId: 0, classId: 1, sectionId: 1 },
-              TOKEN_KEY
+              getToken()
             );
-            console.log("new", response);
-            const resultData = response.map((item) => ({
-              id: item.id,
-              day: item.day,
-              "class section": `${item.class}-${item.section}`,
-              subject: item.subject,
-              "start Time": item.startTime,
-              "end Time": item.endTime,
-              "staff Name": item.staffName,
-            }));
-            setData(resultData);
+            const list = Array.isArray(response) ? response : [];
+            setData(list.length ? mapClassTimetableRows(list) : CLASS_TIMETABLE_DUMMY);
           } catch (err) {
             console.log(err);
+            setData(CLASS_TIMETABLE_DUMMY);
+          } finally {
+            setLoad(false);
           }
         };
         getperiodtimeTables();
@@ -1736,7 +1555,7 @@ const Master = () => {
       case "Transport":
         const getTransportDetails = async () => {
           try {
-            const response = await getTransport({ id: 0 }, TOKEN_KEY);
+            const response = await getTransport({ id: 0 }, getToken());
             console.log("new", response);
             const resultData = response.data.map((item) => ({
               id: item.id,
@@ -1757,7 +1576,7 @@ const Master = () => {
         setInputData(transport);
         break;
       default:
-        setData("");
+        setData([]);
         console.log("No matching data scenario");
     }
     return () => {
@@ -1770,14 +1589,11 @@ const Master = () => {
     setFormData({})
   }, [propsData])
 
-  const [isTableOpen, setIsTableOpen] = useState(true);
   return (
-  <div className="master-page">
-
-    {/* Modal */}
-    <div className="button-content">
+    <div className="master-page">
       {isModalOpen && (
         <Modal
+          key={formData?.id ?? "create"}
           onSubmit={handleSubmit}
           setFormData={setFormData}
           formData={formData}
@@ -1788,38 +1604,28 @@ const Master = () => {
           dropdown={data}
         />
       )}
+
+      <Table
+        data={data || []}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        propsData={propsData}
+        openModal={openModal}
+      />
+
+      <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
-
-    {/* Table */}
-    {isTableOpen && (
-      <div className="table-container">
-        {data?.length > 0 ? (
-          <Table
-            data={data}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            propsData={propsData}
-            openModal={openModal}
-          />
-        ) : (
-          <div className="no-data">No Records Found</div>
-        )}
-      </div>
-    )}
-
-    <ToastContainer
-      position="top-right"
-      autoClose={2000}
-      hideProgressBar={false}
-      newestOnTop={false}
-      closeOnClick
-      rtl={false}
-      pauseOnFocusLoss
-      draggable
-      pauseOnHover
-    />
-  </div>
-);
+  );
 };
 
 export default Master;

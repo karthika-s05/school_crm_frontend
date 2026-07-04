@@ -14,13 +14,28 @@ import {
   getSubject,
   getTimeTable,
 } from "../../services/api";
-import { STAFF_KEY, TOKEN_KEY } from "../../services/auth";
-import { examportion, homework, transport } from "../../assets/constant";
-import { splitArrayIntoPairs } from "../../services/common";
+import { getToken } from "../../services/auth";
+
+const toSelectOptions = (rows, labelKey = "name") =>
+  (Array.isArray(rows) ? rows : []).map((row) => ({
+    id: row.id ?? row.staffId ?? row.admissionNo,
+    value:
+      row[labelKey] ||
+      row.name ||
+      row.State ||
+      row.state ||
+      row.staffName ||
+      row.studentName ||
+      row.slotName ||
+      row.dayName ||
+      row.exam ||
+      "",
+  }));
 
 const Modal = ({
   onSubmit,
   setFormData,
+  formData = {},
   closeModal,
   inputData,
   propsData,
@@ -48,101 +63,79 @@ const Modal = ({
   // }, [closeModal]);
 
   useEffect(() => {
+    setDropdown([]);
+    setShowHTML(false);
+
+    const loadClassSectionDropdown = async () => {
+      try {
+        const token = getToken();
+        const [classRes, sectionRes] = await Promise.all([
+          getClass(0, token),
+          getSection(0, token),
+        ]);
+        setDropdown([
+          { classId: toSelectOptions(classRes) },
+          { sectionId: toSelectOptions(sectionRes) },
+        ]);
+      } catch (err) {
+        console.error("Class & Section dropdown load failed:", err);
+        setDropdown([]);
+      }
+    };
+
     switch (propsData) {
       case "State":
-        const getData = async () => {
+        (async () => {
           try {
-            const response = await getNationality(0, TOKEN_KEY);
-            setDropdown(response);
+            const response = await getNationality(0, getToken());
+            setDropdown(Array.isArray(response) ? response : []);
           } catch (err) {
+            console.error("State dropdown load failed:", err);
+            setDropdown([]);
           }
-        };
-        getData();
+        })();
         break;
       case "City":
-        const getCitydata = async () => {
+        (async () => {
           try {
-            const response = await getState({ id: 0, nationId: 0 }, TOKEN_KEY);
-            setDropdown(response);
+            const response = await getState({ id: 0, nationId: 0 }, getToken());
+            setDropdown(Array.isArray(response) ? response : []);
           } catch (err) {
+            console.error("City dropdown load failed:", err);
+            setDropdown([]);
           }
-        };
-        getCitydata();
+        })();
         break;
       case "Class & Section":
       case "Products":
-        let classSection = [];
-        const getClassdata = async () => {
-          try {
-            const response = await getClass(0, TOKEN_KEY);
-            const class1 = response.map((value, index) => ({
-              id: value.id,
-              value: value.name,
-            }));
-            classSection.push({ classId: class1 });
-          } catch (err) {
-          }
-        };
-        const getSectiondata = async () => {
-          try {
-            const response = await getSection(0, TOKEN_KEY);
-            const section = response.map((value, index) => ({
-              id: value.id,
-              value: value.name,
-            }));
-            classSection.push({ sectionId: section });
-          } catch (err) {
-          }
-        };
-        getClassdata();
-        getSectiondata();
-        setDropdown(classSection);
+        loadClassSectionDropdown();
         break;
       case "Class Teacher":
-        let classTeacher = [];
-        const getClassdat = async () => {
+        (async () => {
           try {
-            const response = await getClass(0, TOKEN_KEY);
-            const classTeachers = response.map((value, index) => ({
-              id: value.id,
-              value: value.name,
-            }));
-            classTeacher.push({ classId: classTeachers });
+            const token = getToken();
+            const [classRes, sectionRes, staffRes] = await Promise.all([
+              getClass(0, token),
+              getSection(0, token),
+              getStafflist("0", token),
+            ]);
+            const staffRows = Array.isArray(staffRes?.data) ? staffRes.data : [];
+            setDropdown([
+              { classId: toSelectOptions(classRes) },
+              { sectionId: toSelectOptions(sectionRes) },
+              { staffId: toSelectOptions(staffRows, "staffName") },
+            ]);
           } catch (err) {
+            console.error("Class Teacher dropdown load failed:", err);
+            setDropdown([]);
           }
-        };
-        const getSectiondat = async () => {
-          try {
-            const response = await getSection(0, TOKEN_KEY);
-            const sectionTeacher = response.map((value, index) => ({
-              id: value.id,
-              value: value.name,
-            }));
-            classTeacher.push({ sectionId: sectionTeacher });
-          } catch (err) {
-          }
-        };
-        const getStaffList = async () => {
-          try {
-            const response = await getStafflist("0", TOKEN_KEY);
-            const staff = response.data.map((value, index) => ({
-              id: value.staffId,
-              value: value.staffName,
-            }));
-            classTeacher.push({ staffId: staff });
-          } catch (err) {
-          }
-        };
-        getClassdat();
-        getSectiondat();
-        getStaffList();
-        setDropdown(classTeacher);
+        })();
         break;
       case "Subject Teacher":
         let subjectTeacher = [];
         const getSubjectClass = async () => {
           try {
-            const response = await getClass(0, TOKEN_KEY);
+            const response = await getClass(0, getToken());
             const classTeacher = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -153,7 +146,7 @@ const Modal = ({
         };
         const getSubjectSection = async () => {
           try {
-            const response = await getSection(0, TOKEN_KEY);
+            const response = await getSection(0, getToken());
             const sectionTeacher = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -164,7 +157,7 @@ const Modal = ({
         };
         const getsubjectStaff = async () => {
           try {
-            const response = await getStafflist("0", TOKEN_KEY);
+            const response = await getStafflist("0", getToken());
             const staff = response.data.map((value, index) => ({
               id: value.staffId,
               value: value.staffName,
@@ -175,7 +168,7 @@ const Modal = ({
         };
         const getSubject1 = async () => {
           try {
-            const response = await getSubject(0, TOKEN_KEY);
+            const response = await getSubject(0, getToken());
             const subject = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -193,7 +186,7 @@ const Modal = ({
       case "Period Slot":
         const getperiod = async () => {
           try {
-            const response = await getClass(0, TOKEN_KEY);
+            const response = await getClass(0, getToken());
             const classTeachers = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -208,7 +201,7 @@ const Modal = ({
         let classSection1 = [];
         const getClassdata1 = async () => {
           try {
-            const response = await getClass(0, TOKEN_KEY);
+            const response = await getClass(0, getToken());
             const class1 = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -219,7 +212,7 @@ const Modal = ({
         };
         const getSectiondata1 = async () => {
           try {
-            const response = await getSection(0, TOKEN_KEY);
+            const response = await getSection(0, getToken());
             const section = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -230,7 +223,7 @@ const Modal = ({
         };
         const getSubjectTime = async () => {
           try {
-            const response = await getSubject(0, TOKEN_KEY);
+            const response = await getSubject(0, getToken());
             const subject = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -241,7 +234,7 @@ const Modal = ({
         };
         const getperiodTime = async () => {
           try {
-            const response = await getPeriodSlot(TOKEN_KEY);
+            const response = await getPeriodSlot(getToken());
             const classTeachers = response.map((value, index) => ({
               id: value.id,
               value: value.slotName,
@@ -252,7 +245,7 @@ const Modal = ({
         };
         const getDays = async () => {
           try {
-            const response = await getDay(TOKEN_KEY);
+            const response = await getDay(getToken());
             const classTeachers = response.map((value, index) => ({
               id: value.id,
               value: value.dayName,
@@ -272,7 +265,7 @@ const Modal = ({
         let assignment = [];
         const getClassstaff = async () => {
           try {
-            const response = await getClass(0, STAFF_KEY);
+            const response = await getClass(0, getToken());
             const class1 = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -283,7 +276,7 @@ const Modal = ({
         };
         const getSectionstaff = async () => {
           try {
-            const response = await getSection(0, STAFF_KEY);
+            const response = await getSection(0, getToken());
             const section = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -294,7 +287,7 @@ const Modal = ({
         };
         const getSubjectstaff = async () => {
           try {
-            const response = await getSubject(0, STAFF_KEY);
+            const response = await getSubject(0, getToken());
             const subject = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -313,7 +306,7 @@ const Modal = ({
         let homework = [];
         const getClassstaffs = async () => {
           try {
-            const response = await getClass(0, STAFF_KEY);
+            const response = await getClass(0, getToken());
             const class1 = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -324,7 +317,7 @@ const Modal = ({
         };
         const getSectionstaffs = async () => {
           try {
-            const response = await getSection(0, STAFF_KEY);
+            const response = await getSection(0, getToken());
             const section = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -335,7 +328,7 @@ const Modal = ({
         };
         const getSubjectstaffs = async () => {
           try {
-            const response = await getSubject(0, STAFF_KEY);
+            const response = await getSubject(0, getToken());
             const subject = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -346,7 +339,7 @@ const Modal = ({
         };
         const getStaffLists = async () => {
           try {
-            const response = await getStafflist("0", TOKEN_KEY);
+            const response = await getStafflist("0", getToken());
             const staff = response.data.map((value, index) => ({
               id: value.staffId,
               value: value.staffName,
@@ -365,7 +358,7 @@ const Modal = ({
         let exam = [];
         const getClassstaffExam = async () => {
           try {
-            const response = await getClass(0, STAFF_KEY);
+            const response = await getClass(0, getToken());
             const class1 = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -376,7 +369,7 @@ const Modal = ({
         };
         const getSectionstaffExam = async () => {
           try {
-            const response = await getSection(0, STAFF_KEY);
+            const response = await getSection(0, getToken());
             const section = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -394,7 +387,7 @@ const Modal = ({
         let examportion = [];
         const ClassstaffExam = async () => {
           try {
-            const response = await getClass(0, STAFF_KEY);
+            const response = await getClass(0, getToken());
             const class1 = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -405,7 +398,7 @@ const Modal = ({
         };
         const SectionstaffExam = async () => {
           try {
-            const response = await getSection(0, STAFF_KEY);
+            const response = await getSection(0, getToken());
             const section = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -416,7 +409,7 @@ const Modal = ({
         };
         const subjectStaff = async () => {
           try {
-            const response = await getStafflist("0", STAFF_KEY);
+            const response = await getStafflist("0", getToken());
             const staff = response.data.map((value, index) => ({
               id: value.staffId,
               value: value.staffName,
@@ -427,7 +420,7 @@ const Modal = ({
         };
         const SubjectExam = async () => {
           try {
-            const response = await getSubject(0, STAFF_KEY);
+            const response = await getSubject(0, getToken());
             const subject = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -438,7 +431,7 @@ const Modal = ({
         };
         const getExamstaffExam1 = async () => {
           try {
-            const response = await getExam({}, STAFF_KEY);
+            const response = await getExam({}, getToken());
             const examName = response.data.map((value, index) => ({
               id: value.id,
               value: value.exam,
@@ -458,7 +451,7 @@ const Modal = ({
       case "Events":
         const getEvents = async () => {
           try {
-            const response = await getClass(0, TOKEN_KEY);
+            const response = await getClass(0, getToken());
             const classTeachers = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -473,7 +466,7 @@ const Modal = ({
         let subjectreport = [];
         const getClassstaffreport = async () => {
           try {
-            const response = await getClass(0, STAFF_KEY);
+            const response = await getClass(0, getToken());
             const class1 = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -484,7 +477,7 @@ const Modal = ({
         };
         const getSectionstaffeport = async () => {
           try {
-            const response = await getSection(0, STAFF_KEY);
+            const response = await getSection(0, getToken());
             const section = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -495,7 +488,7 @@ const Modal = ({
         };
         const getSubjectstaffeport = async () => {
           try {
-            const response = await getSubject(0, STAFF_KEY);
+            const response = await getSubject(0, getToken());
             const subject = response.map((value, index) => ({
               id: value.id,
               value: value.name,
@@ -506,7 +499,7 @@ const Modal = ({
         };
         const getExamstaffExam2 = async () => {
           try {
-            const response = await getExam({}, STAFF_KEY);
+            const response = await getExam({}, getToken());
             const examName = response.data.map((value, index) => ({
               id: value.id,
               value: value.exam,
@@ -517,7 +510,7 @@ const Modal = ({
         };
         const StudentsExams = async () => {
           try {
-            const response = await getStudentlist({ userName: 0 }, TOKEN_KEY);
+            const response = await getStudentlist({ userName: 0 }, getToken());
             const studentlist = response.data.map((value, index) => ({
               id: value.admissionNo,
               value: value.studentName,
@@ -541,7 +534,7 @@ const Modal = ({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [propsData]);
 
   const handleInputChange = async (e) => {
     let { name, value, type } = e.target;
@@ -575,19 +568,22 @@ const Modal = ({
 
 
   if (editData) {
-    inputData.forEach(async (obj1) => {
-      const matchingObj2 = await editData.find(
-        (obj2) => obj2.name === obj1.name
-      );
-      if (matchingObj2) {
-        obj1.value = matchingObj2.data;
+    inputData.forEach((obj1) => {
+      const fromForm = formData?.[obj1.name];
+      if (fromForm !== undefined && fromForm !== null) {
+        obj1.value = fromForm;
       }
     });
   } else {
-    inputData.map((value, index) => {
+    inputData.forEach((value) => {
       delete value.value;
     });
   }
+
+  const fieldValue = (name) => {
+    const v = formData?.[name];
+    return v === undefined || v === null ? "" : v;
+  };
 
   return (
     <>
@@ -612,13 +608,12 @@ const Modal = ({
                 {/* {isSuccessVisible && <h1 className="success-message">{message}</h1>} */}
                 <div className="modal-scroll-content">
                   {inputData.map((data, index) => (
-                    <>
+                    <React.Fragment key={`${data.name}-${index}`}>
                       <InputWithLabel
-                        key={index}
                         type={data.type}
                         label={data.label}
                         name={data.name}
-                        value={data.value}
+                        value={fieldValue(data.name)}
                         onChange={handleInputChange}
                         data={dropdown}
                         propsData={propsData}
@@ -630,7 +625,7 @@ const Modal = ({
                           {validationErrors[data.name]}
                         </p>
                       )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </div>
 

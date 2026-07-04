@@ -6,7 +6,7 @@
   font-family: 'Poppins', sans-serif;
 }
 
-/* Left Panel — Hague Blue + Pantalon */
+/* Left Panel - Hague Blue + Pantalon */
 .adlogin-left {
   width: 45%;
   background: linear-gradient(160deg, #1C3659 0%, #3a5f70 55%, #FF5630 100%);
@@ -150,7 +150,7 @@
 
 .adlogin-stars { display: flex; gap: 6px; color: #C8BFB0; font-size: 14px; }
 
-/* Right Panel — Simply White bg */
+/* Right Panel - Simply White bg */
 .adlogin-right {
   width: 55%;
   background: #F5F2ED;
@@ -285,10 +285,9 @@
 
 @media (max-width: 768px) {
   .adlogin-wrapper { flex-direction: column; }
-  .adlogin-left { width: 100%; height: 220px; padding: 20px; }
-  .adlogin-logo-ring { width: 100px; height: 100px; }
-  .adlogin-logo-ring::before { width: 115px; height: 115px; }
-  .adlogin-logo-ring::after  { width: 130px; height: 130px; }
+  .adlogin-left { width: 100%; height: auto; min-height: 240px; padding: 20px; }
+  .adlogin-scene-wrap { max-width: 260px; }
+  .adlogin-float-deco { display: none; }
   .adlogin-school-name { font-size: 16px; }
   .adlogin-right { width: 100%; padding: 20px; }
   .adlogin-form-card { padding: 28px 24px; }

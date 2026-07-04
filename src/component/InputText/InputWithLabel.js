@@ -17,91 +17,105 @@ const InputWithLabel = ({
   console.log("PropsData: ", propsData);
   console.log("Data: ", data);
   useEffect(() => {
-    if (data) {
-      switch (propsData) {
-        case "State":
-          const state = data.map((value, index) => ({
-            id: value.id,
-            value: value.name,
-          }));
-          console.log("State dropdown:", state);
-          SetDropdownValue((prevData) => ({
-            ...prevData,
-            nationId: state,
-          }));
-          // dropdown.push({ id: value.id, value: value.name })
-          break;
-        case "City":
-          const city = data.map((value, index) => ({
-            id: value.id,
-            value: value.name,
-          }));
-          SetDropdownValue((prevData) => ({
-            ...prevData,
-            stateId: city,
-          }));
-          break;
-        case "Class & Section":
-        case "Period Slot":
-        case "Class Time Table":
-        case "Products":
-          const resultObjectCS = data.reduce((accumulator, currentObject) => {
-            return { ...accumulator, ...currentObject };
-          }, {});
-          SetDropdownValue(resultObjectCS);
-          break;
-        case "Class Teacher":
-          const resultObjectCT = data.reduce((accumulator, currentObject) => {
-            return { ...accumulator, ...currentObject };
-          }, {});
+    if (!data) return;
+
+    const asArray = Array.isArray(data) ? data : [];
+
+    switch (propsData) {
+      case "State": {
+        const nations = asArray.map((value) => ({
+          id: value.id,
+          value: value.name || value.Name || "",
+        })).filter((o) => o.id != null && o.value);
+        SetDropdownValue({ nationId: nations });
+        break;
+      }
+      case "City": {
+        const states = asArray.map((value) => ({
+          id: value.id,
+          value: value.name || value.State || value.state || "",
+        })).filter((o) => o.id != null && o.value);
+        SetDropdownValue({ stateId: states });
+        break;
+      }
+      case "Class & Section":
+      case "Period Slot":
+      case "Class Time Table":
+      case "Products": {
+        const resultObjectCS = asArray.reduce(
+          (accumulator, currentObject) => ({ ...accumulator, ...currentObject }),
+          {}
+        );
+        SetDropdownValue(resultObjectCS);
+        break;
+      }
+        case "Class Teacher": {
+          const resultObjectCT = asArray.reduce(
+            (accumulator, currentObject) => ({ ...accumulator, ...currentObject }),
+            {}
+          );
           SetDropdownValue(resultObjectCT);
           break;
-        case "Subject Teacher":
-          const resultObject = data.reduce((accumulator, currentObject) => {
-            return { ...accumulator, ...currentObject };
-          }, {});
+        }
+        case "Subject Teacher": {
+          const resultObject = asArray.reduce(
+            (accumulator, currentObject) => ({ ...accumulator, ...currentObject }),
+            {}
+          );
           SetDropdownValue(resultObject);
           break;
-        case "Assignment":
-          const resultObjec = data.reduce((accumulator, currentObject) => {
-            return { ...accumulator, ...currentObject };
-          }, {});
+        }
+        case "Assignment": {
+          const resultObjec = asArray.reduce(
+            (accumulator, currentObject) => ({ ...accumulator, ...currentObject }),
+            {}
+          );
           SetDropdownValue(resultObjec);
           break;
-        case "Homework":
-          const resultObjects = data.reduce((accumulator, currentObject) => {
-            return { ...accumulator, ...currentObject };
-          }, {});
+        }
+        case "Homework": {
+          const resultObjects = asArray.reduce(
+            (accumulator, currentObject) => ({ ...accumulator, ...currentObject }),
+            {}
+          );
           SetDropdownValue(resultObjects);
           break;
-        case "Exam Type":
-          const resultObjectExam = data.reduce((accumulator, currentObject) => {
-            return { ...accumulator, ...currentObject };
-          }, {});
+        }
+        case "Exam Type": {
+          const resultObjectExam = asArray.reduce(
+            (accumulator, currentObject) => ({ ...accumulator, ...currentObject }),
+            {}
+          );
           SetDropdownValue(resultObjectExam);
           break;
-        case "Exam Portion":
-          const resultExam = data.reduce((accumulator, currentObject) => {
-            return { ...accumulator, ...currentObject };
-          }, {});
+        }
+        case "Exam Portion": {
+          const resultExam = asArray.reduce(
+            (accumulator, currentObject) => ({ ...accumulator, ...currentObject }),
+            {}
+          );
           SetDropdownValue(resultExam);
           break;
-        case "Events":
-          const resultEvents = data.reduce((accumulator, currentObject) => {
-            return { ...accumulator, ...currentObject };
-          }, {});
+        }
+        case "Events": {
+          const resultEvents = asArray.reduce(
+            (accumulator, currentObject) => ({ ...accumulator, ...currentObject }),
+            {}
+          );
           SetDropdownValue(resultEvents);
           break;
-        case "Exam Report List":
-          const resultReports = data.reduce((accumulator, currentObject) => {
-            return { ...accumulator, ...currentObject };
-          }, {});
+        }
+        case "Exam Report List": {
+          const resultReports = asArray.reduce(
+            (accumulator, currentObject) => ({ ...accumulator, ...currentObject }),
+            {}
+          );
           SetDropdownValue(resultReports);
           break;
+        }
         default:
-          console.log("No matching data scenario");
+          break;
       }
-    }
   }, [data, propsData]);
   const inputRef = useRef(null);
   const selectRef = useRef(null);
@@ -119,26 +133,19 @@ const InputWithLabel = ({
           {label} <span style={{ color: "red", fontWeight: "400" }}>*</span>
         </label>
         <select
-         ref={inputRef}
+          ref={selectRef}
           className="effect-1"
           name={name}
-          defaultValue={value || ""}
+          value={value ?? ""}
           onChange={onChange}
         >
-          {value ? (
-            <option value={value} style={{color:"red"}}>{value}</option>
-          ) : (
-            <option value="">Select {label}</option>
-          )}
-          {dropdownValue[name] && (
-            <>
-              {dropdownValue[name].map((option, index) => (
-                <option key={index} value={option.id}>
-                  {option.value}
-                </option>
-              ))}
-            </>
-          )}
+          <option value="">Select {label}</option>
+          {dropdownValue[name] &&
+            dropdownValue[name].map((option, index) => (
+              <option key={index} value={option.id}>
+                {option.value}
+              </option>
+            ))}
         </select>
         {validationErrors[name] && (
           <div className="error-message1">{validationErrors[name]}</div>
@@ -190,7 +197,7 @@ const InputWithLabel = ({
                   className="effect-1 text-area"
                   ref={inputRef}
                   name={name}
-                  defaultValue={value}
+                  value={value ?? ""}
                   onChange={onChange}
                 />
                 {validationErrors[name] && (
@@ -216,9 +223,8 @@ const InputWithLabel = ({
                   ref={inputRef}
                   type={type}
                   name={name}
-                  defaultValue={value}
+                  value={value ?? ""}
                   onChange={onChange}
-                  // onKeyPress={(event) => { if (!validate(event)) event.preventDefault(); }}
                 />
                 {validationErrors[name] && (
                   <p className="error-message1">{validationErrors[name]}</p>

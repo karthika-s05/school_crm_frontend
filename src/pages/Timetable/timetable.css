@@ -1,40 +1,215 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
-
-.timetable-wrap {
-  font-family: 'Poppins', sans-serif;
+.tt-wrap {
+  font-family: "Poppins", sans-serif;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  font-family: 'Poppins', sans-serif;
+.tt-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
-.table th {
-  background: #1C3659;
-  color: #F5F2ED;
-  padding: 12px 14px;
-  text-align: left;
+.tt-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #fff;
+  border: 1px solid #e9ebf0;
+  border-radius: 20px;
+  font-size: 12px;
   font-weight: 600;
-  border: 1px solid #3a5f70;
+  color: #475569;
+}
+
+.tt-meta-pill i {
+  font-size: 15px;
+  color: #2D3A8C;
+}
+
+.tt-table-scroll {
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid #e9ebf0;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(45, 58, 140, 0.06);
+}
+
+.tt-table {
+  width: 100%;
+  min-width: 960px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+/* ── Header ── */
+.tt-table thead th {
+  background: linear-gradient(135deg, #2D3A8C, #3b52b4);
+  color: #fff;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 10px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.tt-period-head {
+  min-width: 108px;
+}
+
+.tt-period-num {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tt-period-time {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.82;
+  margin-top: 3px;
+}
+
+.tt-slot-head {
+  min-width: 52px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 14px 8px;
+}
+
+.tt-slot-head--break {
+  background: linear-gradient(135deg, #64748b, #94a3b8) !important;
+}
+
+.tt-slot-head--lunch {
+  background: linear-gradient(135deg, #E8541A, #f97316) !important;
+}
+
+/* ── Left day column (sticky) ── */
+.tt-day-col {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  min-width: 120px;
+  background: #f8fafc;
+  color: #1e293b;
+  font-weight: 700;
+  text-align: left;
+  padding: 14px 16px;
+  border-right: 2px solid #e2e8f0;
+  border-bottom: 1px solid #e9ebf0;
   white-space: nowrap;
 }
 
-.table td {
-  padding: 10px 14px;
-  border: 1px solid #e4e7f0;
-  color: #374151;
-  background: #ffffff;
-  text-align: left;
-}
-
-.table .weeks {
+.tt-corner {
+  background: linear-gradient(135deg, #1e2a6e, #2D3A8C) !important;
+  color: #fff !important;
   text-align: center;
-  font-weight: 600;
-  color: #1C3659;
+  z-index: 4;
+  border-right: 2px solid rgba(255, 255, 255, 0.15);
 }
 
-.table tr:nth-child(even) td { background: #FAF8F5; }
-.table tr:nth-child(odd)  td { background: #ffffff; }
-.table tr:hover           td { background: #EDE8E0; transition: background 0.2s; }
+.tt-day-name {
+  display: inline;
+}
+
+.tt-day-short {
+  display: none;
+}
+
+.tt-day-col .tt-day-name {
+  font-size: 14px;
+}
+
+tbody .tt-day-col {
+  background: linear-gradient(90deg, #eef0fb 0%, #f8fafc 100%);
+  color: #2D3A8C;
+}
+
+tbody tr:hover .tt-day-col {
+  background: linear-gradient(90deg, #e0e7ff 0%, #eef2ff 100%);
+}
+
+/* ── Body cells ── */
+.tt-cell {
+  padding: 14px 12px;
+  text-align: center;
+  border-bottom: 1px solid #e9ebf0;
+  border-right: 1px solid #f1f5f9;
+  color: #334155;
+  font-weight: 500;
+  vertical-align: middle;
+  transition: background 0.15s;
+}
+
+.tt-cell--subject {
+  background: #fff;
+}
+
+.tt-cell--break,
+.tt-cell--lunch {
+  background: #f8fafc;
+  color: #94a3b8;
+  font-size: 18px;
+  padding: 10px;
+}
+
+.tt-cell--lunch {
+  background: #fff7ed;
+  color: #E8541A;
+}
+
+tbody tr:hover .tt-cell--subject {
+  background: #f8f9ff;
+}
+
+tbody tr:nth-child(even) .tt-cell--subject {
+  background: #fcfcff;
+}
+
+tbody tr:nth-child(even):hover .tt-cell--subject {
+  background: #f0f4ff;
+}
+
+/* ── Legend ── */
+.tt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.tt-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tt-legend i {
+  font-size: 16px;
+  color: #2D3A8C;
+}
+
+@media (max-width: 768px) {
+  .tt-day-col {
+    min-width: 56px;
+    padding: 12px 8px;
+  }
+
+  .tt-day-name {
+    display: none;
+  }
+
+  .tt-day-short {
+    display: inline;
+    font-size: 13px;
+  }
+}
