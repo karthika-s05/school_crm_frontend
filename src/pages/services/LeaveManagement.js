@@ -10,205 +10,250 @@ import {
 } from "../../services/api";
 import { getToken } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
+import "../../component/modules.css";
 
-const STATUS_OPTIONS = ["Pending", "Approved", "Rejected"];
+const EMPTY_FORM = {
+  startDate: "", endDate: "", reason: "",
+  leaveTypeId: "", leaveTime: "Full day",
+  classId: "", sectionId: "",
+};
+
+const STATUS_COLOR = {
+  Approved: "mod-badge-green",
+  Rejected:  "mod-badge-red",
+  Pending:   "mod-badge-yellow",
+};
 
 export default function LeaveManagement() {
   const token = getToken();
-  const [tab, setTab] = useState("student");
-  const [leaveTypes, setLeaveTypes] = useState([]);
+  const [tab,           setTab]           = useState("student");
+  const [leaveTypes,    setLeaveTypes]    = useState([]);
   const [studentLeaves, setStudentLeaves] = useState([]);
-  const [staffLeaves, setStaffLeaves] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({
-    startDate: "",
-    endDate: "",
-    reason: "",
-    leaveTypeId: "",
-    leaveTime: "Full day",
-  });
+  const [staffLeaves,   setStaffLeaves]   = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [submitting,    setSubmitting]    = useState(false);
+  const [showForm,      setShowForm]      = useState(false);
+  const [form,          setForm]          = useState(EMPTY_FORM);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     await Promise.all([
-      runApi(() => getLeaveTypes(token), {
-        onSuccess: (res) => setLeaveTypes(res.data || []),
-      }),
-      runApi(() => getStudentLeave(token), {
-        onSuccess: (res) => setStudentLeaves(res.data || []),
-      }),
-      runApi(() => getStaffLeave(token), {
-        onSuccess: (res) => setStaffLeaves(res.data || []),
-      }),
+      runApi(() => getLeaveTypes(token),    { onSuccess: (res) => setLeaveTypes(res.data    || []) }),
+      runApi(() => getStudentLeave(token),  { onSuccess: (res) => setStudentLeaves(res.data || []) }),
+      runApi(() => getStaffLeave(token),    { onSuccess: (res) => setStaffLeaves(res.data   || []) }),
     ]);
     setLoading(false);
   }, [token]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const handleStatusUpdate = async (id, status, type) => {
-    const fn =
-      type === "student"
-        ? () => updateStudentLeaveStatus({ id, status }, token)
-        : () => updateStaffLeaveStatus({ id, status }, token);
-    await runApi(fn, {
-      successMsg: "Leave status updated",
-      onSuccess: () => loadData(),
-    });
+    const fn = type === "student"
+      ? () => updateStudentLeaveStatus({ id, status }, token)
+      : () => updateStaffLeaveStatus({ id, status }, token);
+    await runApi(fn, { successMsg: "Leave status updated", onSuccess: loadData });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const body =
-      tab === "student"
-        ? {
-            startDate: form.startDate,
-            endDate: form.endDate,
-            reason: form.reason,
-          }
-        : {
-            startDate: form.startDate,
-            endDate: form.endDate,
-            reason: form.reason,
-            leaveTypeId: Number(form.leaveTypeId),
-            leaveTime: form.leaveTime,
-          };
-    const fn =
-      tab === "student"
-        ? () => createStudentLeave(body, token)
-        : () => createStaffLeave(body, token);
+    setSubmitting(true);
+    const body = tab === "student"
+      ? { startDate: form.startDate, endDate: form.endDate, reason: form.reason,
+          classId: Number(form.classId) || 0, sectionId: Number(form.sectionId) || 0 }
+      : { startDate: form.startDate, endDate: form.endDate, reason: form.reason,
+          leaveTypeId: Number(form.leaveTypeId), leaveTime: form.leaveTime };
+    const fn = tab === "student"
+      ? () => createStudentLeave(body, token)
+      : () => createStaffLeave(body, token);
     await runApi(fn, {
       successMsg: "Leave request submitted",
-      onSuccess: () => {
-        setForm({ startDate: "", endDate: "", reason: "", leaveTypeId: "", leaveTime: "Full day" });
-        loadData();
-      },
+      onSuccess: () => { setForm(EMPTY_FORM); setShowForm(false); loadData(); },
     });
+    setSubmitting(false);
   };
 
   const rows = tab === "student" ? studentLeaves : staffLeaves;
 
   return (
-    <div style={{ padding: "24px 28px" }}>
-      <h2 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 700 }}>Leave Management</h2>
-      <p style={{ color: "#64748b", marginBottom: 20 }}>Apply for leave and approve staff or student requests.</p>
+    <div className="mod-wrap">
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        {["student", "staff"].map((t) => (
-          <button
-            key={t}
-            type="button"
-            className={tab === t ? "fw-btn-fill btn-gradient-add" : "fw-btn-fill"}
-            onClick={() => setTab(t)}
-          >
-            {t === "student" ? "Student Leave" : "Staff Leave"}
+      {/* Header */}
+      <div className="mod-header">
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>Leave Management</div>
+          <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>Manage and track leave requests</div>
+        </div>
+        <div className="mod-pills">
+          <span className="mod-pill blue"><i className="bx bx-calendar"></i>{rows.length} Records</span>
+          <button className="mod-btn mod-btn-primary" onClick={() => setShowForm((p) => !p)}>
+            <i className={`bx ${showForm ? "bx-x" : "bx-plus"}`}></i>
+            {showForm ? "Cancel" : "Apply Leave"}
           </button>
-        ))}
+        </div>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: 12,
-          marginBottom: 24,
-          padding: 16,
-          border: "1px solid #e2e8f0",
-          borderRadius: 12,
-          background: "#fff",
-        }}
-      >
-        <input
-          className="wz-input"
-          type="date"
-          required
-          value={form.startDate}
-          onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))}
-        />
-        <input
-          className="wz-input"
-          type="date"
-          required
-          value={form.endDate}
-          onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))}
-        />
-        {tab === "staff" && (
-          <>
-            <select
-              className="wz-input"
-              required
-              value={form.leaveTypeId}
-              onChange={(e) => setForm((p) => ({ ...p, leaveTypeId: e.target.value }))}
+      {/* Tabs */}
+      <div className="mod-filter-card" style={{ padding: "10px 16px" }}>
+        <div className="mod-tabs">
+          {["student", "staff"].map((t) => (
+            <button
+              key={t}
+              className={`mod-tab${tab === t ? " active" : ""}`}
+              onClick={() => setTab(t)}
             >
-              <option value="">Leave type</option>
-              {leaveTypes.map((lt) => (
-                <option key={lt.id} value={lt.id}>{lt.leaveType || lt.name}</option>
-              ))}
-            </select>
-            <select
-              className="wz-input"
-              value={form.leaveTime}
-              onChange={(e) => setForm((p) => ({ ...p, leaveTime: e.target.value }))}
-            >
-              <option value="Full day">Full day</option>
-              <option value="Half day">Half day</option>
-            </select>
-          </>
-        )}
-        <input
-          className="wz-input"
-          placeholder="Reason"
-          required
-          value={form.reason}
-          onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))}
-        />
-        <button type="submit" className="fw-btn-fill btn-gradient-add">
-          Submit leave
+              <i className={`bx ${t === "student" ? "bx-user" : "bx-briefcase"}`}></i>{" "}
+              {t === "student" ? "Student Leave" : "Staff Leave"}
+            </button>
+          ))}
+        </div>
+        <button className="mod-btn mod-btn-ghost" style={{ marginLeft: "auto" }} onClick={loadData}>
+          <i className="bx bx-refresh"></i> Refresh
         </button>
-      </form>
+      </div>
 
-      <div style={{ overflowX: "auto", background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0" }}>
-        {loading ? (
-          <p style={{ padding: 24, color: "#64748b" }}>Loading…</p>
-        ) : rows.length === 0 ? (
-          <p style={{ padding: 24, color: "#64748b" }}>No leave records.</p>
-        ) : (
-          <table className="table" style={{ width: "100%" }}>
-            <thead>
-              <tr>
-                <th>From</th>
-                <th>To</th>
-                <th>Reason</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.startDate || row.fromDate || "-"}</td>
-                  <td>{row.endDate || row.toDate || "-"}</td>
-                  <td>{row.reason || "-"}</td>
-                  <td>{row.status || "Pending"}</td>
-                  <td>
-                    <select
-                      className="wz-input"
-                      value={row.status || "Pending"}
-                      onChange={(e) => handleStatusUpdate(row.id, e.target.value, tab)}
-                    >
-                      {STATUS_OPTIONS.map((s) => (
-                        <option key={s} value={s}>{s}</option>
+      {/* Apply Leave Form */}
+      {showForm && (
+        <div className="mod-filter-card" style={{ flexDirection: "column", alignItems: "stretch", gap: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
+            <i className="bx bx-edit" style={{ marginRight: 6 }}></i>
+            Apply {tab === "student" ? "Student" : "Staff"} Leave
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+
+              <div className="mod-filter-group">
+                <label>Start Date</label>
+                <input className="mod-input" type="date" required
+                  value={form.startDate}
+                  onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
+              </div>
+
+              <div className="mod-filter-group">
+                <label>End Date</label>
+                <input className="mod-input" type="date" required
+                  value={form.endDate}
+                  onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} />
+              </div>
+
+              {tab === "student" && (
+                <>
+                  <div className="mod-filter-group">
+                    <label>Class ID</label>
+                    <input className="mod-input" type="number" placeholder="Enter class ID" required
+                      value={form.classId}
+                      onChange={(e) => setForm((p) => ({ ...p, classId: e.target.value }))} />
+                  </div>
+                  <div className="mod-filter-group">
+                    <label>Section ID</label>
+                    <input className="mod-input" type="number" placeholder="Enter section ID" required
+                      value={form.sectionId}
+                      onChange={(e) => setForm((p) => ({ ...p, sectionId: e.target.value }))} />
+                  </div>
+                </>
+              )}
+
+              {tab === "staff" && (
+                <>
+                  <div className="mod-filter-group">
+                    <label>Leave Type</label>
+                    <select className="mod-input" required value={form.leaveTypeId}
+                      onChange={(e) => setForm((p) => ({ ...p, leaveTypeId: e.target.value }))}>
+                      <option value="">Select leave type</option>
+                      {leaveTypes.map((lt) => (
+                        <option key={lt.id} value={lt.id}>{lt.leaveType || lt.name}</option>
                       ))}
                     </select>
-                  </td>
+                  </div>
+                  <div className="mod-filter-group">
+                    <label>Leave Time</label>
+                    <select className="mod-input" value={form.leaveTime}
+                      onChange={(e) => setForm((p) => ({ ...p, leaveTime: e.target.value }))}>
+                      <option value="Full day">Full day</option>
+                      <option value="Half day">Half day</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <div className="mod-filter-group" style={{ gridColumn: "1 / -1" }}>
+                <label>Reason</label>
+                <input className="mod-input" placeholder="Enter reason for leave" required
+                  value={form.reason}
+                  onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))} />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
+              <button type="button" className="mod-btn mod-btn-ghost"
+                onClick={() => { setForm(EMPTY_FORM); setShowForm(false); }}>
+                Cancel
+              </button>
+              <button type="submit" className="mod-btn mod-btn-primary" disabled={submitting}>
+                <i className="bx bx-send"></i> {submitting ? "Submitting..." : "Submit Leave"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="mod-table-card">
+        <div className="mod-table-toolbar">
+          <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
+            {tab === "student" ? "Student" : "Staff"} Leave Records
+          </span>
+          <span className="mod-pill blue">{rows.length} records</span>
+        </div>
+
+        <div className="mod-table-body-wrap">
+          {loading ? (
+            <div className="mod-loading"><div className="mod-spinner"></div> Loading...</div>
+          ) : rows.length === 0 ? (
+            <div className="mod-empty"><i className="bx bx-calendar-x"></i><p>No leave records found</p></div>
+          ) : (
+            <table className="mod-table">
+              <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
+                <tr>
+                  <th>#</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Reason</th>
+                  <th>Days</th>
+                  <th>Status</th>
+                  <th>Update Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {rows.map((row, i) => (
+                  <tr key={row.id || i}>
+                    <td>{i + 1}</td>
+                    <td>{row.startDate || row.fromDate || "-"}</td>
+                    <td>{row.endDate   || row.toDate   || "-"}</td>
+                    <td>{row.reason || "-"}</td>
+                    <td>{row.noOfDays || "-"}</td>
+                    <td>
+                      <span className={`mod-badge ${STATUS_COLOR[row.status] || "mod-badge-gray"}`}>
+                        {row.status || "Pending"}
+                      </span>
+                    </td>
+                    <td>
+                      <select
+                        className="mod-input"
+                        style={{ padding: "5px 10px", fontSize: 12, minWidth: 110 }}
+                        value={row.status || "Pending"}
+                        onChange={(e) => handleStatusUpdate(row.id, e.target.value, tab)}
+                      >
+                        {["Pending", "Approved", "Rejected"].map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   );

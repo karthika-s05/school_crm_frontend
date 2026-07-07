@@ -1,350 +1,316 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import "../modules.css";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
-  getClass,
-  getExam,
-  getExamResultlist,
-  getExamreport,
-  getSection,
-  getStudentlist,
-  getSubject,
-  studentReport,
+  getAssignment, createAssignment, deletetAssignment,
+  getClass, getSection, getSubject,
 } from "../../services/api";
 import { getToken } from "../../services/auth";
-import { useNavigate } from "react-router-dom";
+import { runApi } from "../../utils/apiHelper";
+
+const COLORS = ["#2D3A8C","#E8541A","#16a34a","#7c3aed","#d97706","#0891b2"];
+const initials = (s) => (s || "?").slice(0, 2).toUpperCase();
+const EMPTY_FORM = { id: 0, classId: "", sectionId: "", subjectId: "", title: "", description: "", startDate: "", endDate: "" };
 
 export default function Assignment() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [data, setData] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
-  const totalPages = Math.ceil(data.length / pageSize);
+  const token = getToken();
+  const [classes,  setClasses]  = useState([]);
+  const [sections, setSections] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [filter,   setFilter]   = useState({ classId: "", sectionId: "" });
+  const [rows,     setRows]     = useState([]);
+  const [loading,  setLoading]  = useState(false);
+  const [search,   setSearch]   = useState("");
+  const [page,     setPage]     = useState(1);
+  const PAGE = 8;
 
-  const handlePageClick = (pageNumber) => {
-    if (pageNumber === "prev" && currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    } else if (pageNumber === "next" && currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    } else if (
-      typeof pageNumber === "number" &&
-      pageNumber >= 1 &&
-      pageNumber <= totalPages
-    ) {
-      setCurrentPage(pageNumber);
-    }
-  };
+  const [showModal, setShowModal] = useState(false);
+  const [form,      setForm]      = useState(EMPTY_FORM);
+  const [saving,    setSaving]    = useState(false);
+  const [viewItem,  setViewItem]  = useState(null);
 
-  const renderPaginationButtons = () => {
-    const maxButtonsToShow = 3;
-    const buttons = [];
-
-    if (totalPages <= maxButtonsToShow) {
-      for (let i = 1; i <= totalPages; i++) {
-        buttons.push(i);
-      }
-    } else {
-      const startPage = Math.max(
-        1,
-        Math.min(
-          currentPage - Math.floor(maxButtonsToShow / 2),
-          totalPages - maxButtonsToShow + 1
-        )
-      );
-      const endPage = Math.min(startPage + maxButtonsToShow - 1, totalPages);
-
-      if (startPage > 1) {
-        buttons.push(1);
-        if (startPage > 2) {
-          buttons.push("...");
-        }
-      }
-
-      for (let i = startPage; i <= endPage; i++) {
-        buttons.push(i);
-      }
-
-      if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-          buttons.push("...");
-        }
-        buttons.push(totalPages);
-      }
-    }
-
-    return buttons.map((pageNumber, index) => (
-      <button
-        key={index}
-        onClick={() => handlePageClick(pageNumber)}
-        className={`pagination-button ${
-          currentPage === pageNumber ? "active-page" : ""
-        }`}
-      >
-        {pageNumber === "..." ? "..." : pageNumber}
-      </button>
-    ));
-  };
-
-  const openModal = (item) => {
-    setSelectedItem(item);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setSelectedItem(null);
-    setIsModalOpen(false);
-  };
-
-  const handleView = async (item) => {
-
-    try {
-      const studentDetailsResponse = await studentReport(
-        {
-          classId: 1,
-          sectionId: 1,
-          pageNo: 1,
-          startDate: "2023-12-20",
-          endDate: "2023-12-30",
-        },
-        getToken()
-      );
-
-      const studentDetails = studentDetailsResponse.data;
-
-      const combinedData = {
-        ...item,
-        studentDetails,
-      };
-
-      openModal(combinedData);
-    } catch (error) {
-      console.error("Error fetching student details", error);
-    }
-  };
   useEffect(() => {
-    const studentreport = async () => {
+    const load = async () => {
       try {
-        const response = await studentReport(
-          {
-            classId: 1,
-            sectionId: 1,
-            pageNo: 1,
-            startDate: "2023-12-20",
-            endDate: "2023-12-30",
-          },
-          getToken()
-        );
-        const resultData = response.data.map((item) => ({
-          id: item.id,
-          class: item.className,
-          section: item.section,
-          subject: item.subject,
-          title: item.title,
-          startDate: item.startDate,
-          endDate: item.endDate,
-          status: item.status,
-          description: item.description,
-        }));
-        setData(resultData);
-      } catch (err) {
-      }
+        const [cls, sec, sub] = await Promise.all([
+          getClass(0, token), getSection(0, token), getSubject(0, token),
+        ]);
+        setClasses(Array.isArray(cls) ? cls : []);
+        setSections(Array.isArray(sec) ? sec : []);
+        setSubjects(Array.isArray(sub) ? sub : []);
+        const c0 = Array.isArray(cls) && cls[0];
+        const s0 = Array.isArray(sec) && sec[0];
+        if (c0) setFilter(p => ({ ...p, classId: String(c0.id) }));
+        if (s0) setFilter(p => ({ ...p, sectionId: String(s0.id) }));
+      } catch { toast.error("Failed to load filters"); }
     };
-    studentreport();
-  }, []);
+    if (token) load();
+  }, [token]);
+
+  const fetchAssignments = useCallback(async () => {
+    if (!filter.classId || !filter.sectionId) return;
+    setLoading(true);
+    await runApi(
+      () => getAssignment({classId: Number(filter.classId), sectionId: Number(filter.sectionId), pageNo: 1 }, token),
+      { onSuccess: (res) => setRows(res.data || []), onError: () => setRows([]) }
+    );
+    setLoading(false);
+  }, [filter, token]);
+
+  useEffect(() => { fetchAssignments(); }, [fetchAssignments]);
+
+  const filtered = rows.filter(r =>
+    [r.title, r.subject, r.className, r.description].join(" ").toLowerCase().includes(search.toLowerCase())
+  );
+  const totalPages = Math.ceil(filtered.length / PAGE);
+  const paged = filtered.slice((page - 1) * PAGE, page * PAGE);
+
+  const openAdd  = () => { setForm(EMPTY_FORM); setShowModal(true); };
+  const openEdit = (r) => {
+    setForm({ id: r.id || 0, classId: String(r.classId || filter.classId), sectionId: String(r.sectionId || filter.sectionId), subjectId: String(r.subjectId || ""), title: r.title || "", description: r.description || "", startDate: r.startDate || "", endDate: r.endDate || "" });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.title || !form.startDate || !form.endDate) { toast.warning("Title and dates are required"); return; }
+    setSaving(true);
+    await runApi(
+      () => createAssignment({ id: form.id, classId: Number(form.classId || filter.classId), sectionId: Number(form.sectionId || filter.sectionId), subjectId: Number(form.subjectId) || 0, title: form.title, description: form.description, startDate: form.startDate, endDate: form.endDate }, token),
+      { successMsg: form.id ? "Assignment updated!" : "Assignment created!", onSuccess: () => { setShowModal(false); fetchAssignments(); } }
+    );
+    setSaving(false);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this assignment?")) return;
+    await runApi(() => deletetAssignment(id, token), { successMsg: "Deleted!", onSuccess: fetchAssignments });
+  };
+
+  const subjectName = (id) => subjects.find(s => s.id === Number(id))?.name || id || "—";
+
+  const getStatus = (r) => {
+    const now = new Date();
+    const end = r.endDate ? new Date(r.endDate) : null;
+    const start = r.startDate ? new Date(r.startDate) : null;
+    if (r.status) return r.status;
+    if (!end) return "Active";
+    if (end < now) return "Closed";
+    if (start && start > now) return "Upcoming";
+    return "Active";
+  };
+
+  const statusBadge = (s) => {
+    const map = { Active: "mod-badge-green", Closed: "mod-badge-red", Upcoming: "mod-badge-blue" };
+    return map[s] || "mod-badge-gray";
+  };
 
   return (
-    <>
-      {/* <h3>Assignment Report</h3> */}
-      <ul className="breadcrumb" style={{ display: "flex" }}>
-        <li>
-          <a href="/dashboard">
-            <a style={{ color: "#051F3E" }}>
-              <h4>Report</h4>
-            </a>
-          </a>
-        </li>
-        <li>
-          <a>Assignment Report</a>
-        </li>
-      </ul>
-      <div className="table-container">
-        <div className="table-main">
-          <h3 style={{ color: "#051F3E" }}>Student Assignment Report</h3>
-          <div className="form-group">
-            <div className="search-input">
-              <i
-                className="bx bx-search"
-                style={{ color: "gray"}}
-              ></i>
-              <input
-                type="text"
-                placeholder="Search..."
-                className="form-control"
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <button
-              type="submit"
-              className="fw-btn-fill btn-gradient-add"
-              //   onClick={handleAdd}
-            >
-              <i className="bx bx-plus"></i>ADD{" "}
-            </button>
+    <div className="mod-wrap">
+      {/* Header */}
+      <div className="mod-header">
+        <div>
+          {/* <h2 className="mod-title">Assignments</h2>
+          <p className="mod-sub">Create and manage class assignments</p> */}
+        </div>
+        <div className="mod-pills">
+          <span className="mod-pill blue"><i className="bx bx-task"></i>{rows.length} Total</span>
+          <button className="mod-btn mod-btn-primary" onClick={openAdd}>
+            <i className="bx bx-plus"></i> Add Assignment
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="mod-filter-card">
+        <div className="mod-filter-group">
+          <label>Class</label>
+          <select className="mod-input" value={filter.classId} onChange={e => setFilter(p => ({ ...p, classId: e.target.value }))}>
+            {classes.map(c => <option key={c.id} value={c.id}>{c.name || c.className}</option>)}
+          </select>
+        </div>
+        <div className="mod-filter-group">
+          <label>Section</label>
+          <select className="mod-input" value={filter.sectionId} onChange={e => setFilter(p => ({ ...p, sectionId: e.target.value }))}>
+            {sections.map(s => <option key={s.id} value={s.id}>{s.name || s.sectionName}</option>)}
+          </select>
+        </div>
+        <button className="mod-btn mod-btn-ghost" onClick={fetchAssignments}><i className="bx bx-refresh"></i> Refresh</button>
+      </div>
+
+      {/* Table */}
+      <div className="mod-table-card">
+        <div className="mod-table-toolbar">
+          <div className="mod-search">
+            <i className="bx bx-search"></i>
+            <input placeholder="Search assignments..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
           </div>
-          <table className="table">
-            <thead>
+          <span className="mod-pill blue">{filtered.length} records</span>
+        </div>
+
+        {loading ? (
+          <div className="mod-table-body-wrap">
+            <div className="mod-loading"><div className="mod-spinner"></div> Loading assignments...</div>
+          </div>
+        ) : paged.length === 0 ? (
+          <div className="mod-table-body-wrap">
+            <div className="mod-empty"><i className="bx bx-task"></i><p>No assignments found</p></div>
+          </div>
+        ) : (
+          <div className="mod-table-body-wrap">
+          <table className="mod-table">
+            <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
               <tr>
-                <th style={{ textAlign: "center" }}>TITLE</th>
-                <th style={{ textAlign: "center" }}>CLASS</th>
-                <th style={{ textAlign: "center" }}>SECTION</th>
-                <th style={{ textAlign: "center" }}>SUBJECT</th>
-                <th style={{ textAlign: "center" }}>START DATE</th>
-                <th style={{ textAlign: "center" }}>END DATE</th>
-                <th style={{ textAlign: "center" }}>STATUS</th>
-                <th style={{ textAlign: "center" }}>DESCRIPTION</th>
-                <th style={{ textAlign: "center" }}>VIEW</th>
-                {/* <th style={{textAlign:"center" }}>DELETE</th> */}
+                <th>#</th><th>Title</th><th>Subject</th><th>Class</th><th>Start Date</th><th>End Date</th><th>Status</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {data
-                .filter((item) =>
-                  Object.values(item)
-                    .join(" ")
-                    .toLowerCase()
-                    .includes(searchTerm.toLowerCase())
-                )
-                .slice((currentPage - 1) * pageSize, currentPage * pageSize)
-                .map((item) => (
-                  <tr key={item.id}>
-                    <td style={{ textAlign: "center" }}>{item.title}</td>
-                    <td style={{ textAlign: "center" }}>{item.class}</td>
-                    <td style={{ textAlign: "center" }}>{item.section}</td>
-                    <td style={{ textAlign: "center" }}>{item.subject}</td>
-                    <td style={{ textAlign: "center" }}>{item.startDate}</td>
-                    <td style={{ textAlign: "center" }}>{item.endDate}</td>
-                    <td style={{ textAlign: "center" }}>{item.status}</td>
-                    <td style={{ textAlign: "center" }}>{item.description}</td>
-                    <td style={{ textAlign: "center" }}>
-                      <button
-                        class="edit-button"
-                        onClick={() => handleView(item)}
-                      >
-                        <i class="bx bx-show-alt"></i>
-                      </button>
+              {paged.map((r, i) => {
+                const status = getStatus(r);
+                return (
+                  <tr key={r.id || i}>
+                    <td>{(page - 1) * PAGE + i + 1}</td>
+                    <td>
+                      <div className="mod-avatar-cell">
+                        <div className="mod-avatar" style={{ background: COLORS[i % COLORS.length] }}>
+                          {initials(r.title)}
+                        </div>
+                        <div>
+                          <div className="mod-cell-name">{r.title}</div>
+                          <div className="mod-cell-sub" style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.description}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{r.subject || subjectName(r.subjectId)}</td>
+                    <td><span className="mod-badge mod-badge-blue">{r.className || `Class ${filter.classId}`} – {r.section || `Sec ${filter.sectionId}`}</span></td>
+                    <td>{r.startDate || "—"}</td>
+                    <td>{r.endDate || "—"}</td>
+                    <td><span className={`mod-badge ${statusBadge(status)}`}>{status}</span></td>
+                    <td>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button className="mod-action-btn" title="View" onClick={() => setViewItem(r)}><i className="bx bx-show"></i></button>
+                        <button className="mod-action-btn edit" title="Edit" onClick={() => openEdit(r)}><i className="bx bx-edit"></i></button>
+                        <button className="mod-action-btn danger" title="Delete" onClick={() => handleDelete(r.id)}><i className="bx bx-trash"></i></button>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
             </tbody>
           </table>
-          <div className="pagination">
-            {currentPage > 1 && (
-              <button
-                onClick={() => handlePageClick("prev")}
-                disabled={currentPage === 1}
-              >
-                &laquo; Prev
-              </button>
-            )}
-            {renderPaginationButtons()}
-            {currentPage < totalPages && (
-              <button
-                onClick={() => handlePageClick("next")}
-                disabled={currentPage === totalPages}
-              >
-                Next &raquo;
-              </button>
-            )}
           </div>
-        </div>
-      </div>
-      {isModalOpen && selectedItem && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <span
-              style={{ display: "flex", justifyContent: "end", color: "red" }}
-              className="modal-close"
-              onClick={closeModal}
-            >
-              <i
-                class="bx bxs-x-circle"
-                style={{ fontSize: "25px", color: "gray" }}
-              ></i>
-            </span>
+        )}
 
-            <h3
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginBottom: "10px",
-                color: "rgb(5, 31, 62)",
-                fontWeight: "600",
-              }}
-            >
-              Student Assignment Report
-            </h3>
-            <div className="modal-dialog modal-dialog-scrollable">
-              <table className="table">
-                <tbody>
-                  <tr>
-                    <td style={{ color: "rgb(5, 31, 62)", fontWeight: "600" }}>
-                      Title
-                    </td>
-                    <td>{selectedItem.title}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ color: "rgb(5, 31, 62)", fontWeight: "600" }}>
-                      Class
-                    </td>
-                    <td>{selectedItem.class}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ color: "rgb(5, 31, 62)", fontWeight: "600" }}>
-                      Section
-                    </td>
-                    <td>{selectedItem.section}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ color: "rgb(5, 31, 62)", fontWeight: "600" }}>
-                      Subject
-                    </td>
-                    <td>{selectedItem.subject}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ color: "rgb(5, 31, 62)", fontWeight: "600" }}>
-                      Start Date
-                    </td>
-                    <td>{selectedItem.startDate}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ color: "rgb(5, 31, 62)", fontWeight: "600" }}>
-                      End Date
-                    </td>
-                    <td>{selectedItem.endDate}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ color: "rgb(5, 31, 62)", fontWeight: "600" }}>
-                      Status
-                    </td>
-                    <td>{selectedItem.status}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ color: "rgb(5, 31, 62)", fontWeight: "600" }}>
-                      Description
-                    </td>
-                    <td>{selectedItem.description}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div class="btn-style" style={{justifyContent:"end"}}>
-                <button class="cancel-button" onClick={closeModal}>
-                  Cancel
-                </button>
+        {totalPages > 1 && (
+          <div className="mod-pagination">
+            <span className="mod-page-info">Showing {(page - 1) * PAGE + 1}–{Math.min(page * PAGE, filtered.length)} of {filtered.length}</span>
+            <div className="mod-page-btns">
+              <button className="mod-page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}><i className="bx bx-chevron-left"></i></button>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button key={i} className={`mod-page-btn${page === i + 1 ? " active" : ""}`} onClick={() => setPage(i + 1)}>{i + 1}</button>
+              ))}
+              <button className="mod-page-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}><i className="bx bx-chevron-right"></i></button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Add/Edit Modal */}
+      {showModal && (
+        <div className="mod-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="mod-modal" onClick={e => e.stopPropagation()}>
+            <div className="mod-modal-header">
+              <h3>{form.id ? "Edit Assignment" : "Add Assignment"}</h3>
+              <button className="mod-modal-close" onClick={() => setShowModal(false)}><i className="bx bx-x"></i></button>
+            </div>
+            <div className="mod-modal-body">
+              <div className="mod-form-row">
+                <div className="mod-form-group">
+                  <label>Class</label>
+                  <select className="mod-input" value={form.classId || filter.classId} onChange={e => setForm(p => ({ ...p, classId: e.target.value }))}>
+                    {classes.map(c => <option key={c.id} value={c.id}>{c.name || c.className}</option>)}
+                  </select>
+                </div>
+                <div className="mod-form-group">
+                  <label>Section</label>
+                  <select className="mod-input" value={form.sectionId || filter.sectionId} onChange={e => setForm(p => ({ ...p, sectionId: e.target.value }))}>
+                    {sections.map(s => <option key={s.id} value={s.id}>{s.name || s.sectionName}</option>)}
+                  </select>
+                </div>
               </div>
+              <div className="mod-form-row">
+                <div className="mod-form-group">
+                  <label>Subject</label>
+                  <select className="mod-input" value={form.subjectId} onChange={e => setForm(p => ({ ...p, subjectId: e.target.value }))}>
+                    <option value="">Select Subject</option>
+                    {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div className="mod-form-group">
+                  <label>Title</label>
+                  <input className="mod-input" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Assignment title" />
+                </div>
+              </div>
+              <div className="mod-form-row">
+                <div className="mod-form-group">
+                  <label>Start Date</label>
+                  <input type="date" className="mod-input" value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))} />
+                </div>
+                <div className="mod-form-group">
+                  <label>End Date</label>
+                  <input type="date" className="mod-input" value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))} />
+                </div>
+              </div>
+              <div className="mod-form-row full">
+                <div className="mod-form-group">
+                  <label>Description</label>
+                  <textarea className="mod-input" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Assignment description..." />
+                </div>
+              </div>
+            </div>
+            <div className="mod-modal-footer">
+              <button className="mod-btn mod-btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="mod-btn mod-btn-primary" onClick={handleSave} disabled={saving}>
+                <i className="bx bx-save"></i> {saving ? "Saving..." : "Save"}
+              </button>
             </div>
           </div>
         </div>
       )}
-    </>
+
+      {/* View Modal */}
+      {viewItem && (
+        <div className="mod-modal-overlay" onClick={() => setViewItem(null)}>
+          <div className="mod-modal" onClick={e => e.stopPropagation()}>
+            <div className="mod-modal-header">
+              <h3>Assignment Details</h3>
+              <button className="mod-modal-close" onClick={() => setViewItem(null)}><i className="bx bx-x"></i></button>
+            </div>
+            <div className="mod-modal-body">
+              {[
+                ["Title",       viewItem.title],
+                ["Subject",     viewItem.subject || subjectName(viewItem.subjectId)],
+                ["Class",       viewItem.className || `Class ${filter.classId}`],
+                ["Section",     viewItem.section || `Section ${filter.sectionId}`],
+                ["Start Date",  viewItem.startDate || "—"],
+                ["End Date",    viewItem.endDate || "—"],
+                ["Status",      getStatus(viewItem)],
+                ["Description", viewItem.description],
+              ].map(([label, value]) => (
+                <div className="mod-detail-row" key={label}>
+                  <span className="mod-detail-label">{label}</span>
+                  <span className="mod-detail-value">{value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mod-modal-footer">
+              <button className="mod-btn mod-btn-ghost" onClick={() => setViewItem(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ToastContainer position="top-right" autoClose={2500} style={{ fontSize: 14 }} />
+    </div>
   );
 }

@@ -1,14 +1,16 @@
 // App.js
-import React, { useState } from 'react';
+import React from 'react';
 import './App.css';
 import Navbar from './component/NavBar/Nav';
+import StaffNav from './component/NavBar/StaffNav';
+import StudentNav from './component/NavBar/StudentNav';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { getToken } from './services/auth'
+import { getToken, getUserData } from './services/auth';
 import Adlogin from './pages/Login/Adlogin';
-// import Modal from './component/modals/Modal';
 
 function App() {
   const token = getToken();
+  const role  = getUserData("role");
   return (
     <Router>
       <div className="App">
@@ -17,6 +19,10 @@ function App() {
             <Route path="/" element={<Adlogin />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+        ) : role === "Staff" ? (
+          <StaffNav />
+        ) : role === "Student" ? (
+          <StudentNav />
         ) : (
           <Navbar />
         )}

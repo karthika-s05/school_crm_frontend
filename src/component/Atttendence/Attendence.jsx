@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./Attendence.css";
+import "../modules.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -127,8 +128,8 @@ const Attendence = () => {
     <div className="att-wrap">
       <div className="att-header">
         <div>
-          <h2 className="att-title">Student Attendance</h2>
-          <p className="att-sub">Mark daily attendance for your class</p>
+          {/* <h2 className="att-title">Student Attendance</h2>
+          <p className="att-sub">Mark daily attendance for your class</p> */}
         </div>
         <div className="att-summary-pills">
           <span className="att-pill present">

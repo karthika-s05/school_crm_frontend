@@ -1,0 +1,15 @@
+/* Student header avatar (initials instead of image) */
+.student-header-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E8541A, #f97316);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+}

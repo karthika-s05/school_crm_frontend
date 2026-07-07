@@ -1,13 +1,13 @@
 import axios from "axios";
 
-const MASTER_URL = process.env.REACT_APP_MASTER_URL || "http://localhost:8086";
-const DAILY_URL = process.env.REACT_APP_DAILY_URL || "http://localhost:8090";
-const LOGIN_URL = process.env.REACT_APP_LOGIN_URL || "http://localhost:8084";
-const ADMIN_URL = process.env.REACT_APP_ADMIN_URL || "http://localhost:8096";
-const STATIONERY_URL = process.env.REACT_APP_FEES_URL || "http://localhost:8092";
-const STAFF_URL = process.env.REACT_APP_DAILY_URL || "http://localhost:8090";
-const EXAM_URL = process.env.REACT_APP_EXAM_URL || "http://localhost:8091";
-const GRADE_URL = process.env.REACT_APP_MASTER_URL || "http://localhost:8086";
+const MASTER_URL = process.env.REACT_APP_MASTER_URL;
+const DAILY_URL = process.env.REACT_APP_DAILY_URL ;
+const LOGIN_URL = process.env.REACT_APP_LOGIN_URL ;
+const ADMIN_URL = process.env.REACT_APP_ADMIN_URL ;
+const STATIONERY_URL = process.env.REACT_APP_FEES_URL ;
+const STAFF_URL = process.env.REACT_APP_DAILY_URL ;
+const EXAM_URL = process.env.REACT_APP_EXAM_URL;
+const GRADE_URL = process.env.REACT_APP_MASTER_URL ;
 
 export const API_BASE_URLS = {
   MASTER_URL,
@@ -2259,7 +2259,6 @@ export const deletetAadhar = async (id, token) => {
   }
 };
 
-// ─── Dashboard ───────────────────────────────────────────────────────────────
 export const getAdminDashboardSummary = async (token) => {
   const response = await axios.get(`${ADMIN_URL}/admin/dashboard/get_summary`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -2268,13 +2267,12 @@ export const getAdminDashboardSummary = async (token) => {
 };
 
 export const getStaffDashboardSummary = async (token) => {
-  const response = await axios.get(`${DAILY_URL}/dashboard/get_staff_summary`, {
+  const response = await axios.post(`${DAILY_URL}/dashboard/get_staff_summary`, {}, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
-// ─── Academic Year ─────────────────────────────────────────────────────────────
 export const getAcademicYear = async (token) => {
   const response = await axios.post(
     `${ADMIN_URL}/admin/academicYear/get_academicYear`,
@@ -2303,6 +2301,7 @@ export const updateAcademicYear = async (body, token) => {
 };
 
 // ─── Notifications ───────────────────────────────────────────────────────────
+// Student: get notifications for own class/section (uses req.user.classId/sectionId)
 export const getNotifications = async (token) => {
   const response = await axios.get(`${DAILY_URL}/notification/get_notification`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -2310,6 +2309,7 @@ export const getNotifications = async (token) => {
   return response.data;
 };
 
+// Staff/Admin: create notification for a class/section
 export const createNotification = async (body, token) => {
   const response = await axios.post(
     `${DAILY_URL}/notification/create_notification`,
@@ -2319,6 +2319,7 @@ export const createNotification = async (body, token) => {
   return response.data;
 };
 
+// Admin: delete notification
 export const deleteNotification = async (id, token) => {
   const response = await axios.delete(
     `${DAILY_URL}/notification/delete_notification/${id}`,
@@ -2327,6 +2328,7 @@ export const deleteNotification = async (id, token) => {
   return response.data;
 };
 
+// All: update notification read timestamp
 export const updateNotificationTime = async (token) => {
   const response = await axios.post(
     `${DAILY_URL}/notification/update_notification`,
@@ -2337,6 +2339,7 @@ export const updateNotificationTime = async (token) => {
 };
 
 // ─── Leave Management ────────────────────────────────────────────────────────
+// All roles: get leave types list
 export const getLeaveTypes = async (token) => {
   const response = await axios.get(`${DAILY_URL}/leave/get_leaveType`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -2344,6 +2347,7 @@ export const getLeaveTypes = async (token) => {
   return response.data;
 };
 
+// Admin: create/update leave type
 export const createLeaveType = async (body, token) => {
   const response = await axios.post(
     `${DAILY_URL}/leave/create_leaveType`,
@@ -2353,6 +2357,7 @@ export const createLeaveType = async (body, token) => {
   return response.data;
 };
 
+// Admin: delete leave type
 export const deleteLeaveType = async (id, token) => {
   const response = await axios.delete(
     `${DAILY_URL}/leave/delete_leaveType/${id}`,
@@ -2361,6 +2366,7 @@ export const deleteLeaveType = async (id, token) => {
   return response.data;
 };
 
+// Student: get own leave list (uses req.user.classId/sectionId/userName)
 export const getStudentLeave = async (token) => {
   const response = await axios.get(`${DAILY_URL}/leave/get_student_leave`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -2368,6 +2374,7 @@ export const getStudentLeave = async (token) => {
   return response.data;
 };
 
+// Student: apply for leave
 export const createStudentLeave = async (body, token) => {
   const response = await axios.post(
     `${DAILY_URL}/leave/create_student_leave`,
@@ -2377,6 +2384,7 @@ export const createStudentLeave = async (body, token) => {
   return response.data;
 };
 
+// Staff/Admin: approve or reject student leave
 export const updateStudentLeaveStatus = async (body, token) => {
   const response = await axios.post(
     `${DAILY_URL}/leave/update_student_leave_status`,
@@ -2386,6 +2394,7 @@ export const updateStudentLeaveStatus = async (body, token) => {
   return response.data;
 };
 
+// Student: delete own leave application
 export const deleteStudentLeave = async (body, token) => {
   const response = await axios.delete(`${DAILY_URL}/leave/delete_student_leave`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -2394,6 +2403,7 @@ export const deleteStudentLeave = async (body, token) => {
   return response.data;
 };
 
+// Staff: get own leave list (uses req.user.userName + role)
 export const getStaffLeave = async (token) => {
   const response = await axios.get(`${DAILY_URL}/leave/get_staff_leave`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -2401,6 +2411,7 @@ export const getStaffLeave = async (token) => {
   return response.data;
 };
 
+// Staff: apply for leave
 export const createStaffLeave = async (body, token) => {
   const response = await axios.post(
     `${DAILY_URL}/leave/create_staff_leave`,
@@ -2410,6 +2421,7 @@ export const createStaffLeave = async (body, token) => {
   return response.data;
 };
 
+// Staff: delete own leave application
 export const deleteStaffLeave = async (body, token) => {
   const response = await axios.delete(`${DAILY_URL}/leave/delete_staff_leave`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -2418,6 +2430,7 @@ export const deleteStaffLeave = async (body, token) => {
   return response.data;
 };
 
+// Admin: approve or reject staff leave
 export const updateStaffLeaveStatus = async (body, token) => {
   const response = await axios.post(
     `${DAILY_URL}/leave/update_staff_leave_status`,
@@ -2428,6 +2441,7 @@ export const updateStaffLeaveStatus = async (body, token) => {
 };
 
 // ─── Teacher ─────────────────────────────────────────────────────────────────
+// Student: get subject teachers for student's class/section (uses req.user.classId/sectionId)
 export const getTeacher = async (token) => {
   const response = await axios.get(`${DAILY_URL}/teacher/get_Teacher`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -2435,6 +2449,7 @@ export const getTeacher = async (token) => {
   return response.data;
 };
 
+// Staff: get classes assigned to the logged-in teacher (uses req.user.userName)
 export const getTeacherClass = async (token) => {
   const response = await axios.get(`${DAILY_URL}/teacher/get_Teacher_class`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -2451,7 +2466,7 @@ export const getSubjectClass = async (body, token) => {
   return response.data;
 };
 
-// ─── Staff Timetable ─────────────────────────────────────────────────────────
+// ─── Staff Timetable (Staff: uses req.user.userName + body.dayId) ─────────────
 export const getStaffTimetable = async (body, token) => {
   const response = await axios.post(
     `${DAILY_URL}/timetable/get_staff_timetable`,
@@ -2461,11 +2476,42 @@ export const getStaffTimetable = async (body, token) => {
   return response.data;
 };
 
-// ─── Student Attendance (monthly) ────────────────────────────────────────────
+// ─── Student Attendance ───────────────────────────────────────────────────────
+// Staff+Student: get monthly attendance summary (role check in controller)
 export const getStdAttendance = async (body, token) => {
   const response = await axios.post(
     `${DAILY_URL}/attendance/get_student_attendance`,
     body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+// Admin: view staff attendance by staffId + date
+export const getStaffAttendanceView = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/attendance/get_staff_attendance_view`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+// ─── Assignment Status ────────────────────────────────────────────────────────
+// Staff/Admin: toggle assignment open/closed status
+export const updateAssignmentStatus = async (id, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/assignment/update_assignment_status/${id}`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+// Student: get assignments for student's class/section (uses req.user.classId/sectionId)
+export const getStudentAssignment = async (token) => {
+  const response = await axios.get(
+    `${DAILY_URL}/assignment/get_assignment`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
   return response.data;

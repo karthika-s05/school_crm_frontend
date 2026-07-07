@@ -162,8 +162,9 @@
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(45,58,140,0.07);
-  overflow-x: auto;
+  overflow-x: visible;
   overflow-y: visible;
+  min-height: 200px;
 }
 
 .sdl-table td:has(.sdl-action-menu) {

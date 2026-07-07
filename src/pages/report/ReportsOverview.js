@@ -1,43 +1,37 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import "../services/services.css";
+import "../../component/modules.css";
 import { getClass, getReportsOverview, getSection } from "../../services/api";
 import { getToken } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
 
-const CARDS = [
-  { title: "Assignment Report", path: "/assignment", icon: "bx bx-task", color: "#2D3A8C" },
-  { title: "Exam Report", path: "/examtable", icon: "bx bx-book-open", color: "#E8541A" },
-  { title: "Attendance Report", path: "/reports/attendance", icon: "bx bx-calendar-check", color: "#16a34a" },
-  { title: "Homework Report", path: "/reports/homework", icon: "bx bx-notepad", color: "#8b5cf6" },
+const REPORT_CARDS = [
+  { title: "Assignment Report", sub: "Track assignment submissions", path: "/assignment", icon: "bx bx-task",           color: "#2D3A8C", bg: "#eef0fb" },
+  { title: "Exam Report",       sub: "View exam results & marks",   path: "/examtable",  icon: "bx bx-book-open",      color: "#E8541A", bg: "#fdf0eb" },
+  { title: "Attendance Report", sub: "Daily & monthly attendance",  path: "/reports/attendance", icon: "bx bx-calendar-check", color: "#16a34a", bg: "#dcfce7" },
+  { title: "Homework Report",   sub: "Homework completion status",  path: "/reports/homework",   icon: "bx bx-notepad",        color: "#7c3aed", bg: "#f5f3ff" },
 ];
 
 export default function ReportsOverview() {
   const token = getToken();
-  const [classes, setClasses] = useState([]);
-  const [sections, setSections] = useState([]);
-  const [classId, setClassId] = useState("");
+  const [classes,   setClasses]   = useState([]);
+  const [sections,  setSections]  = useState([]);
+  const [classId,   setClassId]   = useState("");
   const [sectionId, setSectionId] = useState("");
-  const [overview, setOverview] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [overview,  setOverview]  = useState(null);
+  const [loading,   setLoading]   = useState(false);
 
   useEffect(() => {
     const loadMeta = async () => {
       try {
-        const [classList, sectionList] = await Promise.all([
-          getClass(0, token),
-          getSection(0, token),
-        ]);
-        const classOpts = (classList || []).map((c) => ({ id: c.id, name: c.name }));
-        const sectionOpts = (sectionList || []).map((s) => ({ id: s.id, name: s.name }));
+        const [cls, sec] = await Promise.all([getClass(0, token), getSection(0, token)]);
+        const classOpts   = (cls  || []).map(c => ({ id: c.id, name: c.name }));
+        const sectionOpts = (sec  || []).map(s => ({ id: s.id, name: s.name }));
         setClasses(classOpts);
         setSections(sectionOpts);
-        if (classOpts.length) setClassId(String(classOpts[0].id));
-        if (sectionOpts.length) setSectionId(String(sectionOpts[0].id));
-      } catch (err) {
-        setError("Failed to load class and section filters.");
-      }
+        if (classOpts[0])   setClassId(String(classOpts[0].id));
+        if (sectionOpts[0]) setSectionId(String(sectionOpts[0].id));
+      } catch {}
     };
     loadMeta();
   }, [token]);
@@ -45,116 +39,94 @@ export default function ReportsOverview() {
   const fetchOverview = useCallback(async () => {
     if (!classId || !sectionId) return;
     setLoading(true);
-    setError(null);
     await runApi(
-      () =>
-        getReportsOverview(
-          { classId: Number(classId), sectionId: Number(sectionId) },
-          token
-        ),
-      {
-        onSuccess: (res) => setOverview(res.data || null),
-        onError: () => setError("Failed to load reports overview."),
-      }
+      () => getReportsOverview({ classId: Number(classId), sectionId: Number(sectionId) }, token),
+      { onSuccess: (res) => setOverview(res.data || null) }
     );
     setLoading(false);
   }, [classId, sectionId, token]);
 
-  useEffect(() => {
-    if (classId && sectionId) fetchOverview();
-  }, [fetchOverview, classId, sectionId]);
+  useEffect(() => { if (classId && sectionId) fetchOverview(); }, [fetchOverview, classId, sectionId]);
+
+  const statCards = [
+    { label: "Total Assignments", value: overview?.assignment?.total ?? "—",  sub: `Active: ${overview?.assignment?.active ?? 0}`,  icon: "bx bx-task",           color: "#2D3A8C", bg: "#eef0fb" },
+    { label: "Total Homework",    value: overview?.homework?.total    ?? "—",  sub: "Assigned tasks",                                icon: "bx bx-book",           color: "#d97706", bg: "#fef3c7" },
+    { label: "Attendance Rate",   value: overview?.attendance?.rate   ?? "—",  sub: "This month",                                    icon: "bx bx-calendar-check", color: "#16a34a", bg: "#dcfce7" },
+    { label: "Upcoming Exams",    value: overview?.exams?.upcoming    ?? "—",  sub: "Scheduled",                                     icon: "bx bx-edit",           color: "#E8541A", bg: "#fdf0eb" },
+  ];
 
   return (
-    <div className="sdl-wrap" style={{ padding: "24px 28px" }}>
-      <h2 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 700 }}>Reports Overview</h2>
-      <p style={{ color: "#64748b", marginBottom: 20 }}>
-        Summary across assignments, homework, attendance, and exams.
-      </p>
+    <div className="mod-wrap">
+      {/* Header */}
+      <div className="mod-header">
+        <div>
+          {/* <h2 className="mod-title">Reports Overview</h2>
+          <p className="mod-sub">Summary across assignments, homework, attendance and exams</p> */}
+        </div>
+        <div className="mod-pills">
+          <span className="mod-pill blue"><i className="bx bx-bar-chart-alt-2"></i> Analytics</span>
+        </div>
+      </div>
 
-      <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
-        <select
-          className="wz-input"
-          value={classId}
-          onChange={(e) => setClassId(e.target.value)}
-          style={{ minWidth: 140 }}
-        >
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
-        <select
-          className="wz-input"
-          value={sectionId}
-          onChange={(e) => setSectionId(e.target.value)}
-          style={{ minWidth: 140 }}
-        >
-          {sections.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
-        <button type="button" className="fw-btn-fill btn-gradient-add" onClick={fetchOverview}>
-          Refresh
+      {/* Filters */}
+      <div className="mod-filter-card">
+        <div className="mod-filter-group">
+          <label>Class</label>
+          <select className="mod-input" value={classId} onChange={e => setClassId(e.target.value)}>
+            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div className="mod-filter-group">
+          <label>Section</label>
+          <select className="mod-input" value={sectionId} onChange={e => setSectionId(e.target.value)}>
+            {sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+        <button className="mod-btn mod-btn-primary" onClick={fetchOverview}>
+          <i className="bx bx-refresh"></i> Refresh
         </button>
       </div>
 
-      {error && (
-        <div style={{ padding: 12, background: "#fef2f2", color: "#ef4444", borderRadius: 8, marginBottom: 16 }}>
-          {error}
+      {/* Stat Cards */}
+      {loading ? (
+        <div className="mod-loading"><div className="mod-spinner"></div> Loading overview...</div>
+      ) : (
+        <div className="mod-stat-row">
+          {statCards.map((c, i) => (
+            <div className="mod-stat-card" key={i}>
+              <div className="mod-stat-icon" style={{ background: c.bg, color: c.color }}>
+                <i className={c.icon}></i>
+              </div>
+              <div className="mod-stat-body">
+                <div className="mod-stat-val">{c.value}</div>
+                <div className="mod-stat-label">{c.label}</div>
+                <div className="mod-stat-sub">{c.sub}</div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {loading ? (
-        <p style={{ color: "#64748b" }}>Loading overview…</p>
-      ) : overview ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 28 }}>
-          <div className="crm-stat-card">
-            <div className="crm-stat-label">Assignments</div>
-            <div className="crm-stat-value">{overview.assignment?.total ?? 0}</div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>
-              Active {overview.assignment?.active ?? 0} · Closed {overview.assignment?.closed ?? 0}
-            </div>
-          </div>
-          <div className="crm-stat-card">
-            <div className="crm-stat-label">Homework</div>
-            <div className="crm-stat-value">{overview.homework?.total ?? 0}</div>
-          </div>
+      {/* Report Navigation Cards */}
+      <div>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 14 }}>
+          <i className="bx bx-grid-alt" style={{ color: "#2D3A8C", marginRight: 8 }}></i>
+          Report Modules
+        </h3>
+        <div className="mod-report-grid">
+          {REPORT_CARDS.map(card => (
+            <Link key={card.path} to={card.path} className="mod-report-card">
+              <div className="mod-report-card-icon" style={{ background: card.bg, color: card.color }}>
+                <i className={card.icon}></i>
+              </div>
+              <div className="mod-report-card-body">
+                <span className="mod-report-card-title">{card.title}</span>
+                <span className="mod-report-card-sub">{card.sub}</span>
+              </div>
+              <i className="bx bx-chevron-right" style={{ color: "#9ca3af", fontSize: 20 }}></i>
+            </Link>
+          ))}
         </div>
-      ) : null}
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
-        {CARDS.map((card) => (
-          <Link
-            key={card.path}
-            to={card.path}
-            style={{
-              textDecoration: "none",
-              padding: 20,
-              borderRadius: 12,
-              border: "1px solid #e2e8f0",
-              background: "#fff",
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-            }}
-          >
-            <span
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 10,
-                background: `${card.color}18`,
-                color: card.color,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 22,
-              }}
-            >
-              <i className={card.icon} />
-            </span>
-            <span style={{ fontWeight: 600, color: "#1e293b" }}>{card.title}</span>
-          </Link>
-        ))}
       </div>
     </div>
   );

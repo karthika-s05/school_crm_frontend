@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import "../List/StudentDummyList.css";
 import "../services/services.css";
 import "./timetable.css";
+import "../../component/modules.css";
 import {
   getClass,
   getSection,
@@ -167,14 +168,15 @@ export default function Timetable() {
   const periodCount = slots.filter((s) => s.type === "period").length;
 
   return (
-    <div className="sdl-wrap tt-wrap">
-      <div className="sdl-header">
+    <div className="mod-wrap tt-wrap">
+      <div className="mod-header">
         <div>
-          <h2 className="sdl-title">Period Time Table</h2>
-          <p className="sdl-sub">Weekly schedule — days on the left, periods across</p>
+          {/* <h2 className="mod-title">Period Time Table</h2>
+          <p className="mod-sub">Weekly schedule — days on the left, periods across</p> */}
         </div>
         <select
-          className="svc-select"
+          className="mod-input"
+          style={{ minWidth: 160 }}
           value={classId && sectionId ? `${classId}-${sectionId}` : ""}
           onChange={handleClassChange}
           disabled={!classOptions.length}
@@ -204,8 +206,8 @@ export default function Timetable() {
       </div>
 
       {loading ? (
-        <div className="sdl-empty" style={{ padding: 48 }}>
-          <i className="bx bx-loader-alt bx-spin"></i>
+        <div className="mod-loading">
+          <div className="mod-spinner"></div>
           <span>Loading timetable…</span>
         </div>
       ) : (

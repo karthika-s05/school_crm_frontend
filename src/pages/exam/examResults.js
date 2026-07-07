@@ -228,7 +228,7 @@ export default function Examresult() {
 
       <div className="sdl-table-card">
         {loading ? (
-          <div style={{ padding: "60px 0", textAlign: "center", color: "#64748b" }}>
+          <div style={{ height: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
             <i className="bx bx-loader-alt bx-spin" style={{ fontSize: 36, display: "block", marginBottom: 10, color: "#2D3A8C" }}></i>
             Loading exam results…
           </div>

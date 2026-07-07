@@ -31,14 +31,28 @@ export default function Adlogin() {
     try {
       const { username, password } = values;
       const token = await login(username, password);
-      console.log(token)
+      console.log(token);
+      const userData = token.data[0];
       setToken(token.token.accessToken);
-      setUserData("role", token.data[0].role);
-      setUserData("adminName", token.data[0].adminName);
-      setUserData("image", token.data[0].photoUrl);
+      setUserData("role", userData.role);
+      // Store display name for all roles
+      if (userData.role === "Staff") {
+        setUserData("staffName", userData.staffName || userData.adminName || username);
+      } else if (userData.role === "Student") {
+        setUserData("studentName", userData.studentName || userData.firstName || username);
+        setUserData("admissionNo", userData.admissionNo || userData.AdmissionNo || "");
+        setUserData("classId", userData.classId || "");
+        setUserData("sectionId", userData.sectionId || "");
+      } else {
+        setUserData("adminName", userData.adminName || username);
+      }
+      setUserData("image", userData.photoUrl || "");
+      const redirectPath = userData.role === "Staff" ? "/staff/dashboard"
+        : userData.role === "Student" ? "/student/dashboard"
+        : "/dashboard";
       toast.success("Login successful!", {
         onClose: () => {
-          navigate("/dashboard");
+          navigate(redirectPath);
           window.location.reload();
         },
       });
