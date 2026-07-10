@@ -124,13 +124,13 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const userName = getUserData("adminName") || getUserData("staffName") || "Admin";
 
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    runApi(() => getAdminDashboardSummary(token), {
-      onSuccess: (res) => setSummary(res?.data || null),
-    });
-  }, []);
+  // useEffect(() => {
+  //   const token = getToken();
+  //   if (!token) return;
+  //   runApi(() => getAdminDashboardSummary(token), {
+  //     onSuccess: (res) => setSummary(res?.data || null),
+  //   });
+  // }, []);
 
   const statCards = useMemo(() => {
     if (!summary) return DEFAULT_STAT_CARDS;

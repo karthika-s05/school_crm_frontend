@@ -148,7 +148,7 @@ export default function StudentDummyList() {
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
-        <button className="sdl-add-btn" onClick={() => navigate("/studentlist/new")}>
+        <button className="sdl-add-btn" onClick={() => navigate("/admin/student/new")}>
           <i className="bx bx-plus"></i> Add Student
         </button>
       </div>
@@ -235,9 +235,7 @@ export default function StudentDummyList() {
                   <td className="sdl-num">{(safePage - 1) * ITEMS_PER_PAGE + i + 1}</td>
                   <td>
                     <div className="sdl-student-cell">
-                      <div className="sdl-avatar" style={{ background: AV_COLORS[i % AV_COLORS.length] }}>
-                        {getInitials(s.name)}
-                      </div>
+                      <img className="sdl-avatar" alt={s.name} src={s.image} />
                       <div>
                         <div className="sdl-name">{s.name}</div>
                         <div className="sdl-email">{s.email}</div>

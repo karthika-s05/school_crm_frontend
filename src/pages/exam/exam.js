@@ -112,6 +112,8 @@ export default function Examreport() {
   };
 
   const handleSubmit = async (e) => {
+    try{
+      console.log("handleSubmit called");
     e.preventDefault();
     const filled = rows.filter((r) => r.subject && r.mark !== "");
     if (!studentId || !examId || !classId || !sectionId) {
@@ -145,6 +147,10 @@ export default function Examreport() {
       },
     });
     setSubmitting(false);
+    }catch(error){
+      console.error("Error submitting form:", error);
+      toast.error("Failed to submit marks");
+    }
   };
 
   return (

@@ -259,31 +259,7 @@ export default function Stationery() {
   return (
     <div className="sdl-wrap">
 
-      {/* ── Class / Section filters ── */}
-      <div className="sdl-header" style={{ marginBottom: 12 }}>
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-          <select
-            className="svc-select"
-            value={classId ?? ""}
-            onChange={(e) => { setClassId(Number(e.target.value)); setPage(1); }}
-          >
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          <select
-            className="svc-select"
-            value={sectionId ?? ""}
-            onChange={(e) => { setSectionId(Number(e.target.value)); setPage(1); }}
-          >
-            {sections.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* ── Stats ── */}
+      {/*  Stats  */}
       <div className="sdl-stats" style={{ gridTemplateColumns:"repeat(4,1fr)" }}>
         {[
           { label:"Total Products",  val:products.length, icon:"bx bxs-box",          color:"#2D3A8C", bg:"#eef0fb" },
@@ -298,14 +274,37 @@ export default function Stationery() {
         ))}
       </div>
 
-      {/* ── Tabs ── */}
-      <div className="svc-tabs">
-        {TABS.map((t,i)=>(
-          <button key={i} className={`svc-tab${tab===i?" active":""}`} onClick={()=>switchTab(i)}>{t}</button>
-        ))}
+      {/*  Tabs  */}
+      <div className="svc-header">
+        <div className="svc-tabs">
+          {TABS.map((t,i)=>(
+            <button key={i} className={`svc-tab${tab===i?" active":""}`} onClick={()=>switchTab(i)}>{t}</button>
+          ))}
+        </div>
+          {/*  Class / Section filters  */}
+        <div className="sdl-header" style={{ marginBottom: 12 }}>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+            <select
+              className="svc-select"
+              value={classId ?? ""}
+              onChange={(e) => { setClassId(Number(e.target.value)); setPage(1); }}
+            >
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <select
+              className="svc-select"
+              value={sectionId ?? ""}
+              onChange={(e) => { setSectionId(Number(e.target.value)); setPage(1); }}
+            >
+              {sections.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
-
-      {/* ════════════ TAB 0 – Inventory ════════════ */}
       {tab===0 && (
         <>
           <div className="sdl-header">

@@ -54,82 +54,82 @@ const ADMIN_MENU_GROUPS = [
   {
     title: "Student", icon: null, section: "Management",
     items: [
-      { label: "Student List", path: "/students", state: "Student List" },
-      { label: "Registration", path: "/studentlist/new", state: "Student Registration" },
+      { label: "Student List",   path: "/admin/students",      state: "Student List" },
+      { label: "Registration",   path: "/admin/student/new",   state: "Student Registration" },
     ],
   },
   {
     title: "Staff", icon: null,
     items: [
-      { label: "Staff List", path: "/list", state: "Staff List" },
-      { label: "Registration", path: "/stafflist/new", state: "Staff Registration" },
+      { label: "Staff List",     path: "/admin/staff",         state: "Staff List" },
+      { label: "Registration",   path: "/admin/staff/new",     state: "Staff Registration" },
     ],
   },
   {
     title: "Master", icon: null,
     items: [
-      { label: "Nationality", path: "/master", state: "Nationality" },
-      { label: "State", path: "/master", state: "State" },
-      { label: "City", path: "/master", state: "City" },
-      { label: "Blood Group", path: "/master", state: "BloodGroup" },
-      { label: "Community", path: "/master", state: "Community" },
-      { label: "Religion", path: "/master", state: "Religion" },
-      { label: "Subject", path: "/master", state: "Subject" },
-      { label: "Class", path: "/master", state: "Class" },
-      { label: "Section", path: "/master", state: "Section" },
+      { label: "Nationality",    path: "/admin/master",        state: "Nationality" },
+      { label: "State",          path: "/admin/master",        state: "State" },
+      { label: "City",           path: "/admin/master",        state: "City" },
+      { label: "Blood Group",    path: "/admin/master",        state: "BloodGroup" },
+      { label: "Community",      path: "/admin/master",        state: "Community" },
+      { label: "Religion",       path: "/admin/master",        state: "Religion" },
+      { label: "Subject",        path: "/admin/master",        state: "Subject" },
+      { label: "Class",          path: "/admin/master",        state: "Class" },
+      { label: "Section",        path: "/admin/master",        state: "Section" },
     ],
   },
   {
     title: "Mapping", icon: null, section: "Academics",
     items: [
-      { label: "Class & Section", path: "/master", state: "Class & Section" },
-      { label: "Class Teacher", path: "/master", state: "Class Teacher" },
-      { label: "Subject Teacher", path: "/master", state: "Subject Teacher" },
+      { label: "Class & Section",  path: "/admin/class&section",      state: "Class & Section" },
+      { label: "Class Teacher",    path: "/admin/classTeacher",      state: "Class Teacher" },
+      { label: "Subject Teacher",  path: "/admin/subjectTeacher",      state: "Subject Teacher" },
     ],
   },
   {
     title: "Time Table", icon: null,
     items: [
-      { label: "Period Slot", path: "/master", state: "Period Slot" },
-      { label: "Class Time Table", path: "/master", state: "Class Time Table" },
-      { label: "Period Time Table", path: "/timetable", state: undefined },
+      { label: "Period Slot",       path: "/admin/periodSlot",     state: "Period Slot" },
+      { label: "Class Time Table",  path: "/admin/classTimetable",     state: "Class Time Table" },
+      { label: "Period Time Table", path: "/admin/periodTimetable",  state: undefined },
     ],
   },
   {
     title: "Examination", icon: null,
     items: [
-      { label: "Exam Type", path: "/examtype", state: "Exam Type" },
-      { label: "Exam Portion", path: "/examportion", state: "Exam Portion" },
-      { label: "Subject Mark", path: "/subjectmark", state: "Subject Mark" },
-      { label: "Exam Result", path: "/examresult", state: "Exam Result" },
+      { label: "Exam Type",    path: "/admin/examtype",    state: undefined },
+      { label: "Exam Portion", path: "/admin/examportion", state: undefined },
+      { label: "Subject Mark", path: "/admin/subjectmark", state: undefined },
+      { label: "Exam Result",  path: "/admin/examresult",  state: undefined },
     ],
   },
   {
     title: "Stationery", icon: null, section: "Services",
     items: [
-      { label: "Stationery", path: "/stationery", state: undefined },
+      { label: "Stationery", path: "/admin/stationery", state: undefined },
     ],
   },
   {
     title: "Transport", icon: null,
     items: [
-      { label: "Transport", path: "/transport", state: undefined },
+      { label: "Transport", path: "/admin/transport", state: undefined },
     ],
   },
   {
     title: "Leave", icon: null, section: "Operations",
     items: [
-      { label: "Leave Management", path: "/leave", state: undefined },
+      { label: "Leave Management", path: "/admin/leave", state: undefined },
     ],
   },
   {
     title: "Reports", icon: null, section: "Reports",
     items: [
-      { label: "Reports Overview", path: "/reports", state: undefined },
-      { label: "Assignment Report", path: "/assignment", state: "Assignment Report" },
-      { label: "Exam Report", path: "/examtable", state: "Exam Report" },
-      { label: "Attendance Report", path: "/reports/attendance", state: undefined },
-      { label: "Homework Report", path: "/reports/homework", state: undefined },
+      { label: "Reports Overview",   path: "/admin/reports",            state: undefined },
+      { label: "Assignment Report",  path: "/admin/reports/assignment", state: undefined },
+      { label: "Exam Report",        path: "/admin/reports/exam",       state: undefined },
+      { label: "Attendance Report",  path: "/admin/reports/attendance", state: undefined },
+      { label: "Homework Report",    path: "/admin/reports/homework",   state: undefined },
     ],
   },
 ];
@@ -240,40 +240,24 @@ const resolvePageTitle = (pathname, state) => {
       }
     }
   }
-  if (pathname === "/students") return { title: "Student List", parent: "Student" };
-  if (pathname === "/list" && state === "Staff List") return { title: "Staff List", parent: "Staff" };
-  if (pathname === "/list" && state === "Student List") return { title: "Student List", parent: "Student" };
-  if (pathname === "/examtable") return { title: "Exam Report", parent: "Reports" };
-  if (pathname === "/assignment") return { title: "Assignment Report", parent: "Reports" };
-  if (pathname === "/reports") return { title: "Reports Overview", parent: "Reports" };
-  if (pathname === "/reports/attendance") return { title: "Attendance Report", parent: "Reports" };
-  if (pathname === "/reports/homework") return { title: "Homework Report", parent: "Reports" };
-  if (pathname === "/leave") return { title: "Leave Management", parent: "Operations" };
-  if (pathname === "/viewattendance") return { title: "View Attendance", parent: "Attendance" };
-  if (pathname === "/myattendance") return { title: "My Attendance", parent: "Attendance" };
-  if (pathname === "/staffattendance") return { title: "Student Attendance", parent: "Attendance" };
-  if (pathname === "/staff/assignment") return { title: "Assignment", parent: "Assignment" };
-  if (pathname === "/staff/homework") return { title: "Homework", parent: "Homework" };
-  if (pathname === "/staff/events") return { title: "Events", parent: "Events" };
-  if (pathname === "/student/portal") {
-    const portalTitles = {
-      Attendance: "My Attendance", Marks: "My Marks", Homework: "Homework",
-      Assignments: "Assignments", Exams: "Exams", Timetable: "Timetable",
-      Events: "Events", ClassTeacher: "Class Teacher", SubjectTeachers: "Subject Teachers",
-      Leave: "My Leave",
-    };
-    return { title: portalTitles[state] || "My Portal", parent: "My Portal" };
-  }
-  if (pathname.startsWith("/releiving")) return { title: "Relieving", parent: "Staff" };
-  if (pathname.startsWith("/studentinfo")) return { title: "Document Upload", parent: "Student" };
-  if (pathname.startsWith("/studentlist")) return { title: "Registration", parent: "Student" };
-  if (pathname.startsWith("/stafflist")) {
-    if (pathname.endsWith("/new")) return { title: "Registration", parent: "Staff" };
-    return { title: "Staff Registration", parent: "Staff" };
-  }
-  if (pathname.startsWith("/transport")) return { title: "Transport", parent: "Services" };
-  if (pathname.startsWith("/stationery")) return { title: "Stationery", parent: "Services" };
-  if (pathname === "/settings") return { title: "Settings", parent: "Home" };
+  if (pathname === "/admin/students")           return { title: "Student List",      parent: "Student"    };
+  if (pathname === "/admin/staff")              return { title: "Staff List",        parent: "Staff"      };
+  if (pathname === "/admin/reports/exam")       return { title: "Exam Report",       parent: "Reports"    };
+  if (pathname === "/admin/reports/assignment") return { title: "Assignment Report", parent: "Reports"    };
+  if (pathname === "/admin/reports")            return { title: "Reports Overview",  parent: "Reports"    };
+  if (pathname === "/admin/reports/attendance") return { title: "Attendance Report", parent: "Reports"    };
+  if (pathname === "/admin/reports/homework")   return { title: "Homework Report",   parent: "Reports"    };
+  if (pathname === "/admin/leave")              return { title: "Leave Management",  parent: "Operations" };
+  if (pathname === "/admin/view-attendance")    return { title: "View Attendance",   parent: "Attendance" };
+  if (pathname === "/admin/my-attendance")      return { title: "My Attendance",     parent: "Attendance" };
+  if (pathname === "/admin/attendance")         return { title: "Student Attendance",parent: "Attendance" };
+  if (pathname.startsWith("/releiving"))        return { title: "Relieving",         parent: "Staff"      };
+  if (pathname.startsWith("/admin/studentinfo"))return { title: "Document Upload",   parent: "Student"    };
+  if (pathname.startsWith("/admin/student"))    return { title: "Registration",      parent: "Student"    };
+  if (pathname.startsWith("/admin/staff/"))     return { title: "Registration",      parent: "Staff"      };
+  if (pathname.startsWith("/admin/transport"))  return { title: "Transport",         parent: "Services"   };
+  if (pathname.startsWith("/admin/stationery")) return { title: "Stationery",        parent: "Services"   };
+  if (pathname === "/admin/settings")           return { title: "Settings",          parent: "Home"       };
   return { title: "Dashboard", parent: "Home" };
 };
 
@@ -464,7 +448,7 @@ const Nav = () => {
 
   const closeFlyout = () => { if (collapsed) setOpenMenu(null); };
   const isDashboardActive = pathname === "/dashboard" || pathname === "/";
-  const isSettingsActive = pathname === "/settings";
+  const isSettingsActive = pathname === "/admin/settings";
 
   const renderedSections = new Set();
 
@@ -535,7 +519,7 @@ const Nav = () => {
 
         <div className="crm-sidebar-footer">
           <Link
-            to="/settings"
+            to="/admin/settings"
             className={`crm-link crm-settings-link${isSettingsActive ? " active" : ""}`}
             title={collapsed ? "Settings" : undefined}
           >
@@ -705,47 +689,42 @@ const Nav = () => {
 
         <div className="crm-page">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            {/* Admin routes */}
-            <Route path="/master" element={<Master />} />
-            <Route path="/nationality" element={<Nationality />} />
-            <Route path="/registration" element={<Registration />} />
-            <Route path="/releiving/:id" element={<Registration />} />
-            <Route path="/students" element={<StudentDummyList />} />
-            <Route path="/list" element={<List />} />
-            <Route path="/studentlist/new" element={<StudentWizard />} />
-            <Route path="/studentlist/:id" element={<StudentWizard />} />
-            <Route path="/stafflist/new" element={<StaffWizard />} />
-            <Route path="/stafflist/:id" element={<StaffWizard />} />
-            <Route path="/studentinfo/:id" element={<Studentinfo />} />
-            <Route path="/transport" element={<Transport />} />
-            <Route path="/stationery" element={<Stationery />} />
-            {/* Shared routes (Admin + Staff) */}
-            <Route path="/timetable" element={<Timetable />} />
-            <Route path="/profile/:id" element={<Profile />} />
-            <Route path="/staffattendance" element={<Staffattendance />} />
-            <Route path="/viewattendance" element={<ViewAttendance />} />
-            <Route path="/myattendance" element={<Staffview />} />
-            <Route path="/exam" element={<Exam />} />
-            <Route path="/subjectmark" element={<Exam />} />
-            <Route path="/examtype" element={<ExamType />} />
-            <Route path="/examportion" element={<ExamPortion />} />
-            <Route path="/examresult" element={<Examresult />} />
-            <Route path="/examtable" element={<ExamReport />} />
-            <Route path="/assignment" element={<AssignmentReport />} />
-            <Route path="/reports" element={<ReportsOverview />} />
-            <Route path="/reports/attendance" element={<AttendanceReport />} />
-            <Route path="/reports/homework" element={<HomeworkReport />} />
-            <Route path="/leave" element={<LeaveManagement />} />
-            {/* Staff-specific routes */}
-            <Route path="/staff/assignment" element={<Staff />} />
-            <Route path="/staff/homework" element={<Staff />} />
-            <Route path="/staff/events" element={<Staff />} />
-            {/* Student routes */}
-            <Route path="/student/portal" element={<StudentPortal />} />
-            {/* Settings */}
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/"                          element={<Dashboard />} />
+            <Route path="/dashboard"           element={<Dashboard />} />
+            <Route path="/admin/master"              element={<Master />} />
+            <Route path="/admin/nationality"         element={<Nationality />} />
+            <Route path="/admin/students"            element={<StudentDummyList />} />
+            <Route path="/admin/staff"               element={<List />} />
+            <Route path="/admin/student/new"         element={<StudentWizard />} />
+            <Route path="/admin/student/:id"         element={<StudentWizard />} />
+            <Route path="/admin/staff/new"           element={<StaffWizard />} />
+            <Route path="/admin/staff/:id"           element={<StaffWizard />} />
+            <Route path="/admin/studentinfo/:id"     element={<Studentinfo />} />
+            <Route path="/admin/transport"           element={<Transport />} />
+            <Route path="/admin/stationery"          element={<Stationery />} />
+            <Route path="/admin/timetable"           element={<Timetable />} />
+            <Route path="/admin/profile/:id"         element={<Profile />} />
+            <Route path="/admin/attendance"          element={<Staffattendance />} />
+            <Route path="/admin/view-attendance"     element={<ViewAttendance />} />
+            <Route path="/admin/my-attendance"       element={<Staffview />} />
+            <Route path="/admin/subjectmark"         element={<Exam />} />
+            <Route path="/admin/examtype"            element={<ExamType />} />
+            <Route path="/admin/examportion"         element={<ExamPortion />} />
+            <Route path="/admin/examresult"          element={<Examresult />} />
+            <Route path="/admin/reports"             element={<ReportsOverview />} />
+            <Route path="/admin/reports/assignment"  element={<AssignmentReport />} />
+            <Route path="/admin/reports/exam"        element={<ExamReport />} />
+            <Route path="/admin/reports/attendance"  element={<AttendanceReport />} />
+            <Route path="/admin/reports/homework"    element={<HomeworkReport />} />
+            <Route path="/admin/leave"               element={<LeaveManagement />} />
+            <Route path="/admin/settings"            element={<SettingsPage />} />
+            <Route path="/releiving/:id"             element={<Registration />} />
+            <Route path="/admin/class&section"       element={<Master/>} />
+            <Route path="/admin/classTeacher"        element={<Master/>}/>
+            <Route path="/admin/subjectTeacher"        element={<Master/>}/>
+            <Route path="/admin/periodSlot"       element={<Master/>} />
+            <Route path="/admin/classTimetable"        element={<Master/>}/>
+            <Route path="/admin/periodTimetable"        element={<Master/>}/>
           </Routes>
         </div>
       </main>

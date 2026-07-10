@@ -422,7 +422,7 @@ export default function StudentWizard() {
   return (
     <div className="wz-wrap">
       {/* Header */}
-      <div className="wz-header">
+      {/* <div className="wz-header">
         <div>
           <h2 className="wz-title">{isEdit ? "Edit Student" : "Student Registration"}</h2>
           <p className="wz-subtitle">
@@ -436,7 +436,7 @@ export default function StudentWizard() {
           <i className="bx bx-save"></i> Save Draft
         </button>
         )}
-      </div>
+      </div> */}
 
       {/* Stepper */}
       <div className="wz-stepper">

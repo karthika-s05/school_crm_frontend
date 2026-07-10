@@ -52,7 +52,7 @@ export default function ExamPortion() {
   const [exams, setExams] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [search, setSearch] = useState("");
-  const [clsFilter, setClsFilter] = useState("");
+  const [clsFilter, setClsFilter] = useState("1");
   const [sectionFilter, setSectionFilter] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -97,6 +97,7 @@ export default function ExamPortion() {
         const classList = Array.isArray(cls) ? cls : [];
         const sectionList = Array.isArray(sec) ? sec : [];
         setClasses(classList);
+        console.log("Class List: ", classList);
         setSections(sectionList);
         setExams(Array.isArray(examRes?.data) ? examRes.data : []);
         setSubjects(Array.isArray(subj) ? subj : []);

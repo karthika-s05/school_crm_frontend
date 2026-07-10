@@ -1,13 +1,13 @@
 import axios from "axios";
 
 const MASTER_URL = process.env.REACT_APP_MASTER_URL;
-const DAILY_URL = process.env.REACT_APP_DAILY_URL ;
-const LOGIN_URL = process.env.REACT_APP_LOGIN_URL ;
-const ADMIN_URL = process.env.REACT_APP_ADMIN_URL ;
-const STATIONERY_URL = process.env.REACT_APP_FEES_URL ;
-const STAFF_URL = process.env.REACT_APP_DAILY_URL ;
+const DAILY_URL = process.env.REACT_APP_DAILY_URL;
+const LOGIN_URL = process.env.REACT_APP_LOGIN_URL;
+const ADMIN_URL = process.env.REACT_APP_ADMIN_URL;
+const STATIONERY_URL = process.env.REACT_APP_FEES_URL;
+const STAFF_URL = process.env.REACT_APP_DAILY_URL;
 const EXAM_URL = process.env.REACT_APP_EXAM_URL;
-const GRADE_URL = process.env.REACT_APP_MASTER_URL ;
+const GRADE_URL = process.env.REACT_APP_MASTER_URL;
 
 export const API_BASE_URLS = {
   MASTER_URL,
@@ -2338,7 +2338,6 @@ export const updateNotificationTime = async (token) => {
   return response.data;
 };
 
-// ─── Leave Management ────────────────────────────────────────────────────────
 // All roles: get leave types list
 export const getLeaveTypes = async (token) => {
   const response = await axios.get(`${DAILY_URL}/leave/get_leaveType`, {
@@ -2367,10 +2366,11 @@ export const deleteLeaveType = async (id, token) => {
 };
 
 // Student: get own leave list (uses req.user.classId/sectionId/userName)
-export const getStudentLeave = async (token) => {
-  const response = await axios.get(`${DAILY_URL}/leave/get_student_leave`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const getStudentLeave = async (token, classId = 0, sectionId = 0) => {
+  const response = await axios.post(`${DAILY_URL}/leave/get_student_leave`,
+    { classId, sectionId },
+    { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+  );
   return response.data;
 };
 
@@ -2379,7 +2379,7 @@ export const createStudentLeave = async (body, token) => {
   const response = await axios.post(
     `${DAILY_URL}/leave/create_student_leave`,
     body,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
   );
   return response.data;
 };
@@ -2389,7 +2389,7 @@ export const updateStudentLeaveStatus = async (body, token) => {
   const response = await axios.post(
     `${DAILY_URL}/leave/update_student_leave_status`,
     body,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
   );
   return response.data;
 };
@@ -2416,7 +2416,7 @@ export const createStaffLeave = async (body, token) => {
   const response = await axios.post(
     `${DAILY_URL}/leave/create_staff_leave`,
     body,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
   );
   return response.data;
 };
@@ -2435,7 +2435,7 @@ export const updateStaffLeaveStatus = async (body, token) => {
   const response = await axios.post(
     `${DAILY_URL}/leave/update_staff_leave_status`,
     body,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
   );
   return response.data;
 };
@@ -2573,6 +2573,7 @@ export const postTransportRoute = async (body, token) => {
   const response = await axios.post(`${STATIONERY_URL}/transport/route/post_route`, body, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  console.log(response.data, "response");
   return response.data;
 };
 
@@ -2580,6 +2581,7 @@ export const deleteTransportRoute = async (id, token) => {
   const response = await axios.post(`${STATIONERY_URL}/transport/route/delete_route/${id}`, {}, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  console.log(response.data, "response");
   return response.data;
 };
 
@@ -2639,7 +2641,6 @@ export const updateTransportFeeStatus = async (body, token) => {
   return response.data;
 };
 
-// ─── Reports ──────────────────────────────────────────────────────────────────
 export const getExamReportData = async (body, token) => {
   const response = await axios.post(`${EXAM_URL}/reports/exam/get_report`, body, {
     headers: { Authorization: `Bearer ${token}` },
@@ -2765,3 +2766,4 @@ export const getExamReportFilters = async (body, token) => {
   });
   return response.data;
 };
+

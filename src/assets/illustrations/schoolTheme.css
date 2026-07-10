@@ -1,4 +1,4 @@
-/* ── School ambience: floating icons ── */
+/*  School ambience: floating icons  */
 .school-ambience {
   position: fixed;
   inset: 0;
@@ -37,7 +37,7 @@
 }
 
 
-/* ── Login scene ── */
+/*  Login scene  */
 .adlogin-scene-wrap {
   width: 100%;
   max-width: 340px;
@@ -64,7 +64,7 @@
 .adlogin-float-deco.d4 { bottom: 18%; right: 10%; color: #fbcfe8; font-size: 20px; animation-delay: -3.5s; }
 .adlogin-float-deco.d5 { top: 45%; left: 5%; color: #bbf7d0; font-size: 16px; animation-delay: -4s; }
 
-/* ── Dashboard welcome banner ── */
+/*  Dashboard welcome banner  */
 .kst-welcome-banner {
   display: flex;
   align-items: center;
@@ -133,7 +133,7 @@
   50% { transform: translateY(-6px); }
 }
 
-/* ── Sidebar school footer ── */
+/*  Sidebar school footer  */
 .crm-school-footer {
   padding: 10px 12px 6px;
   text-align: center;
@@ -166,7 +166,7 @@
   display: none;
 }
 
-/* ── Stationery kit icon (sidebar) ── */
+/*  Stationery kit icon (sidebar)  */
 .stationery-kit {
   display: grid;
   grid-template-columns: 1fr 1fr;

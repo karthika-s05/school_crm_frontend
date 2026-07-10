@@ -1,4 +1,13 @@
 /*  Tabs  */
+
+.svc-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
 .svc-tabs {
   display: flex;
   gap: 4px;

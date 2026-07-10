@@ -142,7 +142,7 @@ const StudentDashboard = () => {
   return (
     <div className="std-dash">
 
-      {/* ── Welcome Banner ── */}
+      {/*  Welcome Banner  */}
       <div className="std-welcome-banner">
         <div className="std-welcome-text">
           <h2>{greeting()}, {studentName}! 👋</h2>
@@ -156,7 +156,7 @@ const StudentDashboard = () => {
         <StudentMascot className="std-welcome-art" width={120} />
       </div>
 
-      {/* ── Stat Cards ── */}
+      {/*  Stat Cards  */}
       <div className="std-stat-row">
         {statCards.map((c, i) => (
           <div className="std-stat-card" key={i}>
@@ -194,7 +194,7 @@ const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* ── Row 2: Attendance chart + Quick Actions ── */}
+      {/*  Row 2: Attendance chart + Quick Actions  */}
       <div className="std-chart-row">
 
         {/* Attendance Trend */}
@@ -257,7 +257,7 @@ const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* ── Row 3: Homework + Exams + Events ── */}
+      {/*  Row 3: Homework + Exams + Events  */}
       <div className="std-bot-row">
 
         {/* Homework */}
@@ -340,7 +340,7 @@ const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* ── Row 4: Notice Board + Recent Activity ── */}
+      {/*  Row 4: Notice Board + Recent Activity  */}
       <div className="std-bot-row2">
 
         {/* Notice Board */}

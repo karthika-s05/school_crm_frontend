@@ -7,12 +7,12 @@ import { getToken } from "../../services/auth";
 import {
   getFleetOverview,
   getTransportRoutes,
+  getTransportFeeSummary,
   postTransportVehicle,
   deleteTransportVehicle,
   postTransportDriver,
   getStudentTransportAllocations,
   updateTransportFeeStatus,
-  getTransportFeeSummary,
   postTransportRoute,
 } from "../../services/api";
 import { runApi } from "../../utils/apiHelper";
@@ -42,6 +42,7 @@ const mapStudent = (row) => ({
 });
 
 const findRouteId = (routeName, fleet) => {
+  console.log("Finding routeId for", routeName, "Fleet",fleet);
   const match = fleet.find((b) => b.route === routeName && b.routeId);
   return match?.routeId ?? null;
 };
@@ -133,6 +134,7 @@ export default function Transport() {
 
   const resolveRouteId = async (token, routeName) => {
     const ok = await runApi(() => postTransportRoute({ routeName }, token));
+    console.log("Route creation result", ok);
     if (!ok) return null;
 
     const routesRes = await getTransportRoutes(token);
@@ -144,8 +146,8 @@ export default function Transport() {
   };
 
   const saveBus = async () => {
-    if (!form.busNo?.trim() || !form.driver?.trim() || !form.route?.trim()) {
-      toast.error("Bus number, driver and route are required");
+    if (!form.busNo?.trim() || !form.driver?.trim() || !form.route?.trim() || !form.driverPhone?.trim()) {
+      toast.error("Bus number, driver, route, and driver phone are required");
       return;
     }
     const token = getToken();
@@ -153,7 +155,9 @@ export default function Transport() {
 
     setSaving(true);
     try {
+      console.log("Saving bus", form);
       let routeId = findRouteId(form.route, buses);
+      console.log("Found routeId for", form.route, routeId);
       if (!routeId) {
         routeId = await resolveRouteId(token, form.route.trim());
         if (!routeId) {
@@ -167,26 +171,26 @@ export default function Transport() {
         busNo: form.busNo.trim(),
         busRegNo: form.regNo || "",
         capacity: Number(form.capacity) || 40,
-        conductor: form.conductor || "",
         busTiming: form.timing || "",
         status: form.status || "Active",
         routeId,
       };
-
+      console.log("Vehicle body", vehicleBody);
       const vehicleRes = await runApi(
         () => postTransportVehicle(vehicleBody, token),
         { successMsg: modal === "edit" ? "Bus updated" : "Bus added" }
       );
       if (!vehicleRes) return;
-
+      console.log("Vehicle saved", vehicleRes.data);
       const vehicleId = vehicleRes.data?.vehicleId || form.id;
       if (vehicleId) {
         await runApi(
           () =>
             postTransportDriver(
               {
+                id: form.driverId,
                 driverName: form.driver.trim(),
-                driverPhone: form.driverPhone || "",
+                driverPhone: form.driverPhone.trim(),
                 vehicleId,
               },
               token
@@ -194,7 +198,7 @@ export default function Transport() {
           { successMsg: "Driver saved" }
         );
       }
-
+      console.log("Driver saved");
       setModal(null);
       await loadData();
     } finally {
@@ -399,18 +403,6 @@ export default function Transport() {
                         <i className="bx bx-phone"></i>
                         {b.driverPhone || "—"}
                       </span>
-                    </div>
-                    <div className="svc-bus-meta">
-                      <span>
-                        <i className="bx bx-time"></i>
-                        {b.timing || "—"}
-                      </span>
-                      {b.conductor && (
-                        <span>
-                          <i className="bx bxs-user-detail"></i>
-                          {b.conductor}
-                        </span>
-                      )}
                     </div>
                     <div className="svc-cap-wrap">
                       <div className="svc-cap-bar">
@@ -769,7 +761,6 @@ export default function Transport() {
                   ["Registration No", "regNo"],
                   ["Driver Name", "driver"],
                   ["Driver Phone", "driverPhone"],
-                  ["Conductor", "conductor"],
                   ["Timing", "timing"],
                 ].map(([lbl, name]) => (
                   <div className="svc-field" key={name}>
@@ -821,7 +812,6 @@ export default function Transport() {
         </div>
       )}
 
-      {/* ════════ View Modal ════════ */}
       {modal === "view" && (
         <div className="svc-overlay" onClick={() => setModal(null)}>
           <div className="svc-modal" onClick={(e) => e.stopPropagation()}>
@@ -838,7 +828,6 @@ export default function Transport() {
                   ["Reg No", form.regNo],
                   ["Driver", form.driver],
                   ["Phone", form.driverPhone],
-                  ["Conductor", form.conductor],
                   ["Timing", form.timing],
                   ["Capacity", `${form.assigned}/${form.capacity}`],
                   ["Status", form.status],

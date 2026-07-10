@@ -328,7 +328,6 @@ export default function ExamReport() {
         </div>
       </div>
 
-      {/* ════════ TAB 0 – Results Table ════════ */}
       {tab === 0 && (
         <>
           <div className="sdl-header">

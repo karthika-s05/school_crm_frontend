@@ -39,7 +39,7 @@ export default function LeaveManagement() {
     setLoading(true);
     await Promise.all([
       runApi(() => getLeaveTypes(token),    { onSuccess: (res) => setLeaveTypes(res.data    || []) }),
-      runApi(() => getStudentLeave(token),  { onSuccess: (res) => setStudentLeaves(res.data || []) }),
+      runApi(() => getStudentLeave(token, Number(form.classId) || 0, Number(form.sectionId) || 0),  { onSuccess: (res) => setStudentLeaves(res.data || []) }),
       runApi(() => getStaffLeave(token),    { onSuccess: (res) => setStaffLeaves(res.data   || []) }),
     ]);
     setLoading(false);
@@ -48,9 +48,14 @@ export default function LeaveManagement() {
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleStatusUpdate = async (id, status, type) => {
+    let remarks = "";
+    if (status === "Approved" || status === "Rejected") {
+      remarks = window.prompt(`Enter remarks for ${status.toLowerCase()} leave request:`, "");
+      if (remarks === null) return; // user cancelled prompt
+    }
     const fn = type === "student"
-      ? () => updateStudentLeaveStatus({ id, status }, token)
-      : () => updateStaffLeaveStatus({ id, status }, token);
+      ? () => updateStudentLeaveStatus({ id, status, remarks }, token)
+      : () => updateStaffLeaveStatus({ id, status, remarks }, token);
     await runApi(fn, { successMsg: "Leave status updated", onSuccess: loadData });
   };
 
@@ -79,10 +84,6 @@ export default function LeaveManagement() {
 
       {/* Header */}
       <div className="mod-header">
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>Leave Management</div>
-          <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>Manage and track leave requests</div>
-        </div>
         <div className="mod-pills">
           <span className="mod-pill blue"><i className="bx bx-calendar"></i>{rows.length} Records</span>
           <button className="mod-btn mod-btn-primary" onClick={() => setShowForm((p) => !p)}>
@@ -220,6 +221,7 @@ export default function LeaveManagement() {
                   <th>Reason</th>
                   <th>Days</th>
                   <th>Status</th>
+                  <th>Remarks</th>
                   <th>Update Status</th>
                 </tr>
               </thead>
@@ -235,6 +237,9 @@ export default function LeaveManagement() {
                       <span className={`mod-badge ${STATUS_COLOR[row.status] || "mod-badge-gray"}`}>
                         {row.status || "Pending"}
                       </span>
+                    </td>
+                    <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={row.remarks || ""}>
+                      {row.remarks || "-"}
                     </td>
                     <td>
                       <select

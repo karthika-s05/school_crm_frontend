@@ -670,19 +670,16 @@ const Master = () => {
         break;
       case "Transport":
         const {
-          name: Tname,
-          class: Tclass,
-          code: Tcode,
-          section: Tsection,
-          driver: Tdriver,
-          root: Troot,
+          driverName,
+          busNo,
+          driverPhoneNo,
         } = formData;
-        if (!Tname || !Tclass || !Tcode || !Tsection || !Tdriver || !Troot) {
+        if (!driverName || !busNo || !driverPhoneNo) {
           showModalError(
-            "Please fill in all required fields for Subject Transport."
+            "Please fill in all required fields (Driver Name, Bus No, Driver Contact)."
           );
           toast.error(
-            "Please fill in all required fields for Subject Transport."
+            "Please fill in all required fields (Driver Name, Bus No, Driver Contact)."
           );
           return;
         }
