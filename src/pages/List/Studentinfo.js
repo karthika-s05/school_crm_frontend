@@ -113,7 +113,7 @@ export default function Studentinfo() {
           throw new Error(response.message);
         }
         toast.success("Student documents saved successfully");
-        setTimeout(() => navigate("/students"), 1500);
+        setTimeout(() => navigate("/admin/students"), 1500);
       } catch (error) {
         console.error("Error:", error);
       } finally {
@@ -284,7 +284,7 @@ export default function Studentinfo() {
       {/* Header */}
       <div className="si-header">
         <div className="si-header-left">
-          <button type="button" className="si-back-btn" onClick={() => navigate("/students")} title="Back to list">
+          <button type="button" className="si-back-btn" onClick={() => navigate("/admin/students")} title="Back to list">
             <i className="bx bx-arrow-back"></i>
           </button>
           <div className="si-avatar">{initials(studentName)}</div>
@@ -584,7 +584,7 @@ export default function Studentinfo() {
         </div>
 
         <div className="si-footer">
-          <button type="button" className="si-btn-cancel" onClick={() => navigate("/students")}>
+          <button type="button" className="si-btn-cancel" onClick={() => navigate("/admin/students")}>
             Cancel
           </button>
           <button type="submit" className="si-btn-submit" disabled={formik.isSubmitting}>

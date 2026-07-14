@@ -131,7 +131,7 @@ const Profile = () => {
           >
             <li>
               <Link
-                to={props === "Student details" ? "/students" : "/list"}
+                to={props === "Student details" ? "/admin/students" : "/list"}
                 state={props === "Student details" ? undefined : "Staff List"}
                 style={{ color: "#051F3E" }}
               >

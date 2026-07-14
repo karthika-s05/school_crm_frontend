@@ -15,6 +15,7 @@ const mapStaff = (item, index) => ({
   dept:         item.department|| item.dept      || "-",
   position:     item.position  || item.roleOfStaff || item.role || "-",
   gender:       item.gender    || "-",
+  image:        item.image     || null,
   dob:          item.date_of_birth || item.dateOfBirth || item.dob || "-",
   mobile:       item.contact_number || item.mobile || item.phoneNumber || "-",
   email:        item.emailID   || item.email     || "-",

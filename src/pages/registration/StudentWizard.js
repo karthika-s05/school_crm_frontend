@@ -391,7 +391,7 @@ export default function StudentWizard() {
         localStorage.removeItem(DRAFT_KEY);
         const adm = res.admissionNo ? ` Admission No: ${res.admissionNo}.` : "";
         toast.success((res.message || "Student registered successfully!") + adm, {
-          onClose: () => navigate("/students"),
+          onClose: () => navigate("/admin/students"),
         });
         navigate("/students");
       } else {

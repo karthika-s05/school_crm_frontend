@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import "./nav.css";
 import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -66,18 +66,34 @@ const ADMIN_MENU_GROUPS = [
     ],
   },
   {
-    title: "Master", icon: null,
-    items: [
-      { label: "Nationality",    path: "/admin/master",        state: "Nationality" },
-      { label: "State",          path: "/admin/master",        state: "State" },
-      { label: "City",           path: "/admin/master",        state: "City" },
-      { label: "Blood Group",    path: "/admin/master",        state: "BloodGroup" },
-      { label: "Community",      path: "/admin/master",        state: "Community" },
-      { label: "Religion",       path: "/admin/master",        state: "Religion" },
-      { label: "Subject",        path: "/admin/master",        state: "Subject" },
-      { label: "Class",          path: "/admin/master",        state: "Class" },
-      { label: "Section",        path: "/admin/master",        state: "Section" },
+    title: "Master", icon: null, isNested: true,
+    subGroups: [
+      {
+        label: "Location",
+        items: [
+          { label: "Nationality", path: "/admin/master", state: "Nationality" },
+          { label: "State",       path: "/admin/master", state: "State" },
+          { label: "City",        path: "/admin/master", state: "City" },
+        ],
+      },
+      {
+        label: "Personal Details",
+        items: [
+          { label: "Blood Group", path: "/admin/master", state: "BloodGroup" },
+          { label: "Community",   path: "/admin/master", state: "Community" },
+          { label: "Religion",    path: "/admin/master", state: "Religion" },
+        ],
+      },
+      {
+        label: "Academic",
+        items: [
+          { label: "Subject", path: "/admin/master", state: "Subject" },
+          { label: "Class",   path: "/admin/master", state: "Class" },
+          { label: "Section", path: "/admin/master", state: "Section" },
+        ],
+      },
     ],
+    items: [], // kept for hasActiveChild check compatibility
   },
   {
     title: "Mapping", icon: null, section: "Academics",
@@ -227,8 +243,19 @@ const getMenuGroups = (role) => {
   return ADMIN_MENU_GROUPS;
 };
 
-// Keep MENU_GROUPS as alias for resolvePageTitle (uses all groups)
-const MENU_GROUPS = [...ADMIN_MENU_GROUPS, ...STAFF_MENU_GROUPS, ...STUDENT_MENU_GROUPS];
+// Flatten nested master subGroups into items for resolvePageTitle
+const flattenGroups = (groups) =>
+  groups.map(g =>
+    g.isNested
+      ? { ...g, items: g.subGroups.flatMap(sg => sg.items) }
+      : g
+  );
+
+const MENU_GROUPS = [
+  ...flattenGroups(ADMIN_MENU_GROUPS),
+  ...STAFF_MENU_GROUPS,
+  ...STUDENT_MENU_GROUPS,
+];
 
 // Resolve active page title + parent from pathname + state
 const resolvePageTitle = (pathname, state) => {
@@ -341,7 +368,111 @@ const MenuGroup = ({ title, items, openMenu, setOpenMenu, collapsed, pathname, l
   );
 };
 
-const Nav = () => {
+const NestedMenuGroup = ({ title, subGroups, openMenu, setOpenMenu, openSubGroup, setOpenSubGroup, collapsed, pathname, locationState, onFlyoutNavigate }) => {
+  const btnRef = useRef(null);
+  const [flyoutTop, setFlyoutTop] = useState(0);
+  const isOpen = openMenu === title;
+
+  const allItems = subGroups.flatMap(sg => sg.items);
+  const hasActiveChild = allItems.some(
+    item => item.path === pathname && (!item.state || item.state === locationState)
+  );
+
+  const handleToggle = () => {
+    if (collapsed) {
+      if (!isOpen && btnRef.current) {
+        const rect = btnRef.current.getBoundingClientRect();
+        setFlyoutTop(rect.top);
+      }
+      setOpenMenu(isOpen ? null : title);
+    } else {
+      setOpenMenu(isOpen ? null : title);
+    }
+  };
+
+  const renderSubLinks = (items) =>
+    items.map((item, i) => {
+      const isSubActive = item.path === pathname && (!item.state || item.state === locationState);
+      return (
+        <Link
+          key={i}
+          to={item.path}
+          state={item.state}
+          className={`crm-sub-link${isSubActive ? " sub-active" : ""}`}
+          onClick={() => onFlyoutNavigate?.()}
+        >
+          <span className="crm-sub-icon"><SchoolSubMenuIcon label={item.label} /></span>
+          {item.label}
+        </Link>
+      );
+    });
+
+  return (
+    <div className={`crm-menu-group${isOpen && collapsed ? " flyout-open" : ""}`}>
+      <button
+        ref={btnRef}
+        className={`crm-menu-btn${hasActiveChild ? " active" : ""}${isOpen && !collapsed ? " open" : ""}`}
+        onClick={handleToggle}
+        title={collapsed ? title : undefined}
+        aria-expanded={isOpen}
+      >
+        <div className="crm-menu-left">
+          <span className="crm-menu-icon"><SchoolMenuIcon name={title} /></span>
+          {!collapsed && <span className="crm-menu-label">{title}</span>}
+        </div>
+        {!collapsed && <IconChevronDown className={`crm-arrow${isOpen ? " rotate" : ""}`} />}
+        {hasActiveChild && collapsed && <span className="crm-active-dot" />}
+      </button>
+
+      {/* Expanded: nested sub-groups */}
+      {!collapsed && isOpen && (
+        <div className="crm-submenu">
+          {subGroups.map((sg, si) => {
+            const sgKey = `${title}-${sg.label}`;
+            const sgOpen = openSubGroup === sgKey;
+            const sgHasActive = sg.items.some(
+              item => item.path === pathname && (!item.state || item.state === locationState)
+            );
+            return (
+              <div key={si} className="crm-nested-group">
+                <button
+                  className={`crm-nested-btn${sgHasActive ? " active" : ""}${sgOpen ? " open" : ""}`}
+                  onClick={() => setOpenSubGroup(sgOpen ? null : sgKey)}
+                >
+                  <span>{sg.label}</span>
+                  <IconChevronDown className={`crm-arrow crm-arrow-sm${sgOpen ? " rotate" : ""}`} />
+                </button>
+                {sgOpen && (
+                  <div className="crm-nested-items">{renderSubLinks(sg.items)}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Collapsed: flyout with sub-groups */}
+      {collapsed && isOpen && (
+        <div className="crm-submenu-flyout" style={{ top: flyoutTop }}>
+          <div className="crm-flyout-header">
+            <SchoolMenuIcon name={title} />
+            <span>{title}</span>
+          </div>
+          <div className="crm-flyout-items">
+            {subGroups.map((sg, si) => (
+              <div key={si}>
+                <div className="crm-flyout-subgroup-label">{sg.label}</div>
+                {renderSubLinks(sg.items)}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default function Nav() {
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
@@ -357,7 +488,7 @@ const Nav = () => {
       : role === "Staff"
       ? getUserData("staffName")
       : getUserData("adminName");
-  const MENU_GROUPS_FOR_ROLE = getMenuGroups(role);
+  const MENU_GROUPS_FOR_ROLE = useMemo(() => flattenGroups(getMenuGroups(role)), [role]);
 
   const [collapsed, setCollapsed] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
@@ -411,6 +542,8 @@ const Nav = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, [collapsed, openMenu]);
 
+  const [openSubGroup, setOpenSubGroup] = useState(null);
+
   useEffect(() => {
     if (collapsed) {
       setOpenMenu(null);
@@ -421,7 +554,7 @@ const Nav = () => {
         item.path === pathname && (!item.state || item.state === locState)
       )
     );
-    if (match) setOpenMenu(match.title);
+    setOpenMenu(match ? match.title : null);
   }, [pathname, locState, collapsed, MENU_GROUPS_FOR_ROLE]);
 
   const MONTHS = ["January", "February", "March", "April", "May", "June",
@@ -492,9 +625,12 @@ const Nav = () => {
           </Link>
 
           {/* Dynamic menu groups */}
-          {MENU_GROUPS_FOR_ROLE.map((group, i) => {
+          {getMenuGroups(role).map((group, i) => {
             const showSection = group.section && !renderedSections.has(group.section);
             if (showSection) renderedSections.add(group.section);
+            const flatItems = group.isNested
+              ? group.subGroups.flatMap(sg => sg.items)
+              : group.items;
             return (
               <React.Fragment key={i}>
                 {showSection && (
@@ -502,16 +638,31 @@ const Nav = () => {
                     {!collapsed && group.section}
                   </div>
                 )}
-                <MenuGroup
-                  title={group.title}
-                  items={group.items}
-                  openMenu={openMenu}
-                  setOpenMenu={setOpenMenu}
-                  collapsed={collapsed}
-                  pathname={pathname}
-                  locationState={locState}
-                  onFlyoutNavigate={closeFlyout}
-                />
+                {group.isNested ? (
+                  <NestedMenuGroup
+                    title={group.title}
+                    subGroups={group.subGroups}
+                    openMenu={openMenu}
+                    setOpenMenu={setOpenMenu}
+                    openSubGroup={openSubGroup}
+                    setOpenSubGroup={setOpenSubGroup}
+                    collapsed={collapsed}
+                    pathname={pathname}
+                    locationState={locState}
+                    onFlyoutNavigate={closeFlyout}
+                  />
+                ) : (
+                  <MenuGroup
+                    title={group.title}
+                    items={group.items}
+                    openMenu={openMenu}
+                    setOpenMenu={setOpenMenu}
+                    collapsed={collapsed}
+                    pathname={pathname}
+                    locationState={locState}
+                    onFlyoutNavigate={closeFlyout}
+                  />
+                )}
               </React.Fragment>
             );
           })}
@@ -730,7 +881,7 @@ const Nav = () => {
       </main>
     </div>
   );
-};
+}
 
 const SettingsPage = () => (
   <div style={{ padding: "28px 32px" }}>
@@ -738,5 +889,3 @@ const SettingsPage = () => (
     <p style={{ color: "#64748b" }}>School configuration and preferences.</p>
   </div>
 );
-
-export default Nav;

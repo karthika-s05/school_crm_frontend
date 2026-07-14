@@ -38,6 +38,7 @@ const mapStudent = (item, index) => {
     cls: String(item["class"] ?? item.className ?? item.cls ?? "-"),
     section: String(item.section ?? item.sectionName ?? "-"),
     gender: String(item.gender || "-"),
+    image: item.image || null,
     dob: String(item.dateOfBirth || item.dob || "-"),
     mobile: String(item.mobile || item.stdMobileNo || "-"),
     email: String(item.emailId || item.email || "-"),

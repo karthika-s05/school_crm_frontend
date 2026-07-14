@@ -113,10 +113,10 @@ export default function Timetable() {
       setTtLoading(true);
       try {
         const res = await getTimeTable(
-          { dayId: 0, classId: selectedClass.classId, sectionId: selectedClass.sectionId },
+          { dayId: 0, classId: Number(selectedClass.classId), sectionId: Number(selectedClass.sectionId) },
           token
         );
-        setTimetableRows(Array.isArray(res) ? res : []);
+        setTimetableRows(Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : []);
       } catch {
         setTimetableRows([]);
       } finally {

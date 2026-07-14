@@ -2394,6 +2394,26 @@ export const updateStudentLeaveStatus = async (body, token) => {
   return response.data;
 };
 
+// Student: update homework completion progress
+export const updateHomeworkProgress = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/homework/update_homework_progress`,
+    body,
+    { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+  );
+  return response.data;
+};
+
+// Student: update assignment completion progress
+export const updateAssignmentProgress = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/assignment/update_assignment_progress`,
+    body,
+    { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+  );
+  return response.data;
+};
+
 // Student: delete own leave application
 export const deleteStudentLeave = async (body, token) => {
   const response = await axios.delete(`${DAILY_URL}/leave/delete_student_leave`, {

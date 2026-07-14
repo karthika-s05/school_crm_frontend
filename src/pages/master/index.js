@@ -510,7 +510,8 @@ const Master = () => {
           code: Stcode,
           section: Stsection,
         } = formData;
-        if (!STname || !STclass || !Stcode || !Stsection) {
+        if (!formData.staffId || !formData.classId || !formData.sectionId || !formData.subjectId) {
+          console.log("Formdata:", formData);
           showModalError(
             "Please fill in all required fields for Subject Teacher."
           );

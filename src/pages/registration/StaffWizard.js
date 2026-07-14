@@ -279,7 +279,7 @@ export default function StaffWizard() {
       if (res.status?.toLowerCase() === "success") {
         localStorage.removeItem(DRAFT_KEY);
         toast.success(res.message || (isEdit ? "Staff updated!" : "Staff registered successfully!"), {
-          onClose: () => navigate("/list", { state: "Staff List" }),
+          onClose: () => navigate("/admin/staff", { state: "Staff List" }),
         });
       } else {
         toast.error(res.message || "Operation failed.");
@@ -460,7 +460,7 @@ export default function StaffWizard() {
 
       {/* Navigation */}
       <div className="wz-nav">
-        <button className="wz-btn wz-btn-ghost" onClick={() => navigate("/list", { state: "Staff List" })}>
+        <button className="wz-btn wz-btn-ghost" onClick={() => navigate("/admin/staff", { state: "Staff List" })}>
           <i className="bx bx-x"></i> Cancel
         </button>
         <div className="wz-nav-right">

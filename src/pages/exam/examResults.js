@@ -220,7 +220,7 @@ export default function Examresult() {
               <i className="bx bx-x"></i> Clear
             </button>
           )}
-          <button className="sdl-add-btn" onClick={() => navigate("/subjectmark")}>
+          <button className="sdl-add-btn" onClick={() => navigate("/admin/subjectmark")}>
             <i className="bx bx-plus"></i> Add Marks
           </button>
         </div>
@@ -285,7 +285,7 @@ export default function Examresult() {
                       <span className={`sdl-status ${(item.result || "").toLowerCase()}`}>{item.result}</span>
                     </td>
                     <td>
-                      <TableActionMenu onEdit={() => navigate("/subjectmark")} onDelete={() => {}} />
+                      <TableActionMenu onEdit={() => navigate("/admin/subjectmark")} onDelete={() => {}} />
                     </td>
                   </tr>
                 ))

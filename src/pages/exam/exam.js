@@ -279,7 +279,7 @@ export default function Examreport() {
             </div>
 
             <div className="exam-form-actions">
-              <button type="button" className="exam-btn-cancel" onClick={() => navigate("/examresult")} disabled={submitting}>
+              <button type="button" className="exam-btn-cancel" onClick={() => navigate("/admin/examresult")} disabled={submitting}>
                 Cancel
               </button>
               <button type="submit" className="exam-btn-submit" disabled={submitting}>

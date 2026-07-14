@@ -360,7 +360,7 @@ const Registration = () => {
                 setFormData({});
                 toast.success(response.message, {
                   onClose: () => {
-                    navigate("/students");
+                    navigate("/admin/students");
                   },
                 });
               }else{
@@ -397,7 +397,7 @@ const Registration = () => {
                 setFormData({});
                 toast.success(response.message, {
                   onClose: () => {
-                    navigate("/list", { state: "Staff List" });
+                    navigate("/admin/staff", { state: "Staff List" });
                   },
                 });
               } else {
@@ -460,7 +460,7 @@ const Registration = () => {
 
           <li>
             <Link
-              to={propsData === "Student Relieving" ? "/students" : "/list"}
+              to={propsData === "Student Relieving" ? "/admin/students" : "/admin/staff"}
               state={propsData === "Student Relieving" ? undefined : "Staff List"}
               style={{ color: "#051F3E" }}
             >
@@ -505,7 +505,7 @@ const Registration = () => {
               type="button"
               onClick={() =>
                 navigate(
-                  propsData === "Student Relieving" ? "/students" : "/list",
+                  propsData === "Student Relieving" ? "/admin/students" : "/admin/staff",
                   propsData === "Student Relieving" ? undefined : { state: "Staff List" }
                 )
               }

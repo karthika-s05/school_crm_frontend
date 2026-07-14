@@ -510,10 +510,10 @@ export default function Studendlist() {
           } else if (responseValue === "success") {
             toast.success(response.message, {
               onClose: () => {
-                navigate(`/studentinfo/${response.id || ids.id}`);
+                navigate(`/admin/students`);
               },
             });
-            navigate(`/studentinfo/${response.id || ids.id}`);
+            navigate(`/admin/students`);
           }
         } else {
           const response = await createStudent(payload, token);
