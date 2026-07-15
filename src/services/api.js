@@ -239,9 +239,9 @@ export const getSubject = async (id, token) => {
     throw error;
   }
 };
-export const getPeriodSlot = async (token) => {
+export const getPeriodSlot = async (classId, token) => {
   try {
-    const response = await axios.get(`${DAILY_URL}/timetable/get_period_slot`, {
+    const response = await axios.get(`${DAILY_URL}/timetable/get_period_slot/${classId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -2338,13 +2338,13 @@ export const updateNotificationTime = async (token) => {
   return response.data;
 };
 
-// All roles: get leave types list
-export const getLeaveTypes = async (token) => {
-  const response = await axios.get(`${DAILY_URL}/leave/get_leaveType`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
-};
+// // All roles: get leave types list
+// export const getLeaveTypes = async (token) => {
+//   const response = await axios.get(`${DAILY_URL}/leave/get_leaveType`, {
+//     headers: { Authorization: `Bearer ${token}` },
+//   });
+//   return response.data;
+// };
 
 // Admin: create/update leave type
 export const createLeaveType = async (body, token) => {
@@ -2787,3 +2787,107 @@ export const getExamReportFilters = async (body, token) => {
   return response.data;
 };
 
+/* ─────────────────────────────────────────────────────────
+   LEAVE MANAGEMENT
+───────────────────────────────────────────────────────── */
+
+/** GET /leave/get_leaveType — fetch all leave type options */
+export const getLeaveTypes = async (token) => {
+  try {
+    const response = await axios.get(`${DAILY_URL}/leave/get_leaveType`, {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("getLeaveTypes error:", error);
+    throw error;
+  }
+};
+
+/** POST /leave/get_student_leave — fetch student leave records */
+// export const getStudentLeave = async (token, classId = 0, sectionId = 0) => {
+//   try {
+//     const response = await axios.post(
+//       `${DAILY_URL}/leave/get_student_leave`,
+//       { classId, sectionId },
+//       { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error("getStudentLeave error:", error);
+//     throw error;
+//   }
+// };
+
+/** GET /leave/get_staff_leave — fetch staff leave records */
+// export const getStaffLeave = async (token) => {
+//   try {
+//     const response = await axios.get(`${DAILY_URL}/leave/get_staff_leave`, {
+//       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error("getStaffLeave error:", error);
+//     throw error;
+//   }
+// };
+
+/** POST /leave/create_student_leave — submit a student leave application */
+// export const createStudentLeave = async (body, token) => {
+//   try {
+//     const response = await axios.post(
+//       `${DAILY_URL}/leave/create_student_leave`,
+//       body,
+//       { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error("createStudentLeave error:", error);
+//     throw error;
+//   }
+// };
+
+/** POST /leave/create_staff_leave — submit a staff / admin leave application */
+// export const createStaffLeave = async (body, token) => {
+//   try {
+//     const response = await axios.post(
+//       `${DAILY_URL}/leave/create_staff_leave`,
+//       body,
+//       { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error("createStaffLeave error:", error);
+//     throw error;
+//   }
+// };
+
+/** POST /leave/update_student_leave_status — approve or reject a student leave */
+// export const updateStudentLeaveStatus = async (body, token) => {
+//   try {
+//     const response = await axios.post(
+//       `${DAILY_URL}/leave/update_student_leave_status`,
+//       body,
+//       { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error("updateStudentLeaveStatus error:", error);
+//     throw error;
+//   }
+// };
+
+/** POST /leave/update_staff_leave_status — approve or reject a staff leave */
+// export const updateStaffLeaveStatus = async (body, token) => {
+//   try {
+//     const response = await axios.post(
+//       `${DAILY_URL}/leave/update_staff_leave_status`,
+//       body,
+//       { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error("updateStaffLeaveStatus error:", error);
+//     throw error;
+//   }
+// };

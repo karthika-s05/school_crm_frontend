@@ -182,7 +182,7 @@ export default function Assignment() {
                       </div>
                     </td>
                     <td>{r.subject || subjectName(r.subjectId)}</td>
-                    <td><span className="mod-badge mod-badge-blue">{r.className || `Class ${filter.classId}`} – {r.section || `Sec ${filter.sectionId}`}</span></td>
+                    <td><span className="mod-badge mod-badge-blue">{r.className || `${filter.className}`} – {r.section || `Sec ${filter.section}`}</span></td>
                     <td>{r.startDate || "—"}</td>
                     <td>{r.endDate || "—"}</td>
                     <td><span className={`mod-badge ${statusBadge(status)}`}>{status}</span></td>

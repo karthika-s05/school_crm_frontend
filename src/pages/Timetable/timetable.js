@@ -1,537 +1,491 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import "./timetable.css";
 import {
-  getClass,
-  getSection,
-  getDay,
   getPeriodSlot,
   getTimeTable,
-  getSubject,
-  getStafflist,
+  getStaffTimetable,
 } from "../../services/api";
 import { getToken, getUserData } from "../../services/auth";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-/* ─── constants ─────────────────────────────────────────── */
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat" };
 const DAY_COLORS = {
-  Monday:    { bg: "#eef0fb", accent: "#2D3A8C", dot: "#2D3A8C" },
-  Tuesday:   { bg: "#fdf0eb", accent: "#E8541A", dot: "#E8541A" },
-  Wednesday: { bg: "#f0fdf4", accent: "#16a34a", dot: "#16a34a" },
-  Thursday:  { bg: "#fef3c7", accent: "#d97706", dot: "#d97706" },
-  Friday:    { bg: "#fdf4ff", accent: "#9333ea", dot: "#9333ea" },
-  Saturday:  { bg: "#f0f9ff", accent: "#0284c7", dot: "#0284c7" },
+  Monday: "#2D3A8C", Tuesday: "#E8541A", Wednesday: "#16a34a",
+  Thursday: "#d97706", Friday: "#9333ea", Saturday: "#0284c7",
 };
-const CLASS_CARD_COLORS = [
-  { bg: "linear-gradient(135deg,#2D3A8C,#3b52b4)", text: "#fff", badge: "rgba(255,255,255,0.18)" },
-  { bg: "linear-gradient(135deg,#E8541A,#f97316)", text: "#fff", badge: "rgba(255,255,255,0.18)" },
-  { bg: "linear-gradient(135deg,#16a34a,#22c55e)", text: "#fff", badge: "rgba(255,255,255,0.18)" },
-  { bg: "linear-gradient(135deg,#9333ea,#a855f7)", text: "#fff", badge: "rgba(255,255,255,0.18)" },
-  { bg: "linear-gradient(135deg,#0284c7,#38bdf8)", text: "#fff", badge: "rgba(255,255,255,0.18)" },
-  { bg: "linear-gradient(135deg,#d97706,#fbbf24)", text: "#fff", badge: "rgba(255,255,255,0.18)" },
-];
 
-/* ─── helpers ────────────────────────────────────────────── */
 const normTime = (t) => (t || "").replace(/\s/g, "").toLowerCase();
 
-const mapSlots = (list) =>
-  Array.isArray(list) && list.length
-    ? list.map((s, i) => ({
-        id: s.id ?? i + 1,
-        label: String(i + 1),
-        startTime: s.startTime ?? s["start Time"] ?? "",
-        endTime: s.endTime ?? s["end Time"] ?? "",
-      }))
-    : [
-        { id: 1, label: "1", startTime: "9:00",  endTime: "9:45"  },
-        { id: 2, label: "2", startTime: "9:45",  endTime: "10:30" },
-        { id: 3, label: "3", startTime: "10:45", endTime: "11:30" },
-        { id: 4, label: "4", startTime: "11:30", endTime: "12:15" },
-        { id: 5, label: "5", startTime: "13:00", endTime: "13:45" },
-        { id: 6, label: "6", startTime: "13:45", endTime: "14:30" },
-        { id: 7, label: "7", startTime: "14:45", endTime: "15:30" },
-        { id: 8, label: "8", startTime: "15:30", endTime: "16:15" },
-      ];
+const normalizeSlotRows = (value) => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  if (Array.isArray(value?.rows)) return value.rows;
+  if (Array.isArray(value?.periodSlots)) return value.periodSlots;
+  return [];
+};
 
-const mapDays = (list) =>
-  Array.isArray(list) && list.length
-    ? list.map((d) => d.day ?? d.name ?? d.dayName ?? String(d))
-    : DAYS;
+const normalizeTimetableRows = (value) => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  if (Array.isArray(value?.rows)) return value.rows;
+  return [];
+};
+
+const getSlotCategory = (slot) => {
+  const text = [
+    slot?.slotType, slot?.slotTypeName, slot?.periodType,
+    slot?.periodSlotType, slot?.type, slot?.slotName,
+    slot?.name, slot?.label, slot?.startTime,
+    slot?.["start Time"], slot?.endTime, slot?.["end Time"],
+  ]
+    .filter(Boolean)
+    .map(v => String(v).trim())
+    .join(" ")
+    .toLowerCase();
+
+  if (text.includes("lunch")) return "lunch";
+  if (text.includes("evening break") || text.includes("eve break") || text.includes("eveningbreak")) return "evening-break";
+  if (text.includes("break")) return "break";
+  return "normal";
+};
+
+const getSlotDisplayLabel = (slot) => {
+  const cat = getSlotCategory(slot);
+  if (cat === "lunch") return "Lunch";
+  if (cat === "evening-break") return "Eve. Break";
+  return "Break";
+};
+
+const toMinutes = (t) => {
+  if (!t) return 0;
+  const s = t.trim().toUpperCase();
+  const pm = s.includes("PM");
+  const am = s.includes("AM");
+  const clean = s.replace(/AM|PM/g, "").trim();
+  let [h, m] = clean.split(":").map(Number);
+  if (pm && h !== 12) h += 12;
+  if (am && h === 12) h = 0;
+  return h * 60 + (m || 0);
+};
+
+const getGridCell = (source, day, slotId) => {
+  if (!source?.[day]) return undefined;
+  const key = String(slotId);
+  return source[day][key] ?? source[day][Number(slotId)] ?? undefined;
+};
+
+const buildEmptyGrid = () => {
+  const g = {};
+  DAYS.forEach(day => { g[day] = {}; });
+  return g;
+};
+
+const normalizeFieldValue = (value) => {
+  if (value === undefined || value === null || value === "" || String(value) === "NaN" || String(value) === "undefined") return "";
+  return String(value);
+};
+
+const normalizeStaffValue = (value) => {
+  if (value === undefined || value === null || value === "" || String(value) === "NaN" || String(value) === "undefined") return 0;
+  const normalized = String(value).trim();
+  return normalized === "0" ? 0 : normalized;
+};
+
+export const buildTimetableSavePayload = ({ id, classId, sectionId, dayId, periodSlotId, subjectId, staffId }) => ({
+  id: Number(id) || 0,
+  classId: Number(classId) || 0,
+  sectionId: Number(sectionId) || 0,
+  dayId: Number(dayId) || 0,
+  periodSlotId: Number(periodSlotId) || 0,
+  subjectId: Number(subjectId) || 0,
+  staffId: normalizeStaffValue(staffId),
+});
+
+const mapSlots = (list) => {
+  const rows = normalizeSlotRows(list);
+  const normalised = rows
+    .map((s, index) => {
+      const startTime = s?.startTime ?? s?.["start Time"] ?? "";
+      const endTime = s?.endTime ?? s?.["end Time"] ?? "";
+      const category = getSlotCategory({ ...s, startTime, endTime });
+      const isBreak = category !== "normal";
+      return {
+        id: s?.id ?? s?.slotId ?? s?.periodSlotId ?? s?.period_slot_id ?? index + 1,
+        label: String(index + 1),
+        startTime,
+        endTime,
+        isBreak,
+        slotType: category,
+        color: isBreak
+          ? (category === "lunch" ? "#16a34a" : category === "evening-break" ? "#0284c7" : "#f59e0b")
+          : "#2d3a8c",
+        bg: isBreak
+          ? (category === "lunch" ? "#f0fdf4" : category === "evening-break" ? "#f0f9ff" : "#fffbeb")
+          : "#f8fafc",
+        source: s,
+      };
+    })
+    .sort((a, b) => {
+      const diff = toMinutes(a.startTime) - toMinutes(b.startTime);
+      return diff !== 0 ? diff : String(a.id).localeCompare(String(b.id));
+    });
+
+  return normalised.map((slot, index) => ({
+    ...slot,
+    label: slot.isBreak ? getSlotDisplayLabel(slot) : String(index + 1),
+  }));
+};
 
 /* ═══════════════════════════════════════════════════════════
-   MAIN COMPONENT
+   READ-ONLY GRID  (Staff & Student)
 ═══════════════════════════════════════════════════════════ */
-export default function Timetable() {
-  const token = getToken();
-  const [darkMode, setDarkMode] = useState(false);
-  const [view, setView] = useState("cards"); // "cards" | "detail"
-  const [selectedClass, setSelectedClass] = useState(null); // { classId, sectionId, className, sectionName }
+function ReadOnlyGrid({ rows, slots, title, subtitle }) {
+  const [activeDay, setActiveDay] = useState(DAYS[new Date().getDay() - 1] || "Monday");
 
-  const [classes, setClasses]   = useState([]);
-  const [sections, setSections] = useState([]);
-  const [days, setDays]         = useState(DAYS);
-  const [slots, setSlots]       = useState([]);
-  const [subjects, setSubjects] = useState([]);
-  const [staff, setStaff]       = useState([]);
-  const [timetableRows, setTimetableRows] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [ttLoading, setTtLoading] = useState(false);
-  const [search, setSearch]     = useState("");
-  const [filterSection, setFilterSection] = useState("");
-
-  /* ── load masters ── */
-  useEffect(() => {
-    if (!token) { setLoading(false); return; }
-    (async () => {
-      setLoading(true);
-      try {
-        const [cls, sec, dayRes, slotRes, subj] = await Promise.all([
-          getClass(0, token).catch(() => []),
-          getSection(0, token).catch(() => []),
-          getDay(token).catch(() => null),
-          getPeriodSlot(token).catch(() => null),
-          getSubject(0, token).catch(() => []),
-        ]);
-        const classList    = (Array.isArray(cls)  ? cls  : []).map((c) => ({ id: c.id, name: c.name ?? c.className ?? String(c.id) }));
-        const sectionList  = (Array.isArray(sec)  ? sec  : []).map((s) => ({ id: s.id, name: s.name ?? s.sectionName ?? String(s.id) }));
-        const subjectList  = (Array.isArray(subj) ? subj : []).map((s) => ({ id: s.id, name: s.name ?? s.subjectName ?? "" }));
-        setClasses(classList);
-        setSections(sectionList);
-        setDays(mapDays(dayRes));
-        setSlots(mapSlots(slotRes));
-        setSubjects(subjectList);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [token]);
-
-  /* ── load timetable when detail view opens ── */
-  useEffect(() => {
-    if (!selectedClass || view !== "detail") return;
-    (async () => {
-      setTtLoading(true);
-      try {
-        const res = await getTimeTable(
-          { dayId: 0, classId: Number(selectedClass.classId), sectionId: Number(selectedClass.sectionId) },
-          token
-        );
-        setTimetableRows(Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : []);
-      } catch {
-        setTimetableRows([]);
-      } finally {
-        setTtLoading(false);
-      }
-    })();
-  }, [selectedClass, view, token]);
-
-  /* ── class cards (cross-join class × section) ── */
-  const classCards = useMemo(() => {
-    if (!classes.length || !sections.length) return [];
-    return classes.flatMap((c, ci) =>
-      sections.map((s, si) => ({
-        classId: c.id,
-        sectionId: s.id,
-        className: c.name,
-        sectionName: s.name,
-        colorIdx: (ci * sections.length + si) % CLASS_CARD_COLORS.length,
-        periodsPerDay: slots.length,
-        subjectCount: subjects.length,
-      }))
-    );
-  }, [classes, sections, slots, subjects]);
-
-  const filteredCards = useMemo(() => {
-    let list = classCards;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (c) =>
-          c.className.toLowerCase().includes(q) ||
-          c.sectionName.toLowerCase().includes(q)
-      );
-    }
-    if (filterSection) list = list.filter((c) => c.sectionName === filterSection);
-    return list;
-  }, [classCards, search, filterSection]);
-
-  /* ── timetable grid per day ── */
-  const gridByDay = useMemo(() => {
+  const gridMap = useMemo(() => {
     const map = {};
-    DAYS.forEach((d) => { map[d] = {}; });
-    timetableRows.forEach((row) => {
-      const day   = row.day ?? row.dayName ?? "";
+    DAYS.forEach(d => { map[d] = {}; });
+    rows.forEach(row => {
+      const day = row.day ?? row.dayName ?? "";
       const start = normTime(row.startTime ?? row["start Time"] ?? "");
-      if (day && start) map[day] = map[day] || {};
       if (day && start) map[day][start] = row;
     });
     return map;
-  }, [timetableRows]);
-
-  const openDetail = useCallback((card) => {
-    setSelectedClass(card);
-    setView("detail");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
-
-  const uniqueSections = useMemo(() => [...new Set(sections.map((s) => s.name))], [sections]);
+  }, [rows]);
 
   return (
-    <div className={`tt2-root${darkMode ? " tt2-dark" : ""}`}>
-
-      {/* ── Top Bar ── */}
-      <div className="tt2-topbar">
-        <div className="tt2-topbar-left">
-          {view === "detail" && (
-            <button className="tt2-back-btn" onClick={() => setView("cards")}>
-              <i className="bx bx-arrow-back"></i>
-            </button>
-          )}
-          <div>
-            <h1 className="tt2-page-title">
-              {view === "cards" ? "Class Timetable" : `Class ${selectedClass?.className} – ${selectedClass?.sectionName}`}
-            </h1>
-            <p className="tt2-page-sub">
-              {view === "cards"
-                ? `${classCards.length} classes · ${days.length} days/week · ${slots.length} periods/day`
-                : "Weekly schedule · Click a day to expand"}
-            </p>
-          </div>
-        </div>
-        <div className="tt2-topbar-right">
-          <button className="tt2-dark-toggle" onClick={() => setDarkMode((v) => !v)} title="Toggle dark mode">
-            <i className={`bx ${darkMode ? "bx-sun" : "bx-moon"}`}></i>
-          </button>
+    <div className="tt-root">
+      <div className="tt-topbar">
+        <div>
+          <h1 className="tt-page-title">{title}</h1>
+          <p className="tt-page-sub">{subtitle}</p>
         </div>
       </div>
 
-      {/* ── Cards View ── */}
-      {view === "cards" && (
-        <>
-          {/* Search + Filter */}
-          <div className="tt2-toolbar">
-            <div className="tt2-search">
-              <i className="bx bx-search"></i>
-              <input
-                placeholder="Search class or section…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              {search && (
-                <button className="tt2-search-clear" onClick={() => setSearch("")}>
-                  <i className="bx bx-x"></i>
-                </button>
-              )}
-            </div>
-            <div className="tt2-filters">
-              <select
-                className="tt2-select"
-                value={filterSection}
-                onChange={(e) => setFilterSection(e.target.value)}
-              >
-                <option value="">All Sections</option>
-                {uniqueSections.map((s) => (
-                  <option key={s} value={s}>Section {s}</option>
-                ))}
-              </select>
-            </div>
-            <div className="tt2-stats-pills">
-              <span className="tt2-pill blue"><i className="bx bxs-school"></i>{classes.length} Classes</span>
-              <span className="tt2-pill orange"><i className="bx bx-time-five"></i>{slots.length} Periods</span>
-              <span className="tt2-pill green"><i className="bx bxs-book"></i>{subjects.length} Subjects</span>
-            </div>
-          </div>
+      <div className="tt-day-tabs">
+        {DAYS.map(day => {
+          const filled = slots.filter(s => gridMap[day]?.[normTime(s.startTime)]).length;
+          return (
+            <button
+              key={day}
+              className={`tt-day-tab${activeDay === day ? " active" : ""}`}
+              style={activeDay === day ? { borderBottomColor: DAY_COLORS[day], color: DAY_COLORS[day] } : {}}
+              onClick={() => setActiveDay(day)}
+            >
+              {DAY_SHORT[day]}
+              <span className="tt-day-tab-count" style={activeDay === day ? { background: DAY_COLORS[day] } : {}}>
+                {filled}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-          {loading ? (
-            <div className="tt2-loading">
-              <div className="tt2-spinner"></div>
-              <span>Loading classes…</span>
-            </div>
-          ) : filteredCards.length === 0 ? (
-            <div className="tt2-empty">
-              <i className="bx bx-calendar-x"></i>
-              <p>No classes found</p>
-            </div>
-          ) : (
-            <div className="tt2-cards-grid">
-              {filteredCards.map((card) => {
-                const col = CLASS_CARD_COLORS[card.colorIdx];
-                return (
-                  <div className="tt2-class-card" key={`${card.classId}-${card.sectionId}`}>
-                    {/* Card Header */}
-                    <div className="tt2-card-header" style={{ background: col.bg }}>
-                      <div className="tt2-card-avatar" style={{ background: col.badge }}>
-                        {card.className}
-                      </div>
-                      <div className="tt2-card-header-info">
-                        <span className="tt2-card-title" style={{ color: col.text }}>
-                          Class {card.className}
-                        </span>
-                        <span className="tt2-card-section" style={{ color: col.text, opacity: 0.85 }}>
-                          Section {card.sectionName}
-                        </span>
-                      </div>
-                      <div className="tt2-card-badge" style={{ background: col.badge, color: col.text }}>
-                        <i className="bx bx-calendar-week"></i>
-                        {days.length}d
-                      </div>
-                    </div>
-
-                    {/* Card Body */}
-                    <div className="tt2-card-body">
-                      <div className="tt2-card-stat">
-                        <i className="bx bx-time-five"></i>
-                        <span>{card.periodsPerDay} periods/day</span>
-                      </div>
-                      <div className="tt2-card-stat">
-                        <i className="bx bxs-book"></i>
-                        <span>{card.subjectCount} subjects</span>
-                      </div>
-                      <div className="tt2-card-stat">
-                        <i className="bx bx-calendar"></i>
-                        <span>{days.length} days/week</span>
-                      </div>
-                      <div className="tt2-card-stat">
-                        <i className="bx bxs-user-badge"></i>
-                        <span>Class Teacher</span>
-                      </div>
-                    </div>
-
-                    {/* Day pills */}
-                    <div className="tt2-card-days">
-                      {days.map((d) => (
-                        <span key={d} className="tt2-day-pill">{DAY_SHORT[d] ?? d.slice(0, 3)}</span>
-                      ))}
-                    </div>
-
-                    {/* Footer */}
-                    <div className="tt2-card-footer">
-                      <button className="tt2-view-btn" onClick={() => openDetail(card)}>
-                        <i className="bx bx-calendar-check"></i>
-                        View Timetable
-                      </button>
-                    </div>
+      {slots.length === 0 ? (
+        <div className="tt-empty"><i className="bx bx-time-five"></i><p>No period slots configured yet.</p></div>
+      ) : (
+        <div className="tt-ro-periods">
+          {slots.map(slot => {
+            const row = gridMap[activeDay]?.[normTime(slot.startTime)];
+            const accent = DAY_COLORS[activeDay];
+            return (
+              <div key={slot.id} className={`tt-ro-period${row ? " filled" : " empty"}`}>
+                <div className="tt-ro-period-num" style={{ background: accent }}>P{slot.label}</div>
+                <div className="tt-ro-period-time">{slot.startTime}{slot.endTime ? ` – ${slot.endTime}` : ""}</div>
+                {row ? (
+                  <div className="tt-ro-period-info" style={{ borderLeftColor: accent }}>
+                    <div className="tt-ro-subject"><i className="bx bxs-book" style={{ color: accent }}></i><span>{row.subject ?? row.subjectName ?? "—"}</span></div>
+                    {(row.teacher ?? row.teacherName ?? row.staffName) && (
+                      <div className="tt-ro-teacher"><i className="bx bxs-user"></i><span>{row.teacher ?? row.teacherName ?? row.staffName}</span></div>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </>
+                ) : (
+                  <div className="tt-ro-period-free"><i className="bx bx-minus-circle"></i><span>Free Period</span></div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
-
-      {/* ── Detail View ── */}
-      {view === "detail" && selectedClass && (
-        <DetailView
-          selectedClass={selectedClass}
-          days={days}
-          slots={slots}
-          subjects={subjects}
-          gridByDay={gridByDay}
-          loading={ttLoading}
-          darkMode={darkMode}
-        />
-      )}
+      <ToastContainer position="top-right" autoClose={2000} hideProgressBar={false} />
     </div>
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   DETAIL VIEW
-═══════════════════════════════════════════════════════════ */
-function DetailView({ selectedClass, days, slots, subjects, gridByDay, loading, darkMode }) {
-  const [openDays, setOpenDays] = useState(() => {
-    const s = new Set();
-    s.add(days[0]);
-    return s;
-  });
-  const [daySearch, setDaySearch] = useState("");
+function StaffTimetable() {
+  const token = getToken();
+  const staffName = getUserData("staffName") || "Teacher";
+  const classId = getUserData("classId") || "0";
+  const [slots, setSlots] = useState([]);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleDay = (day) => {
-    setOpenDays((prev) => {
-      const next = new Set(prev);
-      next.has(day) ? next.delete(day) : next.add(day);
-      return next;
+  React.useEffect(() => {
+    if (!token) { setLoading(false); return; }
+    (async () => {
+      setLoading(true);
+      try {
+        const [slotRes, ttRes] = await Promise.all([
+          getPeriodSlot(token).catch(() => null),
+          getStaffTimetable({ dayId: 0 }, token).catch(() => null),
+        ]);
+        setSlots(mapSlots(slotRes));
+        setRows(Array.isArray(ttRes?.data) ? ttRes.data : Array.isArray(ttRes) ? ttRes : []);
+      } finally { setLoading(false); }
+    })();
+  }, [token, classId]);
+
+  if (loading) return <div className="tt-root"><div className="tt-loading"><div className="tt-spinner"></div><span>Loading…</span></div></div>;
+  return <ReadOnlyGrid rows={rows} slots={slots} title="My Timetable" subtitle={`${staffName} · ${rows.length} periods assigned`} />;
+}
+
+function StudentTimetable() {
+  const token = getToken();
+  const classId = getUserData("classId") || "0";
+  const sectionId = getUserData("sectionId") || "0";
+  const studentName = getUserData("studentName") || "Student";
+  const [slots, setSlots] = useState([]);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    if (!token) { setLoading(false); return; }
+    (async () => {
+      setLoading(true);
+      try {
+        const [slotRes, ttRes] = await Promise.all([
+          getPeriodSlot(token).catch(() => null),
+          getTimeTable({ classId: Number(classId), sectionId: Number(sectionId) }, token).catch(() => null),
+        ]);
+        setSlots(mapSlots(slotRes));
+        setRows(Array.isArray(ttRes) ? ttRes : Array.isArray(ttRes?.data) ? ttRes.data : []);
+      } finally { setLoading(false); }
+    })();
+  }, [token, classId, sectionId]);
+
+  if (loading) return <div className="tt-root"><div className="tt-loading"><div className="tt-spinner"></div><span>Loading…</span></div></div>;
+  return <ReadOnlyGrid rows={rows} slots={slots} title="My Timetable" subtitle={`${studentName} · Class ${classId} – Section ${sectionId}`} />;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ADMIN TIMETABLE
+   ─ Grid is ALWAYS built from Period Slot Master (mock data).
+   ─ Zero API calls — verify structure first, then reconnect.
+═══════════════════════════════════════════════════════════ */
+
+/* Mock period slots — replace with API data once structure is verified */
+const MOCK_SLOTS = [
+  { id: 1, startTime: "09:15 AM", endTime: "10:00 AM", slotType: "normal" },
+  { id: 2, startTime: "10:00 AM", endTime: "10:45 AM", slotType: "normal" },
+  { id: 3, startTime: "10:45 AM", endTime: "11:00 AM", slotType: "break" },
+  { id: 4, startTime: "11:00 AM", endTime: "11:45 AM", slotType: "normal" },
+  { id: 5, startTime: "11:45 AM", endTime: "12:30 PM", slotType: "normal" },
+  { id: 6, startTime: "12:30 PM", endTime: "01:15 PM", slotType: "lunch" },
+  { id: 7, startTime: "01:15 PM", endTime: "02:00 PM", slotType: "normal" },
+  { id: 8, startTime: "02:00 PM", endTime: "02:45 PM", slotType: "normal" },
+  { id: 9, startTime: "02:45 PM", endTime: "03:00 PM", slotType: "break" },
+  { id: 10, startTime: "03:00 PM", endTime: "03:45 PM", slotType: "normal" },
+  { id: 11, startTime: "03:45 PM", endTime: "04:30 PM", slotType: "normal" },
+];
+
+const MOCK_SUBJECTS = [
+  { id: 1, name: "Mathematics" },
+  { id: 2, name: "Science" },
+  { id: 3, name: "English" },
+  { id: 4, name: "Tamil" },
+  { id: 5, name: "Social Science" },
+];
+
+const MOCK_STAFF = [
+  { id: 1, name: "Mrs. Priya" },
+  { id: 2, name: "Mr. Kumar" },
+  { id: 3, name: "Mrs. Anitha" },
+  { id: 4, name: "Mr. Raj" },
+];
+
+const MOCK_CLASSES = [
+  { classId: 1, className: "Class 1" },
+  { classId: 2, className: "Class 2" },
+  { classId: 3, className: "Class 3" },
+];
+
+const MOCK_SECTIONS = {
+  1: [{ sectionId: 1, sectionName: "Section A" }, { sectionId: 2, sectionName: "Section B" }],
+  2: [{ sectionId: 3, sectionName: "Section A" }],
+  3: [{ sectionId: 4, sectionName: "Section A" }, { sectionId: 5, sectionName: "Section B" }],
+};
+
+function AdminTimetable() {
+  const [selClassId, setSelClassId] = useState("");
+  const [selSectionId, setSelSectionId] = useState("");
+
+  /* slots built from mock data — always available on load */
+  const slots = mapSlots(MOCK_SLOTS);
+
+  /* grid: { [day]: { [slotId]: { subjectId, staffId, id } } } */
+  const [grid, setGrid] = useState(buildEmptyGrid);
+  const [origGrid, setOrigGrid] = useState(buildEmptyGrid);
+
+  const sections = MOCK_SECTIONS[selClassId] ?? [];
+
+  const handleLoad = () => {
+    if (!selClassId || !selSectionId) {
+      toast.error("Please select Class and Section.");
+      return;
+    }
+    toast.info("Grid structure verified. API will be connected next.");
+  };
+
+  const handleCellChange = (day, slotId, field, value) => {
+    setGrid(prev => {
+      const key = String(slotId);
+      const prevCell = prev?.[day]?.[key] ?? { id: 0, subjectId: "", staffId: "" };
+      return {
+        ...prev,
+        [day]: { ...(prev?.[day] ?? {}), [key]: { ...prevCell, [field]: normalizeFieldValue(value) } },
+      };
     });
   };
 
-  const expandAll   = () => setOpenDays(new Set(days));
-  const collapseAll = () => setOpenDays(new Set());
+  const handleSave = () => {
+    toast.info("Save will be connected after API is restored.");
+  };
 
-  const subjectName = (row) =>
-    row?.subject ?? row?.subjectName ?? "—";
-
-  const teacherName = (row) =>
-    row?.teacher ?? row?.teacherName ?? row?.staffName ?? "—";
-
-  const timeLabel = (slot) =>
-    slot.endTime ? `${slot.startTime} – ${slot.endTime}` : slot.startTime;
-
-  if (loading) {
-    return (
-      <div className="tt2-loading">
-        <div className="tt2-spinner"></div>
-        <span>Loading timetable…</span>
-      </div>
-    );
-  }
+  const handleReset = () => {
+    setGrid(JSON.parse(JSON.stringify(origGrid)));
+    toast.info("Changes reset.");
+  };
 
   return (
-    <div className="tt2-detail">
-      {/* Detail toolbar */}
-      <div className="tt2-detail-toolbar">
-        <div className="tt2-search" style={{ maxWidth: 280 }}>
-          <i className="bx bx-search"></i>
-          <input
-            placeholder="Search subject or teacher…"
-            value={daySearch}
-            onChange={(e) => setDaySearch(e.target.value)}
-          />
-          {daySearch && (
-            <button className="tt2-search-clear" onClick={() => setDaySearch("")}>
-              <i className="bx bx-x"></i>
-            </button>
-          )}
+    <div className="tt-root">
+      {/* Filter bar */}
+      <div className="tt-filter-bar">
+        <div className="tt-filter-group">
+          <label>Class</label>
+          <select value={selClassId} onChange={e => { setSelClassId(e.target.value); setSelSectionId(""); }}>
+            <option value="">— Select Class —</option>
+            {MOCK_CLASSES.map(c => <option key={c.classId} value={c.classId}>{c.className}</option>)}
+          </select>
         </div>
-        <div className="tt2-detail-actions">
-          <button className="tt2-ghost-btn" onClick={expandAll}>
-            <i className="bx bx-expand-alt"></i> Expand All
-          </button>
-          <button className="tt2-ghost-btn" onClick={collapseAll}>
-            <i className="bx bx-collapse-alt"></i> Collapse All
-          </button>
+        <div className="tt-filter-group">
+          <label>Section</label>
+          <select value={selSectionId} onChange={e => setSelSectionId(e.target.value)} disabled={!selClassId}>
+            <option value="">— Select Section —</option>
+            {sections.map(s => <option key={s.sectionId} value={s.sectionId}>{s.sectionName}</option>)}
+          </select>
         </div>
-        {/* Summary pills */}
-        <div className="tt2-stats-pills">
-          {days.map((d) => {
-            const col = DAY_COLORS[d] || DAY_COLORS.Monday;
-            return (
-              <span
-                key={d}
-                className="tt2-pill"
-                style={{ background: col.bg, color: col.accent, cursor: "pointer" }}
-                onClick={() => toggleDay(d)}
-              >
-                {DAY_SHORT[d] ?? d.slice(0, 3)}
-              </span>
-            );
-          })}
-        </div>
+        <button className="tt-load-btn" onClick={handleLoad}>
+          <i className="bx bx-refresh"></i> Load Timetable
+        </button>
       </div>
 
-      {/* Day sections */}
-      <div className="tt2-day-sections">
-        {days.map((day) => {
-          const col     = DAY_COLORS[day] || DAY_COLORS.Monday;
-          const isOpen  = openDays.has(day);
-          const dayGrid = gridByDay[day] || {};
-
-          const periods = slots.filter((slot) => {
-            const row = dayGrid[normTime(slot.startTime)];
-            if (!daySearch.trim()) return true;
-            const q = daySearch.toLowerCase();
-            return (
-              subjectName(row).toLowerCase().includes(q) ||
-              teacherName(row).toLowerCase().includes(q)
-            );
-          });
-
-          const filledCount = slots.filter((s) => dayGrid[normTime(s.startTime)]).length;
-
-          return (
-            <div className="tt2-day-section" key={day}>
-              {/* Day header (sticky) */}
-              <button
-                className={`tt2-day-header${isOpen ? " open" : ""}`}
-                style={{ borderLeftColor: col.accent }}
-                onClick={() => toggleDay(day)}
-              >
-                <div className="tt2-day-header-left">
-                  <span className="tt2-day-dot" style={{ background: col.accent }}></span>
-                  <span className="tt2-day-label">{day}</span>
-                  <span className="tt2-day-count" style={{ background: col.bg, color: col.accent }}>
-                    {filledCount}/{slots.length} periods
-                  </span>
-                </div>
-                <div className="tt2-day-header-right">
-                  <span className="tt2-day-progress-wrap">
-                    <span
-                      className="tt2-day-progress-bar"
-                      style={{
-                        width: `${slots.length ? (filledCount / slots.length) * 100 : 0}%`,
-                        background: col.accent,
-                      }}
-                    ></span>
-                  </span>
-                  <i className={`bx bx-chevron-${isOpen ? "up" : "down"} tt2-chevron`}></i>
-                </div>
-              </button>
-
-              {/* Period cards */}
-              {isOpen && (
-                <div className="tt2-periods-grid">
-                  {periods.map((slot) => {
-                    const row = dayGrid[normTime(slot.startTime)];
-                    const isEmpty = !row;
-                    return (
-                      <div
-                        className={`tt2-period-card${isEmpty ? " empty" : ""}`}
-                        key={slot.id}
-                        style={!isEmpty ? { borderTopColor: col.accent } : {}}
+      {/* Grid — always visible, built from mock period slots */}
+      <div className="tt-grid-scroll">
+        <table className="tt-grid-table">
+          <thead>
+            <tr>
+              <th className="tt-th-day-col">Period<br /><span className="tt-th-day-sub">Slot</span></th>
+              {DAYS.map(day => (
+                <th key={day} className="tt-th-slot" style={{ borderBottomColor: DAY_COLORS[day] }}>
+                  <div className="tt-th-slot-num" style={{ color: DAY_COLORS[day] }}>{day}</div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {slots.map(slot => {
+              /* Break / Lunch / Evening Break rows */
+              if (slot.isBreak) {
+                return (
+                  <tr key={slot.id}>
+                    <td className="tt-td-day" style={{ borderLeftColor: slot.color }}>
+                      <div className="tt-th-slot-num" style={{ color: slot.color }}>{slot.label}</div>
+                      <div className="tt-th-slot-time">{slot.startTime}{slot.endTime ? ` - ${slot.endTime}` : ""}</div>
+                    </td>
+                    {DAYS.map(day => (
+                      <td
+                        key={`${day}-${slot.id}`}
+                        className="tt-td-break"
+                        style={{ background: slot.bg, borderLeftColor: slot.color, borderRightColor: slot.color }}
                       >
-                        <div className="tt2-period-top">
-                          <span className="tt2-period-num" style={!isEmpty ? { background: col.bg, color: col.accent } : {}}>
-                            P{slot.label}
-                          </span>
-                          <span className="tt2-period-time">
-                            <i className="bx bx-time-five"></i>
-                            {timeLabel(slot)}
-                          </span>
-                          {!isEmpty && (
-                            <div className="tt2-period-actions">
-                              <button className="tt2-icon-btn edit" title="Edit">
-                                <i className="bx bx-edit"></i>
-                              </button>
-                              <button className="tt2-icon-btn delete" title="Delete">
-                                <i className="bx bx-trash"></i>
-                              </button>
-                            </div>
-                          )}
+                        <div className="tt-break-cell" style={{ color: slot.color, borderLeftColor: slot.color }}>
+                          <i className="bx bx-coffee"></i>
+                          <span>{slot.label}</span>
                         </div>
+                      </td>
+                    ))}
+                  </tr>
+                );
+              }
 
-                        {isEmpty ? (
-                          <div className="tt2-period-empty-body">
-                            <i className="bx bx-plus-circle"></i>
-                            <span>Free Period</span>
+              /* Normal period rows — always rendered with empty dropdowns */
+              return (
+                <tr key={slot.id}>
+                  <td className="tt-td-day" style={{ borderLeftColor: "#2d3a8c" }}>
+                    <div className="tt-th-slot-num">P{slot.label}</div>
+                    <div className="tt-th-slot-time">{slot.startTime}{slot.endTime ? ` - ${slot.endTime}` : ""}</div>
+                  </td>
+                  {DAYS.map(day => {
+                    const cell = getGridCell(grid, day, slot.id) ?? { id: 0, subjectId: "", staffId: "" };
+                    return (
+                      <td key={`${day}-${slot.id}`} className="tt-td-cell">
+                        <div className="tt-cell-inner">
+                          <select
+                            className="tt-cell-select subject"
+                            value={cell.subjectId}
+                            onChange={e => handleCellChange(day, slot.id, "subjectId", e.target.value)}
+                          >
+                            <option value="">Assign Subject</option>
+                            {MOCK_SUBJECTS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                          </select>
+                          <div className="tt-cell-teacher-row">
+                            <i className="bx bxs-user-circle"></i>
+                            <select
+                              className="tt-cell-select teacher"
+                              value={cell.staffId}
+                              onChange={e => handleCellChange(day, slot.id, "staffId", e.target.value)}
+                            >
+                              <option value="">Assign Teacher</option>
+                              {MOCK_STAFF.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
                           </div>
-                        ) : (
-                          <div className="tt2-period-body">
-                            <div className="tt2-period-subject">
-                              <i className="bx bxs-book" style={{ color: col.accent }}></i>
-                              <span>{subjectName(row)}</span>
-                            </div>
-                            <div className="tt2-period-meta">
-                              <div className="tt2-period-meta-item">
-                                <i className="bx bxs-user"></i>
-                                <span>{teacherName(row)}</span>
-                              </div>
-                              {(row?.classroom ?? row?.room) && (
-                                <div className="tt2-period-meta-item">
-                                  <i className="bx bxs-map-pin"></i>
-                                  <span>{row.classroom ?? row.room}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      </td>
                     );
                   })}
-                </div>
-              )}
-            </div>
-          );
-        })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
+
+      {/* Bottom actions */}
+      <div className="tt-bottom-bar">
+        <div className="tt-note">
+          <i className="bx bx-info-circle"></i>
+          <span><strong>Note:</strong> Using mock data — API will be reconnected after structure is verified.</span>
+        </div>
+        <div className="tt-bottom-actions">
+          <button className="tt-hdr-btn outline" onClick={handleReset}>
+            <i className="bx bx-reset"></i> Reset
+          </button>
+          <button className="tt-hdr-btn primary" onClick={handleSave}>
+            <i className="bx bxs-save"></i> Save Timetable
+          </button>
+        </div>
+      </div>
+
+      <ToastContainer position="top-right" autoClose={2000} hideProgressBar={false} />
     </div>
   );
+}
+
+export default function Timetable() {
+  const role = getUserData("role");
+  if (role === "Staff") return <StaffTimetable />;
+  if (role === "Student") return <StudentTimetable />;
+  return <AdminTimetable />;
 }

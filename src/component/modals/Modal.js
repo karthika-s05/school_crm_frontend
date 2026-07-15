@@ -567,6 +567,8 @@ const Modal = ({
   };
 
 
+  if (!Array.isArray(inputData)) return null;
+
   if (editData) {
     inputData.forEach((obj1) => {
       const fromForm = formData?.[obj1.name];

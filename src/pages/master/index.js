@@ -591,13 +591,7 @@ const Master = () => {
         stationery();
         break;
       case "Period Slot":
-        const {
-          name: Periodname,
-          class: Periodclass,
-          code: Periodcode,
-        } = formData;
-        if (!Periodname || !Periodclass || !Periodcode) {
-          showModalError("Please fill in all required fields for Period Slot.");
+        if (!formData.classId || !formData.startTime || !formData.endTime) {
           toast.error("Please fill in all required fields for Period Slot.");
           return;
         }
@@ -625,26 +619,14 @@ const Master = () => {
         period();
         break;
       case "Class Time Table":
-        const {
-          name: Timename,
-          class: Timeclass,
-          code: Timecode,
-          section: Timesection,
-          driver: Timedriver,
-        } = formData;
         if (
-          !Timename ||
-          !Timeclass ||
-          !Timecode ||
-          !Timesection ||
-          !Timedriver
+          !formData.periodSlotId ||
+          !formData.dayId ||
+          !formData.subjectId ||
+          !formData.classId ||
+          !formData.sectionId
         ) {
-          showModalError(
-            "Please fill in all required fields for Subject Transport."
-          );
-          toast.error(
-            "Please fill in all required fields for Subject Transport."
-          );
+          toast.error("Please fill in all required fields for Class Time Table.");
           return;
         }
         const timeTable = async () => {
@@ -861,6 +843,7 @@ const Master = () => {
             { dayId: 0, classId: 1, sectionId: 1 },
             token
           );
+          console.log("Staff Id response", response);
           setFormData({
             id: response[0].id,
             classId: response[0].classId,
@@ -868,6 +851,7 @@ const Master = () => {
             subjectId: response[0].subjectId,
             periodSlotId: response[0].slotId,
             sectionId: response[0].sectionId,
+            staffId: response[0].staffId,
           });
           setInputData(classTimeTable);
           break;
@@ -1535,7 +1519,7 @@ const Master = () => {
         const getperiodtimeTables = async () => {
           try {
             const response = await getTimeTable(
-              { dayId: 0, classId: 1, sectionId: 1 },
+              { dayId: formData.dayId, classId: 1, sectionId: 1 },
               getToken()
             );
             const list = Array.isArray(response) ? response : [];

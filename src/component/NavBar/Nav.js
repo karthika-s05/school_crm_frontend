@@ -106,9 +106,8 @@ const ADMIN_MENU_GROUPS = [
   {
     title: "Time Table", icon: null,
     items: [
-      { label: "Period Slot",       path: "/admin/periodSlot",     state: "Period Slot" },
-      { label: "Class Time Table",  path: "/admin/classTimetable",     state: "Class Time Table" },
-      { label: "Period Time Table", path: "/admin/periodTimetable",  state: undefined },
+      { label: "Period Slot",      path: "/admin/master",    state: "Period Slot" },
+      { label: "Class Time Table", path: "/admin/timetable", state: undefined },
     ],
   },
   {
@@ -282,6 +281,7 @@ const resolvePageTitle = (pathname, state) => {
   if (pathname.startsWith("/admin/studentinfo"))return { title: "Document Upload",   parent: "Student"    };
   if (pathname.startsWith("/admin/student"))    return { title: "Registration",      parent: "Student"    };
   if (pathname.startsWith("/admin/staff/"))     return { title: "Registration",      parent: "Staff"      };
+  if (pathname === "/admin/timetable")          return { title: "Class Time Table",  parent: "Time Table" };
   if (pathname.startsWith("/admin/transport"))  return { title: "Transport",         parent: "Services"   };
   if (pathname.startsWith("/admin/stationery")) return { title: "Stationery",        parent: "Services"   };
   if (pathname === "/admin/settings")           return { title: "Settings",          parent: "Home"       };
@@ -873,9 +873,6 @@ export default function Nav() {
             <Route path="/admin/class&section"       element={<Master/>} />
             <Route path="/admin/classTeacher"        element={<Master/>}/>
             <Route path="/admin/subjectTeacher"        element={<Master/>}/>
-            <Route path="/admin/periodSlot"       element={<Master/>} />
-            <Route path="/admin/classTimetable"        element={<Master/>}/>
-            <Route path="/admin/periodTimetable"        element={<Master/>}/>
           </Routes>
         </div>
       </main>

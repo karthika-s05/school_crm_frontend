@@ -34,6 +34,12 @@ import {
   LuPenLine,
   LuTrophy,
   LuSettings,
+  LuSquareCheck,
+  LuClipboardCheck,
+  LuCalendarCheck,
+  LuBriefcase,
+  LuPartyPopper,
+  LuFileText,
 } from "react-icons/lu";
 import { MdAssignment, MdAssessment } from "react-icons/md";
 import { PiStudentBold, PiChalkboardTeacherBold } from "react-icons/pi";
@@ -207,6 +213,18 @@ const SUBMENU_ICON_MAP = {
   "Transport":           (p) => <IconSubTransport {...p} />,
   "Assignment Report":   (p) => <SubIcon Icon={MdAssignment} {...p} />,
   "Exam Report":         (p) => <SubIcon Icon={MdAssessment} {...p} />,
+  /* Staff submenu */
+  "Mark Attendance":     (p) => <SubIcon Icon={LuSquareCheck} {...p} />,
+  "View Attendance":     (p) => <SubIcon Icon={LuClipboardList} {...p} />,
+  "My Timetable":        (p) => <SubIcon Icon={LuCalendarDays} {...p} />,
+  "Leave Management":    (p) => <SubIcon Icon={LuBriefcase} {...p} />,
+  "Reports Overview":    (p) => <SubIcon Icon={LuChartBar} {...p} />,
+  "Attendance Report":   (p) => <SubIcon Icon={LuClipboardCheck} {...p} />,
+  "Homework Report":     (p) => <SubIcon Icon={LuNotebookPen} {...p} />,
+  /* Student submenu */
+  "My Attendance":       (p) => <SubIcon Icon={LuCalendarCheck} {...p} />,
+  "Exam Results":        (p) => <SubIcon Icon={LuTrophy} {...p} />,
+  "School Events":       (p) => <SubIcon Icon={LuPartyPopper} {...p} />,
 };
 
 export function SchoolSubMenuIcon({ label, className }) {
@@ -214,17 +232,52 @@ export function SchoolSubMenuIcon({ label, className }) {
   return <Cmp className={className} />;
 }
 
+/* ── Staff & Student menu icons ── */
+
+export function IconAttendance({ className }) {
+  return <MenuIcon Icon={LuSquareCheck} className={className} />;
+}
+
+export function IconHomework({ className }) {
+  return <MenuIcon Icon={LuNotebookPen} className={className} />;
+}
+
+export function IconAssignment({ className }) {
+  return <MenuIcon Icon={LuClipboardCheck} className={className} />;
+}
+
+export function IconLeave({ className }) {
+  return <MenuIcon Icon={LuBriefcase} className={className} />;
+}
+
+export function IconEvents({ className }) {
+  return <MenuIcon Icon={LuPartyPopper} className={className} />;
+}
+
+export function IconProfile({ className }) {
+  return <MenuIcon Icon={LuFileText} className={className} />;
+}
+
 export const MENU_ICON_MAP = {
-  Dashboard: IconDashboard,
-  Student: IconStudent,
-  Staff: IconStaff,
-  Master: IconMaster,
-  Mapping: IconMapping,
-  "Time Table": IconTimetable,
-  Examination: IconExam,
-  Stationery: IconStationery,
-  Transport: IconTransport,
-  Reports: IconReports,
+  /* Admin */
+  Dashboard:      IconDashboard,
+  Student:        IconStudent,
+  Staff:          IconStaff,
+  Master:         IconMaster,
+  Mapping:        IconMapping,
+  "Time Table":   IconTimetable,
+  Examination:    IconExam,
+  Stationery:     IconStationery,
+  Transport:      IconTransport,
+  Reports:        IconReports,
+  /* Staff & Student shared */
+  Attendance:     IconAttendance,
+  Homework:       IconHomework,
+  Assignment:     IconAssignment,
+  Timetable:      IconTimetable,
+  Leave:          IconLeave,
+  Events:         IconEvents,
+  Profile:        IconProfile,
 };
 
 export function SchoolMenuIcon({ name, className }) {

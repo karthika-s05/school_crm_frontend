@@ -246,8 +246,8 @@ export default function Homework() {
       {/*  Page Header  */}
       <div className="mod-header">
         <div>
-          <h2 className="mod-title">Homework</h2>
-          <p className="mod-sub">Manage and track homework assignments for your classes</p>
+          {/* <h2 className="mod-title">Homework</h2>
+          <p className="mod-sub">Manage and track homework assignments for your classes</p> */}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span className="mod-pill blue">
@@ -385,8 +385,8 @@ export default function Homework() {
 
                     <td>
                       <span className="mod-badge mod-badge-blue">
-                        {r.className || `Class ${r.classId || filter.classId}`}
-                        {r.sectionName ? ` – ${r.sectionName}` : ""}
+                        {r.className || `${r.class || filter.class}`}
+                        {r.section ? ` – ${r.section}` : ""}
                       </span>
                     </td>
 
