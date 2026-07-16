@@ -5,7 +5,7 @@ export const handleApiResponse = (res, successMsg) => {
     if (successMsg) toast.success(successMsg);
     return res;
   }
-  toast.error(res?.message || "Request failed");
+  // toast.error(res?.message || "Request failed");
   return null;
 };
 
@@ -22,7 +22,7 @@ export const runApi = async (fn, { successMsg, onSuccess, onError } = {}) => {
       err?.response?.data?.data ||
       err?.message ||
       "Network error";
-    toast.error(typeof msg === "string" ? msg : "Request failed");
+    // toast.error(typeof msg === "string" ? msg : "Request failed");
     if (onError) onError(err);
     return null;
   }

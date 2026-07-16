@@ -43,6 +43,8 @@ export default function Adlogin() {
         setUserData("admissionNo", userData.admissionNo || userData.AdmissionNo || "");
         setUserData("classId", userData.classId || "");
         setUserData("sectionId", userData.sectionId || "");
+        setUserData("className", userData.className || "");
+        setUserData("sectionName", userData.sectionName || "");
       } else {
         setUserData("adminName", userData.adminName || username);
       }

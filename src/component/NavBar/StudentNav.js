@@ -132,8 +132,8 @@ const StudentNav = () => {
 
   const studentName = getUserData("studentName") || "Student";
   const admissionNo = getUserData("admissionNo") || "";
-  const classId     = getUserData("classId")     || "";
-  const sectionId   = getUserData("sectionId")   || "";
+  const className  = getUserData("className")     || "";
+  const sectionName   = getUserData("sectionName")   || "";
 
   const [collapsed,    setCollapsed]    = useState(false);
   const [openMenu,     setOpenMenu]     = useState(null);
@@ -366,7 +366,7 @@ const StudentNav = () => {
                 <div className="crm-profile-menu">
                   <div className="crm-profile-menu-user">
                     <h4>{studentName}</h4>
-                    <p>Class {classId} – Section {sectionId}</p>
+                    <p>Class {className} - Section {sectionName}</p>
                   </div>
                   <button type="button" onClick={logout}><IconLogout /> Logout</button>
                 </div>

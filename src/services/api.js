@@ -2787,9 +2787,6 @@ export const getExamReportFilters = async (body, token) => {
   return response.data;
 };
 
-/* ─────────────────────────────────────────────────────────
-   LEAVE MANAGEMENT
-───────────────────────────────────────────────────────── */
 
 /** GET /leave/get_leaveType — fetch all leave type options */
 export const getLeaveTypes = async (token) => {
@@ -2891,3 +2888,10 @@ export const getLeaveTypes = async (token) => {
 //     throw error;
 //   }
 // };
+
+export const getMyStaffLeave = (token) =>
+  axios.get(`${process.env.REACT_APP_DAILY_URL}/leave/my_staff_leave`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });

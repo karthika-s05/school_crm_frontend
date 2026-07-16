@@ -247,8 +247,8 @@
   font-size: 12px;
   font-weight: 700;
 }
-.sp-result-pill.pass    { background: #dcfce7; color: #16a34a; }
-.sp-result-pill.fail    { background: #fee2e2; color: #ef4444; }
+.sp-result-pill.accepted   { background: #dcfce7; color: #16a34a; }
+.sp-result-pill.rejected    { background: #fee2e2; color: #ef4444; }
 .sp-result-pill.pending { background: #fef3c7; color: #d97706; }
 
 /* ── Class Teacher card ── */

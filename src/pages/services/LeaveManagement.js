@@ -4,6 +4,7 @@ import {
   createStudentLeave,
   getLeaveTypes,
   getStaffLeave,
+  getMyStaffLeave,
   getStudentLeave,
   updateStaffLeaveStatus,
   updateStudentLeaveStatus,
@@ -15,25 +16,25 @@ import "react-toastify/dist/ReactToastify.css";
 import "../../component/modules.css";
 import "./leave.css";
 
-/* ─── Constants ─────────────────────────────────────────── */
+/* ─ Constants ─ */
 const EMPTY_FORM = {
   startDate: "", endDate: "", reason: "",
   leaveTypeId: "", leaveTime: "Full day",
 };
 
 const STATUS_COLOR = {
-  Approved: "mod-badge-green",
-  Rejected:  "mod-badge-red",
-  Pending:   "mod-badge-yellow",
+  accepted: "mod-badge-green",
+  rejected: "mod-badge-red",
+  pending: "mod-badge-yellow",
 };
 
 const STATUS_ICON = {
-  Approved: "bx-check-circle",
-  Rejected:  "bx-x-circle",
-  Pending:   "bx-time-five",
+  Accepted: "bx-check-circle",
+  Rejected: "bx-x-circle",
+  Pending: "bx-time-five",
 };
 
-/* ─── Date helpers ───────────────────────────────────────── */
+/* ─ Date helpers ─ */
 const calcDays = (start, end, leaveTime) => {
   if (!start || !end) return 0;
   const s = new Date(start);
@@ -50,7 +51,7 @@ const fmt = (dateStr) => {
   } catch { return dateStr; }
 };
 
-/* ─── Apply Leave Form ───────────────────────────────────── */
+/* ─ Apply Leave Form ─ */
 function ApplyLeaveForm({ isStaff, leaveTypes, onSubmit, onCancel, submitting }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const days = calcDays(form.startDate, form.endDate, form.leaveTime);
@@ -151,10 +152,10 @@ function ApplyLeaveForm({ isStaff, leaveTypes, onSubmit, onCancel, submitting })
   );
 }
 
-/* ─── Approve / Reject inline buttons ───────────────────── */
+/* ─ Approve / Reject inline buttons ─ */
 function StatusActions({ row, onUpdate, type }) {
   const [busy, setBusy] = useState(false);
-  if (row.status === "Approved" || row.status === "Rejected") return null;
+  if (row.status === "Accepted" || row.status === "Rejected") return null;
 
   const handle = async (status) => {
     const remarks = window.prompt(`Enter remarks for ${status.toLowerCase()} leave (optional):`, "") ?? "";
@@ -170,9 +171,9 @@ function StatusActions({ row, onUpdate, type }) {
         className="lv-action-btn approve"
         disabled={busy}
         title="Approve"
-        onClick={() => handle("Approved")}
+        onClick={() => handle("Accepted")}
       >
-        <i className="bx bx-check"></i> Approve
+        <i className="bx bx-check"></i> Accept
       </button>
       <button
         className="lv-action-btn reject"
@@ -186,7 +187,7 @@ function StatusActions({ row, onUpdate, type }) {
   );
 }
 
-/* ─── Leave Table ────────────────────────────────────────── */
+/* ─ Leave Table  */
 function LeaveTable({ rows, loading, showActions, onUpdate, type, emptyMsg }) {
   if (loading) return <div className="mod-loading"><div className="mod-spinner"></div> Loading…</div>;
   if (!rows.length) return <div className="mod-empty"><i className="bx bx-calendar-x"></i><p>{emptyMsg}</p></div>;
@@ -224,7 +225,7 @@ function LeaveTable({ rows, loading, showActions, onUpdate, type, emptyMsg }) {
                 </div>
               </td>
               <td>{fmt(row.startDate || row.fromDate)}</td>
-              <td>{fmt(row.endDate   || row.toDate)}</td>
+              <td>{fmt(row.endDate || row.toDate)}</td>
               <td><span className="lv-days-chip">{row.noOfDays ?? "—"}</span></td>
               <td className="lv-reason-cell" title={row.reason || ""}>{row.reason || "—"}</td>
               <td>{row.leaveType || row.leaveTypeName || "—"}</td>
@@ -248,7 +249,7 @@ function LeaveTable({ rows, loading, showActions, onUpdate, type, emptyMsg }) {
   );
 }
 
-/* ─── Stat Card ──────────────────────────────────────────── */
+/* ─ Stat Card  */
 function StatCard({ icon, label, value, color }) {
   return (
     <div className="mod-stat-card">
@@ -261,227 +262,264 @@ function StatCard({ icon, label, value, color }) {
   );
 }
 
-/* ═════════════════════════════════════════════════════════
-   MAIN COMPONENT — role-based rendering
-═════════════════════════════════════════════════════════ */
 export default function LeaveManagement() {
   const token = getToken();
-  const role  = getUserData("role");     // "Admin" | "Staff" | "Student"
-  const isAdmin   = role === "Admin";
-  const isStaff   = role === "Staff" || role === "Admin"; // Admin also uses staff leave API
+  const role = getUserData("role");
+  const isAdmin = role === "Admin";
+  const isStaff = role === "Staff" || role === "Admin";
   const isStudent = role === "Student";
 
-  /* ── State ── */
-  const [tab,           setTab]           = useState(isStudent ? "myLeave" : isAdmin ? "staffLeaves" : "studentLeaves");
-  const [leaveTypes,    setLeaveTypes]    = useState([]);
+  /*  State  */
+  const [tab, setTab] = useState(isStudent ? "myLeave" : isAdmin ? "staffLeaves" : "studentLeaves");
+  const [leaveTypes, setLeaveTypes] = useState([]);
+  const [myLeaves, setMyLeaves] = useState([]);
   const [studentLeaves, setStudentLeaves] = useState([]);
-  const [staffLeaves,   setStaffLeaves]   = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [submitting,    setSubmitting]    = useState(false);
-  const [showForm,      setShowForm]      = useState(false);
+  const [staffLeaves, setStaffLeaves] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
-  /* ── Load data ── */
+  useEffect(() => {
+    console.log("myLeaves State:", myLeaves);
+  }, [myLeaves]);
+
+  /*  Load data  */
   const loadData = useCallback(async () => {
     setLoading(true);
+
     const calls = [
-      runApi(() => getLeaveTypes(token), { onSuccess: (res) => setLeaveTypes(res.data || []) }),
+      runApi(() => getLeaveTypes(token), {
+        onSuccess: (res) => setLeaveTypes(res.data || []),
+      }),
     ];
+
     if (!isStudent) {
+      // Student Leave Requests (for Staff/Admin)
       calls.push(
-        runApi(() => getStudentLeave(token, 0, 0), { onSuccess: (res) => setStudentLeaves(res.data || []) }),
-        runApi(() => getStaffLeave(token),          { onSuccess: (res) => setStaffLeaves(res.data   || []) }),
+        runApi(() => getStudentLeave(token, 0, 0), {
+          onSuccess: (res) => setStudentLeaves(res.data || []),
+        })
       );
-    } else {
-      // Students see only their own leave (handled by JWT in backend)
+
+      // Staff Leave Requests (Admin view)
       calls.push(
-        runApi(() => getStudentLeave(token, 0, 0), { onSuccess: (res) => setStudentLeaves(res.data || []) }),
+        runApi(() => getStaffLeave(token), {
+          onSuccess: (res) => setStaffLeaves(res.data || []),
+        })
       );
-    }
-    await Promise.all(calls);
-    setLoading(false);
+
+      // Logged-in Staff/Admin Leave History
+      calls.push(
+        runApi(() => getMyStaffLeave(token), {
+          onSuccess: (res) => {
+            console.log("My Staff Leave API:", res);
+            setMyLeaves(res.data || []);
+          },
+        })
+      );
+} else {
+  // Student Leave History
+  calls.push(
+    runApi(() => getStudentLeave(token, 0, 0), {
+      onSuccess: (res) => {
+        setStudentLeaves(res.data || []);
+        setMyLeaves(res.data || []);
+      },
+    })
+  );
+}
+
+await Promise.all(calls);
+setLoading(false);
   }, [token, isStudent]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+useEffect(() => { loadData(); }, [loadData]);
 
-  /* ── Status update ── */
-  const handleStatusUpdate = async (id, status, remarks, type) => {
-    const fn = type === "student"
-      ? () => updateStudentLeaveStatus({ id, status, remarks }, token)
-      : () => updateStaffLeaveStatus({ id, status, remarks }, token);
-    await runApi(fn, { successMsg: `Leave ${status.toLowerCase()} successfully`, onSuccess: loadData });
-  };
+/*  Status update  */
+const handleStatusUpdate = async (id, status, remarks, type) => {
+  const fn = type === "student"
+    ? () => updateStudentLeaveStatus({ id, status, remarks }, token)
+    : () => updateStaffLeaveStatus({ id, status, remarks }, token);
+  await runApi(fn, { successMsg: `Leave ${status.toLowerCase()} successfully`, onSuccess: loadData });
+};
 
-  /* ── Submit leave application ── */
-  const handleSubmit = async (form) => {
-    setSubmitting(true);
-    const body = isStudent
-      ? { startDate: form.startDate, endDate: form.endDate, reason: form.reason }
-      : { startDate: form.startDate, endDate: form.endDate, reason: form.reason,
-          leaveTypeId: Number(form.leaveTypeId), leaveTime: form.leaveTime };
-    const fn = isStudent ? () => createStudentLeave(body, token) : () => createStaffLeave(body, token);
-    await runApi(fn, {
-      successMsg: "Leave request submitted successfully!",
-      onSuccess: () => { setShowForm(false); loadData(); },
-    });
-    setSubmitting(false);
-  };
-
-  /* ── Stats ── */
-  const statsOf = (list) => ({
-    total:    list.length,
-    pending:  list.filter(r => (r.status || "Pending") === "Pending").length,
-    approved: list.filter(r => r.status === "Approved").length,
-    rejected: list.filter(r => r.status === "Rejected").length,
+/*  Submit leave application  */
+const handleSubmit = async (form) => {
+  setSubmitting(true);
+  const body = isStudent
+    ? { startDate: form.startDate, endDate: form.endDate, reason: form.reason }
+    : {
+      startDate: form.startDate, endDate: form.endDate, reason: form.reason,
+      leaveTypeId: Number(form.leaveTypeId), leaveTime: form.leaveTime
+    };
+  const fn = isStudent ? () => createStudentLeave(body, token) : () => createStaffLeave(body, token);
+  await runApi(fn, {
+    successMsg: "Leave request submitted successfully!",
+    onSuccess: () => { setShowForm(false); loadData(); },
   });
+  setSubmitting(false);
+};
 
-  const currentList = tab === "staffLeaves" ? staffLeaves : studentLeaves;
-  const stats = statsOf(currentList);
+/*  Stats  */
+const statsOf = (list) => ({
+  total: list.length,
+  pending: list.filter(r => (r.status || "pending") === "pending").length,
+  accepted: list.filter(r => r.status === "accepted").length,
+  rejected: list.filter(r => r.status === "rejected").length,
+});
 
-  /* ── Tab config ── */
-  const tabs = isStudent
-    ? [{ id: "myLeave",      label: "My Leave History", icon: "bx-history" }]
-    : isAdmin
+const currentList = tab === "staffLeaves" ? staffLeaves : studentLeaves;
+const stats = statsOf(currentList);
+
+/*  Tab config  */
+const tabs = isStudent
+  ? [{ id: "myLeave", label: "My Leave History", icon: "bx-history" }]
+  : isAdmin
     ? [
-        { id: "staffLeaves", label: "Staff Leaves",     icon: "bx-briefcase" },
-        { id: "myLeave",     label: "Apply My Leave",   icon: "bx-calendar-plus" },
-      ]
+      { id: "staffLeaves", label: "Staff Leaves", icon: "bx-briefcase" },
+      { id: "myLeave", label: "Apply My Leave", icon: "bx-calendar-plus" },
+    ]
     : [
-        { id: "studentLeaves", label: "Student Leaves", icon: "bx-user" },
-        { id: "myLeave",       label: "My Leave",       icon: "bx-calendar-plus" },
-      ];
+      { id: "studentLeaves", label: "Student Leaves", icon: "bx-user" },
+      { id: "myLeave", label: "My Leave", icon: "bx-calendar-plus" },
+    ];
 
-  return (
-    <div className="mod-wrap">
-      {/* ── Header ── */}
-      <div className="mod-header">
-        <div>
-          {/* <h2 className="mod-title">
+return (
+  <div className="mod-wrap">
+    {/*  Header  */}
+    <div className="mod-header">
+      <div>
+        {/* <h2 className="mod-title">
             <i className="bx bx-calendar-check" style={{ color: "#2D3A8C", marginRight: 8 }}></i>
             Leave Management
           </h2> */}
-          {/* <p className="mod-sub">
+        {/* <p className="mod-sub">
             {isAdmin && "Manage staff leave requests and apply your own leave"}
             {role === "Staff" && "Manage student leave requests and apply your own leave"}
             {isStudent && "Apply for leave and view your leave history"}
           </p> */}
-        </div>
-        <div className="mod-pills">
-          {!isStudent && tab !== "myLeave" && (
-            <>
-              <span className="mod-pill yellow"><i className="bx bx-time"></i>{stats.pending} Pending</span>
-              <span className="mod-pill green"><i className="bx bx-check"></i>{stats.approved} Approved</span>
-              <span className="mod-pill orange"><i className="bx bx-x"></i>{stats.rejected} Rejected</span>
-            </>
-          )}
-          <button className="mod-btn mod-btn-primary" onClick={() => setShowForm((p) => !p)}>
-            <i className={`bx ${showForm ? "bx-x" : "bx-plus"}`}></i>
-            {showForm ? "Cancel" : "Apply Leave"}
-          </button>
-        </div>
       </div>
-
-      {/* ── Stat Row (non-student list views) ── */}
-      {!isStudent && tab !== "myLeave" && (
-        <div className="mod-stat-row">
-          <StatCard icon={<i className="bx bx-list-ul"></i>}     label="Total Requests" value={stats.total}    color="#2D3A8C" />
-          <StatCard icon={<i className="bx bx-time-five"></i>}    label="Pending"        value={stats.pending}  color="#d97706" />
-          <StatCard icon={<i className="bx bx-check-circle"></i>} label="Approved"       value={stats.approved} color="#16a34a" />
-          <StatCard icon={<i className="bx bx-x-circle"></i>}     label="Rejected"       value={stats.rejected} color="#ef4444" />
-        </div>
-      )}
-
-      {/* ── Tab Bar ── */}
-      <div className="mod-filter-card" style={{ padding: "10px 16px" }}>
-        <div className="mod-tabs">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              className={`mod-tab${tab === t.id ? " active" : ""}`}
-              onClick={() => { setTab(t.id); setShowForm(false); }}
-            >
-              <i className={`bx ${t.icon}`}></i> {t.label}
-            </button>
-          ))}
-        </div>
-        <button className="mod-btn mod-btn-ghost" style={{ marginLeft: "auto" }} onClick={loadData}>
-          <i className="bx bx-refresh"></i> Refresh
+      <div className="mod-pills">
+        {!isStudent && tab !== "myLeave" && (
+          <>
+            <span className="mod-pill yellow"><i className="bx bx-time"></i>{stats.pending} Pending</span>
+            <span className="mod-pill green"><i className="bx bx-check"></i>{stats.accepted} Accepted</span>
+            <span className="mod-pill orange"><i className="bx bx-x"></i>{stats.rejected} Rejected</span>
+          </>
+        )}
+        <button className="mod-btn mod-btn-primary" onClick={() => setShowForm((p) => !p)}>
+          <i className={`bx ${showForm ? "bx-x" : "bx-plus"}`}></i>
+          {showForm ? "Cancel" : "Apply Leave"}
         </button>
       </div>
-
-      {/* ── Apply Leave Form ── */}
-      {showForm && (
-        <ApplyLeaveForm
-          isStaff={!isStudent}
-          leaveTypes={leaveTypes}
-          onSubmit={handleSubmit}
-          onCancel={() => setShowForm(false)}
-          submitting={submitting}
-        />
-      )}
-
-      {/* ── Content ── */}
-      {tab === "myLeave" ? (
-        /* My Leave History */
-        <div className="mod-table-card">
-          <div className="mod-table-toolbar">
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
-              <i className="bx bx-history" style={{ marginRight: 6 }}></i> My Leave History
-            </span>
-            <span className="mod-pill blue"><i className="bx bx-calendar"></i>{(isStudent ? studentLeaves : staffLeaves).length} records</span>
-          </div>
-          <div className="mod-table-body-wrap">
-            <LeaveTable
-              rows={isStudent ? studentLeaves : staffLeaves}
-              loading={loading}
-              showActions={false}
-              type={isStudent ? "student" : "staff"}
-              emptyMsg="No leave requests found. Click 'Apply Leave' to submit one."
-            />
-          </div>
-        </div>
-      ) : tab === "staffLeaves" ? (
-        /* Admin view — Staff Leave list + Approve/Reject */
-        <div className="mod-table-card">
-          <div className="mod-table-toolbar">
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
-              <i className="bx bx-briefcase" style={{ marginRight: 6 }}></i> Staff Leave Requests
-            </span>
-            <span className="mod-pill blue"><i className="bx bx-list-ul"></i>{staffLeaves.length} records</span>
-          </div>
-          <div className="mod-table-body-wrap">
-            <LeaveTable
-              rows={staffLeaves}
-              loading={loading}
-              showActions={true}
-              onUpdate={handleStatusUpdate}
-              type="staff"
-              emptyMsg="No staff leave requests found."
-            />
-          </div>
-        </div>
-      ) : (
-        /* Staff view — Student Leave list + Approve/Reject */
-        <div className="mod-table-card">
-          <div className="mod-table-toolbar">
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
-              <i className="bx bx-user" style={{ marginRight: 6 }}></i> Student Leave Requests
-            </span>
-            <span className="mod-pill blue"><i className="bx bx-list-ul"></i>{studentLeaves.length} records</span>
-          </div>
-          <div className="mod-table-body-wrap">
-            <LeaveTable
-              rows={studentLeaves}
-              loading={loading}
-              showActions={true}
-              onUpdate={handleStatusUpdate}
-              type="student"
-              emptyMsg="No student leave requests found."
-            />
-          </div>
-        </div>
-      )}
-
-      <ToastContainer position="top-right" autoClose={3000} />
     </div>
-  );
+
+    {/*  Stat Row (non-student list views)  */}
+    {!isStudent && tab !== "myLeave" && (
+      <div className="mod-stat-row">
+        <StatCard icon={<i className="bx bx-list-ul"></i>} label="Total Requests" value={stats.total} color="#2D3A8C" />
+        <StatCard icon={<i className="bx bx-time-five"></i>} label="Pending" value={stats.pending} color="#d97706" />
+        <StatCard icon={<i className="bx bx-check-circle"></i>} label="Accepted" value={stats.accepted} color="#16a34a" />
+        <StatCard icon={<i className="bx bx-x-circle"></i>} label="Rejected" value={stats.rejected} color="#ef4444" />
+      </div>
+    )}
+
+    {/*  Tab Bar  */}
+    <div className="mod-filter-card" style={{ padding: "10px 16px" }}>
+      <div className="mod-tabs">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            className={`mod-tab${tab === t.id ? " active" : ""}`}
+            onClick={() => { setTab(t.id); setShowForm(false); }}
+          >
+            <i className={`bx ${t.icon}`}></i> {t.label}
+          </button>
+        ))}
+      </div>
+      <button className="mod-btn mod-btn-ghost" style={{ marginLeft: "auto" }} onClick={loadData}>
+        <i className="bx bx-refresh"></i> Refresh
+      </button>
+    </div>
+
+    {/*  Apply Leave Form  */}
+    {showForm && (
+      <ApplyLeaveForm
+        isStaff={!isStudent}
+        leaveTypes={leaveTypes}
+        onSubmit={handleSubmit}
+        onCancel={() => setShowForm(false)}
+        submitting={submitting}
+      />
+    )}
+
+    {/*  Content  */}
+    {tab === "myLeave" ? (
+      <div className="mod-table-card">
+        <div className="mod-table-toolbar">
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
+            <i className="bx bx-history" style={{ marginRight: 6 }}></i>
+            My Leave History
+          </span>
+
+          <span className="mod-pill blue">
+            <i className="bx bx-calendar"></i>
+            {(isStudent ? studentLeaves : myLeaves).length} records
+          </span>
+        </div>
+
+        <div className="mod-table-body-wrap">
+          <LeaveTable
+            rows={myLeaves}
+            loading={loading}
+            showActions={false}
+            emptyMsg="No leave history found."
+          />
+        </div>
+      </div>
+    ) : tab === "staffLeaves" ? (
+      /* Admin view — Staff Leave list + Approve/Reject */
+      <div className="mod-table-card">
+        <div className="mod-table-toolbar">
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
+            <i className="bx bx-briefcase" style={{ marginRight: 6 }}></i> Staff Leave Requests
+          </span>
+          <span className="mod-pill blue"><i className="bx bx-list-ul"></i>{staffLeaves.length} records</span>
+        </div>
+        <div className="mod-table-body-wrap">
+          <LeaveTable
+            rows={staffLeaves}
+            loading={loading}
+            showActions={true}
+            onUpdate={handleStatusUpdate}
+            type="staff"
+            emptyMsg="No staff leave requests found."
+          />
+        </div>
+      </div>
+    ) : (
+      /* Staff view — Student Leave list + Approve/Reject */
+      <div className="mod-table-card">
+        <div className="mod-table-toolbar">
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
+            <i className="bx bx-user" style={{ marginRight: 6 }}></i> Student Leave Requests
+          </span>
+          <span className="mod-pill blue"><i className="bx bx-list-ul"></i>{studentLeaves.length} records</span>
+        </div>
+        <div className="mod-table-body-wrap">
+          <LeaveTable
+            rows={studentLeaves}
+            loading={loading}
+            showActions={true}
+            onUpdate={handleStatusUpdate}
+            type="student"
+            emptyMsg="No student leave requests found."
+          />
+        </div>
+      </div>
+    )}
+
+    <ToastContainer position="top-right" autoClose={3000} />
+  </div>
+);
 }

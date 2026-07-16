@@ -176,7 +176,7 @@ const StudentPortal = () => {
       <div className="sp-body">
         {loading && <div className="sp-loading"><i className="bx bx-loader-alt bx-spin"></i> Loading...</div>}
 
-        {/* ── Attendance ── */}
+        {/*  Attendance  */}
         {!loading && activeTab === "Attendance" && (
           <div>
             {myAttRow ? (
@@ -226,7 +226,7 @@ const StudentPortal = () => {
           </div>
         )}
 
-        {/* ── Marks ── */}
+        {/*  Marks  */}
         {!loading && activeTab === "Marks" && (
           <div>
             {marks.length === 0 ? (
@@ -268,7 +268,7 @@ const StudentPortal = () => {
           </div>
         )}
 
-        {/* ── Homework ── */}
+        {/*  Homework  */}
         {!loading && activeTab === "Homework" && (
           <div>
             {homework.length === 0 ? (
@@ -295,7 +295,7 @@ const StudentPortal = () => {
           </div>
         )}
 
-        {/* ── Assignments ── */}
+        {/*  Assignments  */}
         {!loading && activeTab === "Assignments" && (
           <div>
             {assignments.length === 0 ? (
@@ -331,7 +331,7 @@ const StudentPortal = () => {
           </div>
         )}
 
-        {/* ── Exams ── */}
+        {/*  Exams  */}
         {!loading && activeTab === "Exams" && (
           <div>
             {exams.length === 0 && portions.length === 0 ? (
@@ -388,7 +388,7 @@ const StudentPortal = () => {
           </div>
         )}
 
-        {/* ── Timetable ── */}
+        {/*  Timetable  */}
         {!loading && activeTab === "Timetable" && (
           <div>
             {timetable.length === 0 ? (
@@ -416,7 +416,7 @@ const StudentPortal = () => {
           </div>
         )}
 
-        {/* ── Events ── */}
+        {/*  Events  */}
         {!loading && activeTab === "Events" && (
           <div>
             {events.length === 0 ? (
@@ -443,7 +443,7 @@ const StudentPortal = () => {
           </div>
         )}
 
-        {/* ── Class Teacher ── */}
+        {/*  Class Teacher  */}
         {!loading && activeTab === "ClassTeacher" && (
           <div>
             {!classTeacher ? (
@@ -468,7 +468,7 @@ const StudentPortal = () => {
           </div>
         )}
 
-        {/* ── Subject Teachers ── */}
+        {/*  Subject Teachers  */}
         {!loading && activeTab === "SubjectTeachers" && (
           <div>
             {subjectTeachers.length === 0 ? (
@@ -494,7 +494,7 @@ const StudentPortal = () => {
           </div>
         )}
 
-        {/* ── Leave ── */}
+        {/*  Leave  */}
         {!loading && activeTab === "Leave" && (
           <div>
             {/* Apply Leave Form */}
@@ -553,8 +553,8 @@ const StudentPortal = () => {
                   </thead>
                   <tbody>
                     {leaves.map((lv, i) => {
-                      const status = lv.status || "Pending";
-                      const statusClass = status === "Approved" ? "pass" : status === "Rejected" ? "fail" : "pending";
+                      const status = lv.status || "pending";
+                      // const statusClass = status === "accepted" ? "pass" : status === "rejected" ? "fail" : "pending";
                       return (
                         <tr key={i}>
                           <td>{i + 1}</td>
@@ -562,7 +562,7 @@ const StudentPortal = () => {
                           <td>{lv.fromDate}</td>
                           <td>{lv.toDate}</td>
                           <td>{lv.reason}</td>
-                          <td><span className={`sp-result-pill ${statusClass}`}>{status}</span></td>
+                          <td><span className={`sp-result-pill ${status}`}>{status}</span></td>
                         </tr>
                       );
                     })}
