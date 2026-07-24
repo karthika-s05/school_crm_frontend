@@ -79,7 +79,6 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
-  PERIOD_SLOT_DUMMY,
   CLASS_TIMETABLE_DUMMY,
   mapPeriodSlotRows,
   mapClassTimetableRows,
@@ -96,6 +95,8 @@ const Master = () => {
   const [editData, setEditData] = useState();
   const [inputData, setInputData] = useState();
   const [load, setLoad] = useState(true);
+  /** Bumps to re-fetch master lists after save/delete without looping on `load`. */
+  const [refreshKey, setRefreshKey] = useState(0);
   console.log("datsdsdsda", inputData);
 
   const openModal = () => {
@@ -595,25 +596,22 @@ const Master = () => {
           toast.error("Please fill in all required fields for Period Slot.");
           return;
         }
-        console.log(formData);
         const period = async () => {
           try {
-            console.log("hello", formData);
-            const response = await postTimeSlot(formData, getToken());
-            console.log(response.data);
-            showMessage(response);
+            const payload = { ...formData, id: formData.id ?? 0 };
+            const response = await postTimeSlot(payload, getToken());
             if (response.status === "error" || response.status === "Error") {
               toast.error(response.message);
-            } else if (
-              response.status === "success" ||
-              response.status === "Success"
-            ) {
-              toast.success(response.message);
+              showMessage(response);
+              return;
             }
+            toast.success(response.message || "Period slot saved successfully");
             showMessage(response);
-            setLoad(false);
+            closeModal();
+            setRefreshKey((k) => k + 1);
           } catch (err) {
             console.log(err);
+            toast.error(err?.response?.data?.message || err?.message || "Failed to save period slot");
           }
         };
         period();
@@ -1193,20 +1191,17 @@ const Master = () => {
         const deletePeriod = async () => {
           try {
             const response = await deletePeriodSlot(id, getToken());
-            console.log(response.data);
-            showMessage(response);
             if (response.status === "error" || response.status === "Error") {
               toast.error(response.message);
-            } else if (
-              response.status === "success" ||
-              response.status === "Success"
-            ) {
-              toast.success(response.message);
+              showMessage(response);
+              return;
             }
+            toast.success(response.message || "Period slot deleted");
             showMessage(response);
-            setLoad(false);
+            setRefreshKey((k) => k + 1);
           } catch (err) {
             console.log(err);
+            toast.error(err?.message || "Failed to delete period slot");
           }
         };
         deletePeriod();
@@ -1260,8 +1255,6 @@ const Master = () => {
     }
   };
   useEffect(() => {
-    console.log("load", load);
-    setLoad(true);
     console.log(propsData);
     switch (propsData) {
       case "State":
@@ -1502,14 +1495,13 @@ const Master = () => {
       case "Period Slot":
         const getperiodSlot = async () => {
           try {
-            const response = await getPeriodSlot(getToken());
+            const response = await getPeriodSlot(0, getToken());
             const list = Array.isArray(response) ? response : [];
-            setData(list.length ? mapPeriodSlotRows(list) : PERIOD_SLOT_DUMMY);
+            setData(mapPeriodSlotRows(list));
           } catch (err) {
             console.log(err);
-            setData(PERIOD_SLOT_DUMMY);
-          } finally {
-            setLoad(false);
+            toast.error(err?.message || "Failed to load period slots");
+            setData([]);
           }
         };
         getperiodSlot();
@@ -1527,8 +1519,6 @@ const Master = () => {
           } catch (err) {
             console.log(err);
             setData(CLASS_TIMETABLE_DUMMY);
-          } finally {
-            setLoad(false);
           }
         };
         getperiodtimeTables();
@@ -1564,7 +1554,7 @@ const Master = () => {
     return () => {
       console.log("Component unmounted or effect is being cleaned up");
     };
-  }, [propsData, message, load]);
+  }, [propsData, message, refreshKey]);
 
   useEffect(() => {
     setIsModalOpen(false);
@@ -1595,17 +1585,7 @@ const Master = () => {
         openModal={openModal}
       />
 
-      <ToastContainer
-        position="top-right"
-        autoClose={2000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
     </div>
   );
 };

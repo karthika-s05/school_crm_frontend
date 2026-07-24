@@ -256,9 +256,8 @@ export const getPeriodSlot = async (classId, token) => {
 };
 export const getPeriodSlotbyID = async (id, token) => {
   try {
-    const response = await axios.post(
-      `${DAILY_URL}/timetable/get_period_slot/${id}`,
-      {},
+    const response = await axios.get(
+      `${DAILY_URL}/timetable/get_period_slot_by_id/${id}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -266,7 +265,6 @@ export const getPeriodSlotbyID = async (id, token) => {
         },
       }
     );
-    console.log(response.data.data);
     return response.data.data;
   } catch (error) {
     console.error("Error fetching data:", error);
@@ -289,6 +287,23 @@ export const getTimeTable = async (body, token) => {
     return response.data.data;
   } catch (error) {
     console.error("Error fetching data:", error);
+    throw error;
+  }
+};
+export const getSubjectStaff = async (subjectId, token) => {
+  try {
+    const response = await axios.get(
+      `${DAILY_URL}/timetable/get_subject_staff/${subjectId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching subject staff:", error);
     throw error;
   }
 };
@@ -1563,6 +1578,32 @@ export const createExamReport = async (body, token) => {
     throw error;
   }
 };
+export const publishExamResult = async (body, token) => {
+  const response = await axios.post(
+    `${EXAM_URL}/examReport/publish`,
+    body,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return response.data;
+};
+export const unpublishExamResult = async (body, token) => {
+  const response = await axios.post(
+    `${EXAM_URL}/examReport/unpublish`,
+    body,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return response.data;
+};
 export const getExamResultlist = async (body, token) => {
   try {
     const response = await axios.post(
@@ -1580,6 +1621,18 @@ export const getExamResultlist = async (body, token) => {
     console.error("Error fetching data:", error);
     throw error;
   }
+};
+export const getStudentExamReport = async (token) => {
+  const response = await axios.get(
+    `${EXAM_URL}/examReport/get_examReport`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return response.data;
 };
 //  Exam Portion
 export const createExamportion = async (body, token) => {
@@ -1674,7 +1727,7 @@ export const createEvent = async (body, token) => {
     throw error;
   }
 };
-export const getEvent = async (body, token) => {
+export const getEvent = async (body = {}, token) => {
   try {
     const response = await axios.post(`${STAFF_URL}/events/get_events`, body, {
       headers: {
@@ -1742,6 +1795,45 @@ export const createEventImage = async (body, token) => {
     console.error("Error fetching data:", error);
     throw error;
   }
+};
+
+export const publishEvent = async (id, token) => {
+  const response = await axios.post(
+    `${STAFF_URL}/events/publish/${id}`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const unpublishEvent = async (id, token) => {
+  const response = await axios.post(
+    `${STAFF_URL}/events/unpublish/${id}`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const getEventHistory = async (id, token) => {
+  const response = await axios.get(`${STAFF_URL}/events/history/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getEventMeta = async (token) => {
+  const response = await axios.get(`${STAFF_URL}/events/meta`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getEventSummary = async (token) => {
+  const response = await axios.get(`${STAFF_URL}/events/summary`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
 };
 //   Grade
 export const createOverallgrade = async (body, token) => {
@@ -2025,7 +2117,7 @@ export const getclassList = async (body, token) => {
 export const getsectionList = async (body, token) => {
   try {
     const response = await axios.post(
-      `${MASTER_URL}/academic/get_sectionList`,
+      `${MASTER_URL}/academic/get_section`,
       body,
       {
         headers: {
@@ -2302,9 +2394,14 @@ export const updateAcademicYear = async (body, token) => {
 
 // ─── Notifications ───────────────────────────────────────────────────────────
 // Student: get notifications for own class/section (uses req.user.classId/sectionId)
-export const getNotifications = async (token) => {
+export const getNotifications = async (token, filters = {}) => {
   const response = await axios.get(`${DAILY_URL}/notification/get_notification`, {
     headers: { Authorization: `Bearer ${token}` },
+    params: {
+      type: filters.type && filters.type !== "All" ? filters.type : undefined,
+      unreadOnly: filters.unreadOnly || undefined,
+      limit: filters.limit || undefined,
+    },
   });
   return response.data;
 };
@@ -2323,6 +2420,17 @@ export const createNotification = async (body, token) => {
 export const deleteNotification = async (id, token) => {
   const response = await axios.delete(
     `${DAILY_URL}/notification/delete_notification/${id}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const markNotificationAsRead = async (id, token) => {
+  // POST instead of PATCH: PATCH preflights are blocked by CORS on some
+  // deployments of the backend.
+  const response = await axios.post(
+    `${DAILY_URL}/notification/mark_read/${id}`,
+    {},
     { headers: { Authorization: `Bearer ${token}` } }
   );
   return response.data;
@@ -2496,6 +2604,34 @@ export const getStaffTimetable = async (body, token) => {
   return response.data;
 };
 
+/** GET /substitute/my_requests - pending/accepted substitute offers for logged-in staff */
+export const getMySubstituteRequests = async (token) => {
+  const response = await axios.get(`${DAILY_URL}/substitute/my_requests`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+/** POST /substitute/:id/accept */
+export const acceptSubstituteRequest = async (id, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/substitute/${id}/accept`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+/** POST /substitute/:id/reject */
+export const rejectSubstituteRequest = async (id, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/substitute/${id}/reject`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
 // ─── Student Attendance ───────────────────────────────────────────────────────
 // Staff+Student: get monthly attendance summary (role check in controller)
 export const getStdAttendance = async (body, token) => {
@@ -2661,6 +2797,65 @@ export const updateTransportFeeStatus = async (body, token) => {
   return response.data;
 };
 
+// ─── School Fees Collection (FEES_URL /fees/...) ─────────────────────────────
+const FEES_URL = () => STATIONERY_URL;
+const feesAuth = (token) => ({
+  headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+});
+
+export const getFeeStructures = async (body, token) => {
+  const response = await axios.post(`${FEES_URL()}/fees/structure/list`, body || {}, feesAuth(token));
+  return response.data;
+};
+
+export const saveFeeStructure = async (body, token) => {
+  const response = await axios.post(`${FEES_URL()}/fees/structure/save`, body || {}, feesAuth(token));
+  return response.data;
+};
+
+export const deleteFeeStructure = async (id, token) => {
+  const response = await axios.post(
+    `${FEES_URL()}/fees/structure/delete/${id}`,
+    {},
+    feesAuth(token)
+  );
+  return response.data;
+};
+
+export const getFeeLedger = async (body, token) => {
+  const response = await axios.post(`${FEES_URL()}/fees/ledger/list`, body || {}, feesAuth(token));
+  return response.data;
+};
+
+export const generateFeeLedger = async (body, token) => {
+  const response = await axios.post(
+    `${FEES_URL()}/fees/ledger/generate`,
+    body || {},
+    feesAuth(token)
+  );
+  return response.data;
+};
+
+export const collectFeePayment = async (body, token) => {
+  const response = await axios.post(
+    `${FEES_URL()}/fees/ledger/collect`,
+    body || {},
+    feesAuth(token)
+  );
+  return response.data;
+};
+
+export const getSchoolFeeSummary = async (token) => {
+  const response = await axios.get(`${FEES_URL()}/fees/summary`, feesAuth(token));
+  return response.data;
+};
+
+/** Combined school + transport totals for admin dashboard Fee Collection chart */
+export const getFeesDashboardSummary = async (token) => {
+  const response = await axios.get(`${FEES_URL()}/fees/dashboard_summary`, feesAuth(token));
+  return response.data;
+};
+
 export const getExamReportData = async (body, token) => {
   const response = await axios.post(`${EXAM_URL}/reports/exam/get_report`, body, {
     headers: { Authorization: `Bearer ${token}` },
@@ -2788,7 +2983,7 @@ export const getExamReportFilters = async (body, token) => {
 };
 
 
-/** GET /leave/get_leaveType — fetch all leave type options */
+/** GET /leave/get_leaveType - fetch all leave type options */
 export const getLeaveTypes = async (token) => {
   try {
     const response = await axios.get(`${DAILY_URL}/leave/get_leaveType`, {
@@ -2801,7 +2996,7 @@ export const getLeaveTypes = async (token) => {
   }
 };
 
-/** POST /leave/get_student_leave — fetch student leave records */
+/** POST /leave/get_student_leave - fetch student leave records */
 // export const getStudentLeave = async (token, classId = 0, sectionId = 0) => {
 //   try {
 //     const response = await axios.post(
@@ -2816,7 +3011,7 @@ export const getLeaveTypes = async (token) => {
 //   }
 // };
 
-/** GET /leave/get_staff_leave — fetch staff leave records */
+/** GET /leave/get_staff_leave - fetch staff leave records */
 // export const getStaffLeave = async (token) => {
 //   try {
 //     const response = await axios.get(`${DAILY_URL}/leave/get_staff_leave`, {
@@ -2829,7 +3024,7 @@ export const getLeaveTypes = async (token) => {
 //   }
 // };
 
-/** POST /leave/create_student_leave — submit a student leave application */
+/** POST /leave/create_student_leave - submit a student leave application */
 // export const createStudentLeave = async (body, token) => {
 //   try {
 //     const response = await axios.post(
@@ -2844,7 +3039,7 @@ export const getLeaveTypes = async (token) => {
 //   }
 // };
 
-/** POST /leave/create_staff_leave — submit a staff / admin leave application */
+/** POST /leave/create_staff_leave - submit a staff / admin leave application */
 // export const createStaffLeave = async (body, token) => {
 //   try {
 //     const response = await axios.post(
@@ -2859,7 +3054,7 @@ export const getLeaveTypes = async (token) => {
 //   }
 // };
 
-/** POST /leave/update_student_leave_status — approve or reject a student leave */
+/** POST /leave/update_student_leave_status - approve or reject a student leave */
 // export const updateStudentLeaveStatus = async (body, token) => {
 //   try {
 //     const response = await axios.post(
@@ -2874,7 +3069,7 @@ export const getLeaveTypes = async (token) => {
 //   }
 // };
 
-/** POST /leave/update_staff_leave_status — approve or reject a staff leave */
+/** POST /leave/update_staff_leave_status - approve or reject a staff leave */
 // export const updateStaffLeaveStatus = async (body, token) => {
 //   try {
 //     const response = await axios.post(
@@ -2889,9 +3084,144 @@ export const getLeaveTypes = async (token) => {
 //   }
 // };
 
-export const getMyStaffLeave = (token) =>
-  axios.get(`${process.env.REACT_APP_DAILY_URL}/leave/my_staff_leave`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
+/** GET /leave/my_staff_leave - logged-in staff/admin own leave history */
+export const getMyStaffLeave = async (token) => {
+  try {
+    const response = await axios.get(`${DAILY_URL}/leave/my_staff_leave`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("getMyStaffLeave error:", error);
+    throw error;
+  }
+};
+
+// ─── Attendance v2 ────────────────────────────────────────────────────────────
+// Normalized attendance routes are mounted under DAILY_URL /attendance
+const ATT_V2 = () => `${DAILY_URL}/attendance`;
+
+const ATT_REPORT_ROUTE_MAP = {
+  student: "student",
+  staff: "staff",
+  daily: "daily",
+  monthly: "monthly",
+  class: "class_wise",
+  subject: "subject_wise",
+  absent_students: "absent_students",
+  absent_staff: "absent_staff",
+};
+
+const ATT_REPORT_TYPE_MAP = {
+  student: "student",
+  staff: "staff",
+  daily: "daily",
+  monthly: "monthly",
+  class: "class-wise",
+  subject: "subject-wise",
+  absent_students: "absent-students",
+  absent_staff: "absent-staff",
+};
+const authHeaders = (token) => ({
+  headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+});
+
+/** POST /attendance/student/context - roster + existing marks for class/section/date (+ period/subject in period mode) */
+export const getStudentAttendanceContextV2 = async (body, token) => {
+  const response = await axios.post(`${ATT_V2()}/student/context`, body, authHeaders(token));
+  return response.data;
+};
+
+/** POST /attendance/v2/student/save - save daily or period student attendance records */
+export const saveStudentAttendanceV2 = async (body, token) => {
+  const response = await axios.post(`${ATT_V2()}/student/save`, body, authHeaders(token));
+  return response.data;
+};
+
+/** GET /attendance/v2/student/today-periods - logged-in staff's timetable periods for today */
+export const getStudentTodayPeriodsV2 = async (token) => {
+  const response = await axios.get(`${ATT_V2()}/student/today-periods`, authHeaders(token));
+  return response.data;
+};
+
+/** POST /attendance/v2/student/view - filtered student attendance records (date/class/section/subject/period) */
+export const getStudentAttendanceViewV2 = async (body, token) => {
+  const response = await axios.post(`${ATT_V2()}/student/view`, body, authHeaders(token));
+  return response.data;
+};
+
+/** POST /attendance/v2/student/edit - edit a single student attendance record */
+export const editStudentAttendanceV2 = async (body, token) => {
+  const response = await axios.post(`${ATT_V2()}/student/edit`, body, authHeaders(token));
+  return response.data;
+};
+
+/** POST /attendance/v2/student/my-summary - JWT-scoped student self summary (today, monthly, subjects, history) */
+export const getMyAttendanceSummaryV2 = async (body, token) => {
+  const response = await axios.post(`${ATT_V2()}/student/my-summary`, body || {}, authHeaders(token));
+  return response.data;
+};
+
+/** POST /attendance/v2/staff/mark - mark staff attendance for a date */
+export const markStaffAttendanceV2 = async (body, token) => {
+  const response = await axios.post(`${ATT_V2()}/staff/mark`, body, authHeaders(token));
+  return response.data;
+};
+
+/** POST /attendance/v2/staff/view - filtered staff attendance records */
+export const getStaffAttendanceViewV2 = async (body, token) => {
+  const response = await axios.post(`${ATT_V2()}/staff/view`, body, authHeaders(token));
+  return response.data;
+};
+
+/** POST /attendance/v2/staff/my - logged-in staff's own attendance history / month summary */
+export const getMyStaffAttendanceV2 = async (body, token) => {
+  const response = await axios.post(`${ATT_V2()}/staff/my`, body || {}, authHeaders(token));
+  return response.data;
+};
+
+/** POST /attendance/v2/staff/edit - edit a single staff attendance record */
+export const editStaffAttendanceV2 = async (body, token) => {
+  const response = await axios.post(`${ATT_V2()}/staff/edit`, body, authHeaders(token));
+  return response.data;
+};
+
+// ─── Attendance Reports v2 (DAILY_URL /reports/attendance/...) ───────────────
+const ATT_REPORT_V2 = () => `${DAILY_URL}/reports/attendance`;
+
+/**
+ * POST /reports/attendance/:reportType
+ * reportType: student | staff | daily | monthly | class | subject | absent_students | absent_staff
+ */
+export const getAttendanceReportV2 = async (reportType, body, token) => {
+  const routeKey = ATT_REPORT_ROUTE_MAP[reportType] || reportType;
+  const response = await axios.post(
+    `${ATT_REPORT_V2()}/${routeKey}`,
+    {
+      ...body,
+      reportType: ATT_REPORT_TYPE_MAP[reportType] || reportType,
+      startDate: body?.startDate || body?.fromDate,
+      endDate: body?.endDate || body?.toDate,
     },
+    authHeaders(token)
+  );
+  return response.data;
+};
+
+/** POST /reports/attendance/export_v2 - export report; body includes reportType + format (csv|xlsx|pdf) */
+export const exportAttendanceReportV2 = async (body, token) => {
+  const reportType = ATT_REPORT_TYPE_MAP[body?.reportType] || body?.reportType;
+  const response = await axios.post(
+    `${ATT_REPORT_V2()}/export_v2`,
+    {
+      ...body,
+      reportType,
+      startDate: body?.startDate || body?.fromDate,
+      endDate: body?.endDate || body?.toDate,
+    },
+    {
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    responseType: "blob",
   });
+  return response;
+};

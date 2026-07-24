@@ -701,7 +701,7 @@ export default function ExamReport() {
                         alignItems: "center",
                       }}
                     >
-                      <span style={{ fontSize: 28, fontWeight: 800, color: gradeColor(g.grade) }}>
+                      <span style={{ fontSize: 22, fontWeight: 600, color: gradeColor(g.grade) }}>
                         Grade {g.grade}
                       </span>
                       <div

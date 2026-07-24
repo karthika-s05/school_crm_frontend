@@ -40,6 +40,10 @@ import {
   LuBriefcase,
   LuPartyPopper,
   LuFileText,
+  LuLandmark,
+  LuMegaphone,
+  LuEye,
+  LuWallet,
 } from "react-icons/lu";
 import { MdAssignment, MdAssessment } from "react-icons/md";
 import { PiStudentBold, PiChalkboardTeacherBold } from "react-icons/pi";
@@ -162,6 +166,10 @@ export function IconTransport({ className }) {
   return <BiSolidBusSchool className={`school-menu-icon ${className || ""}`} size={MENU_SIZE} aria-hidden="true" />;
 }
 
+export function IconFees({ className }) {
+  return <MenuIcon Icon={LuWallet} className={className} />;
+}
+
 export function IconSubTransport({ className }) {
   return <BiSolidBusSchool className={className} size={SUB_SIZE} aria-hidden="true" />;
 }
@@ -211,16 +219,22 @@ const SUBMENU_ICON_MAP = {
   "Exam Result":         (p) => <SubIcon Icon={LuTrophy} {...p} />,
   "Stationery":          (p) => <IconSubStationery {...p} />,
   "Transport":           (p) => <IconSubTransport {...p} />,
+  "Fees Collection":     (p) => <SubIcon Icon={LuWallet} {...p} />,
   "Assignment Report":   (p) => <SubIcon Icon={MdAssignment} {...p} />,
   "Exam Report":         (p) => <SubIcon Icon={MdAssessment} {...p} />,
   /* Staff submenu */
   "Mark Attendance":     (p) => <SubIcon Icon={LuSquareCheck} {...p} />,
   "View Attendance":     (p) => <SubIcon Icon={LuClipboardList} {...p} />,
+  "Student Attendance":  (p) => <SubIcon Icon={LuUserCheck} {...p} />,
+  "View Student Attendance": (p) => <SubIcon Icon={LuEye} {...p} />,
+  "Staff Attendance":    (p) => <SubIcon Icon={LuUsers} {...p} />,
+  "View Staff Attendance": (p) => <SubIcon Icon={LuClipboardCheck} {...p} />,
   "My Timetable":        (p) => <SubIcon Icon={LuCalendarDays} {...p} />,
   "Leave Management":    (p) => <SubIcon Icon={LuBriefcase} {...p} />,
   "Reports Overview":    (p) => <SubIcon Icon={LuChartBar} {...p} />,
   "Attendance Report":   (p) => <SubIcon Icon={LuClipboardCheck} {...p} />,
   "Homework Report":     (p) => <SubIcon Icon={LuNotebookPen} {...p} />,
+  "Events & Announcements": (p) => <SubIcon Icon={LuMegaphone} {...p} />,
   /* Student submenu */
   "My Attendance":       (p) => <SubIcon Icon={LuCalendarCheck} {...p} />,
   "Exam Results":        (p) => <SubIcon Icon={LuTrophy} {...p} />,
@@ -254,6 +268,10 @@ export function IconEvents({ className }) {
   return <MenuIcon Icon={LuPartyPopper} className={className} />;
 }
 
+export function IconAdministration({ className }) {
+  return <MenuIcon Icon={LuMegaphone} className={className} />;
+}
+
 export function IconProfile({ className }) {
   return <MenuIcon Icon={LuFileText} className={className} />;
 }
@@ -269,7 +287,9 @@ export const MENU_ICON_MAP = {
   Examination:    IconExam,
   Stationery:     IconStationery,
   Transport:      IconTransport,
+  Fees:           IconFees,
   Reports:        IconReports,
+  Administration: IconAdministration,
   /* Staff & Student shared */
   Attendance:     IconAttendance,
   Homework:       IconHomework,

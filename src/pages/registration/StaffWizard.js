@@ -8,6 +8,12 @@ import { getToken } from "../../services/auth";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./wizard.css";
+import {
+  validateEmail,
+  validateMobile,
+  sanitizeMobileInput,
+  isMobileFieldName,
+} from "../../utils/validators";
 
 const STEPS = [
   { label: "Personal",     icon: "bx bxs-user" },
@@ -107,7 +113,10 @@ const initForm = {
   certDoc: null, idProof: null,
 };
 
-const Field = ({ label, name, type = "text", value, onChange, error, options, required, placeholder }) => (
+const Field = ({
+  label, name, type = "text", value, onChange, error, options, required, placeholder,
+  maxLength, inputMode, pattern,
+}) => (
   <div className="wz-field">
     <label className="wz-label">
       {label}{required && <span className="wz-req">*</span>}
@@ -120,7 +129,18 @@ const Field = ({ label, name, type = "text", value, onChange, error, options, re
     ) : type === "file" ? (
       <input className="wz-input wz-file" type="file" name={name} onChange={onChange} />
     ) : (
-      <input className={`wz-input${error ? " wz-error-border" : ""}`} type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} max={type === "date" ? new Date().toISOString().split("T")[0] : undefined} />
+      <input
+        className={`wz-input${error ? " wz-error-border" : ""}`}
+        type={type === "tel" ? "tel" : type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        inputMode={inputMode}
+        pattern={pattern}
+        max={type === "date" ? new Date().toISOString().split("T")[0] : undefined}
+      />
     )}
     {error && <span className="wz-error">{error}</span>}
   </div>
@@ -209,8 +229,26 @@ export default function StaffWizard() {
 
   const handleChange = e => {
     const { name, value, files } = e.target;
-    setForm(p => ({ ...p, [name]: files ? files[0] : value }));
-    setErrors(p => ({ ...p, [name]: "" }));
+    if (files) {
+      setForm(p => ({ ...p, [name]: files[0] }));
+      setErrors(p => ({ ...p, [name]: "" }));
+      return;
+    }
+    const nextValue = isMobileFieldName(name) ? sanitizeMobileInput(value) : value;
+    setForm(p => ({ ...p, [name]: nextValue }));
+    if (isMobileFieldName(name) && nextValue.length === 10) {
+      const err = validateMobile(nextValue, {
+        label:
+          name === "mobile"
+            ? "Mobile"
+            : name === "alternateMobile"
+            ? "Alternate mobile"
+            : "Emergency contact",
+      });
+      setErrors(p => ({ ...p, [name]: err }));
+    } else {
+      setErrors(p => ({ ...p, [name]: "" }));
+    }
   };
 
   const saveDraft = () => {
@@ -241,19 +279,34 @@ export default function StaffWizard() {
       if (!form.dateOfJoining) e.dateOfJoining = "Date of Joining is required";
     }
     if (s === 2) {
-      if (!form.email.trim()) e.email = "Email is required";
-      if (!form.mobile.trim()) e.mobile = "Mobile is required";
+      const emailErr = validateEmail(form.email, { required: true, label: "Email" });
+      if (emailErr) e.email = emailErr;
+      const mobileErr = validateMobile(form.mobile, { required: true, label: "Mobile" });
+      if (mobileErr) e.mobile = mobileErr;
+      if (form.alternateMobile?.trim()) {
+        const altErr = validateMobile(form.alternateMobile, { label: "Alternate mobile" });
+        if (altErr) e.alternateMobile = altErr;
+      }
+      if (form.emergencyContact?.trim()) {
+        const emErr = validateMobile(form.emergencyContact, { label: "Emergency contact" });
+        if (emErr) e.emergencyContact = emErr;
+      }
     }
     if (s === 3) {
       if (!form.address1.trim()) e.address1 = "Address is required";
       if (!form.pincode.trim()) e.pincode = "Pincode is required";
+      else if (!/^\d{6}$/.test(form.pincode.trim())) e.pincode = "Pincode must be 6 digits";
     }
     return e;
   };
 
   const next = () => {
     const e = validate(step);
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (Object.keys(e).length) {
+      setErrors(e);
+      toast.error(Object.values(e)[0]);
+      return;
+    }
     saveDraftSilent();
     setStep(s => s + 1);
   };
@@ -270,12 +323,10 @@ export default function StaffWizard() {
 
     setSubmitting(true);
     try {
-      const payload = isEdit
-        ? buildStaffPayload(form, routeId)
-        : form;
+      const payload = buildStaffPayload(form, isEdit ? routeId : undefined);
       const res = isEdit
         ? await updateStaff(payload, token)
-        : await registerStaff(form, token);
+        : await registerStaff(payload, token);
       if (res.status?.toLowerCase() === "success") {
         localStorage.removeItem(DRAFT_KEY);
         toast.success(res.message || (isEdit ? "Staff updated!" : "Staff registered successfully!"), {
@@ -377,9 +428,43 @@ export default function StaffWizard() {
         {step === 2 && (
           <div className="wz-grid">
             <Field label="Email Address" name="email" type="email" value={form.email} onChange={handleChange} error={errors.email} required />
-            <Field label="Mobile Number" name="mobile" value={form.mobile} onChange={handleChange} error={errors.mobile} required />
-            <Field label="Alternate Mobile" name="alternateMobile" value={form.alternateMobile} onChange={handleChange} />
-            <Field label="Emergency Contact" name="emergencyContact" value={form.emergencyContact} onChange={handleChange} />
+            <Field
+              label="Mobile Number"
+              name="mobile"
+              type="tel"
+              value={form.mobile}
+              onChange={handleChange}
+              error={errors.mobile}
+              required
+              maxLength={10}
+              inputMode="numeric"
+              pattern="[6-9][0-9]{9}"
+              placeholder="10-digit mobile (starts with 6–9)"
+            />
+            <Field
+              label="Alternate Mobile"
+              name="alternateMobile"
+              type="tel"
+              value={form.alternateMobile}
+              onChange={handleChange}
+              error={errors.alternateMobile}
+              maxLength={10}
+              inputMode="numeric"
+              pattern="[6-9][0-9]{9}"
+              placeholder="Optional 10-digit mobile"
+            />
+            <Field
+              label="Emergency Contact"
+              name="emergencyContact"
+              type="tel"
+              value={form.emergencyContact}
+              onChange={handleChange}
+              error={errors.emergencyContact}
+              maxLength={10}
+              inputMode="numeric"
+              pattern="[6-9][0-9]{9}"
+              placeholder="Optional 10-digit mobile"
+            />
           </div>
         )}
 
@@ -481,7 +566,7 @@ export default function StaffWizard() {
         </div>
       </div>
 
-      <ToastContainer position="top-right" autoClose={2500} />
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
     </div>
   );
 }

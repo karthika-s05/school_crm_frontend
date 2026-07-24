@@ -251,8 +251,8 @@ export default function StudentDummyList() {
                   </td>
                   <td>
                     <TableActionMenu
-                      onView={() => navigate(`/studentinfo/${s.admNo}`)}
-                      onEdit={() => navigate(`/studentlist/${s.admNo}`)}
+                      onView={() => navigate(`/admin/studentinfo/${s.admNo}`)}
+                      onEdit={() => navigate(`/admin/student/${s.admNo}`)}
                       onDelete={() =>
                         navigate(`/releiving/${s.admNo}`, { state: "Student Relieving" })
                       }

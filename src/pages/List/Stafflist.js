@@ -64,8 +64,10 @@ export default function StaffList() {
         const token = getToken();
         const res   = await getStafflist("0", token);
 
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+        if (res?.status?.toLowerCase() === "success" && Array.isArray(res.data)) {
           setStaff(res.data.map(mapStaff));
+        } else if (res?.status?.toLowerCase() === "error") {
+          setError(typeof res.data === "string" ? res.data : "Failed to load staff list");
         }
       } catch (err) {
         console.error("getStafflist API error:", err);

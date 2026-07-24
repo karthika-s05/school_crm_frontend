@@ -67,7 +67,11 @@ export default function AttendanceReport() {
   };
 
   const columns = rows.length > 0
-    ? Object.keys(rows[0]).filter(k => !k.startsWith("_"))
+    ? Object.keys(rows[0]).filter((k) => {
+        if (k.startsWith("_")) return false;
+        const key = String(k).toLowerCase();
+        return !["classid", "sectionid", "periodslotid", "periodid", "slotid", "id"].includes(key);
+      })
     : ["studentName", "date", "status"];
 
   const filtered = rows.filter(r =>
@@ -182,7 +186,7 @@ export default function AttendanceReport() {
                         </td>
                       );
                     }
-                    return <td key={col}>{val ?? "—"}</td>;
+                    return <td key={col}>{val ?? "-"}</td>;
                   })}
                 </tr>
               ))}

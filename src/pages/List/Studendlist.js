@@ -23,6 +23,7 @@ import {
   updateStudent,
   getStudentToCheck
 } from "../../services/api";
+import { validateEmail, validateMobile, sanitizeMobileInput } from "../../utils/validators";
 import { getToken } from "../../services/auth";
 import "./list.css";
 import { ToastContainer, toast } from "react-toastify";
@@ -165,11 +166,8 @@ export default function Studendlist() {
   };
 
   const handleMobileChange = (event) => {
-    const formattedValue = formatMobile(event.target.value);
+    const formattedValue = sanitizeMobileInput(event.target.value);
     formik.setFieldValue("mobile", formattedValue);
-    formik.setFieldValue("fatherMobile", formattedValue);
-    formik.setFieldValue("motherMobile", formattedValue);
-    formik.setFieldValue("guardianMobile", formattedValue);
   };
 
   const validate = (values) => {
@@ -189,10 +187,12 @@ export default function Studendlist() {
     }
     if (!values.mobile) {
       errors.mobile = "Please enter valid mobile no";
-    } else if (
-      !/^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(values.mobile)
-    ) {
-      errors.mobile = "Please enter valid mobile no";
+    } else {
+      const mobileErr = validateMobile(values.mobile, {
+        required: true,
+        label: "Mobile number",
+      });
+      if (mobileErr) errors.mobile = mobileErr;
     }
     if (!values.pincode) {
       errors.pincode = "Please enter pin code";
@@ -245,8 +245,12 @@ export default function Studendlist() {
     if (!values.address1) {
       errors.address1 = "Please enter address";
     }
-    if (!values.emailId || !/^\S+@\S+\.\S+$/.test(values.emailId)) {
-      errors.emailId = "Please enter valid e-mail";
+    {
+      const emailErr = validateEmail(values.emailId, {
+        required: true,
+        label: "Email",
+      });
+      if (emailErr) errors.emailId = emailErr;
     }
     return errors;
   };
@@ -1016,7 +1020,7 @@ export default function Studendlist() {
                       <label class="input-label">
                         Admission No
                         <span style={{ color: "#64748b", fontWeight: 400, paddingLeft: "5px" }}>
-                          (optional — auto-generated if blank)
+                          (optional - auto-generated if blank)
                         </span>
                       </label>
                       <input
@@ -4752,18 +4756,7 @@ export default function Studendlist() {
           </form>
         )}
       </div>
-      <ToastContainer
-        position="top-right"
-        autoClose={2300}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        style={{ fontSize: "14px" }}
-      />
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
     </div>
   );
 }

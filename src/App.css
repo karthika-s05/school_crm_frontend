@@ -63,3 +63,15 @@ ul.breadcrumb li:last-child a {
 }
 
 .attendances { text-align: center !important; }
+
+/* Toasts above sticky header / nav (header z-index ~110–300) */
+.Toastify {
+  z-index: 99999 !important;
+}
+.Toastify__toast-container {
+  z-index: 99999 !important;
+}
+.Toastify__toast-container--bottom-right {
+  bottom: 1rem;
+  right: 1rem;
+}

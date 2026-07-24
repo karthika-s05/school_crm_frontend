@@ -2,22 +2,30 @@ import React, { useState, useRef, useEffect } from "react";
 import "./nav.css";
 import "./StaffNav.css";
 import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
-import { FiBell, FiSearch, FiChevronLeft, FiChevronRight, FiX, FiCheck, FiTrash2 } from "react-icons/fi";
+import { FiBell, FiSearch, FiChevronLeft, FiChevronRight, FiX, FiCheck } from "react-icons/fi";
 import { getUserData, removeToken, getToken } from "../../services/auth";
-import { getNotifications, updateNotificationTime } from "../../services/api";
+import {
+  getNotifications,
+  markNotificationAsRead,
+  updateNotificationTime,
+} from "../../services/api";
 import StaffDashboard from "../StaffDashboard/Dashboard";
-import Attendence from "../Atttendence/Attendence";
 import Assignment from "../Assignment/Assignment";
 import Homework from "../Homework/Homework";
-import ViewAttendance from "../Atttendence/ViewAttendance";
+import StudentAttendanceEntry from "../../pages/attendance/StudentAttendanceEntry";
+import StudentAttendanceView from "../../pages/attendance/StudentAttendanceView";
+import MyStaffAttendance from "../../pages/attendance/MyStaffAttendance";
 import LeaveManagement from "../../pages/services/LeaveManagement";
+import NotificationCenter from "../../pages/notifications/NotificationCenter";
+import Event from "../../pages/Event/Event";
 import Timetable from "../../pages/Timetable/timetable";
 import ExamType from "../../pages/exam/ExamType";
 import ExamPortion from "../../pages/exam/ExamPortion";
+import Exam from "../../pages/exam/exam";
 import Examresult from "../../pages/exam/examResults";
 import ExamReport from "../../pages/report/ExamReport";
 import AssignmentReport from "../../pages/report/AssignmentReport";
-import AttendanceReport from "../../pages/report/AttendanceReport";
+import AttendanceReportDashboard from "../../pages/attendance/AttendanceReportDashboard";
 import HomeworkReport from "../../pages/report/HomeworkReport";
 import ReportsOverview from "../../pages/report/ReportsOverview";
 import Profile from "../../pages/profile/profile";
@@ -34,6 +42,7 @@ const STAFF_MENU_GROUPS = [
     items: [
       { label: "Mark Attendance", path: "/staff/attendance", state: undefined },
       { label: "View Attendance", path: "/staff/view-attendance", state: undefined },
+      { label: "My Attendance", path: "/staff/my-attendance", state: undefined },
     ],
   },
   {
@@ -63,6 +72,12 @@ const STAFF_MENU_GROUPS = [
     ],
   },
   {
+    title: "Communication", icon: null, section: "Communication",
+    items: [
+      { label: "Parent Meetings", path: "/staff/events", state: undefined },
+    ],
+  },
+  {
     title: "Leave", icon: null, section: "Services",
     items: [
       { label: "Leave Management", path: "/staff/leave", state: undefined },
@@ -82,6 +97,8 @@ const STAFF_MENU_GROUPS = [
 
 const resolveStaffPageTitle = (pathname) => {
   if (pathname === "/staff/dashboard" || pathname === "/") return { title: "Dashboard", parent: "Home" };
+  if (pathname === "/staff/notifications") return { title: "Notifications", parent: "Home" };
+  if (pathname === "/staff/events") return { title: "Parent Meetings", parent: "Communication" };
   for (const group of STAFF_MENU_GROUPS) {
     for (const item of group.items) {
       if (item.path === pathname) return { title: item.label, parent: group.title };
@@ -188,7 +205,7 @@ const StaffNav = () => {
             title: n.title || "Notification",
             desc: n.message || n.description || "",
             time: n.createdAt || n.time || "",
-            read: n.isRead === 1 || n.read === true,
+            read: Number(n.isRead) === 1 || n.read === true,
             icon: "bx bxs-bell",
             color: "#2D3A8C",
             bg: "#eef0fb",
@@ -196,6 +213,35 @@ const StaffNav = () => {
         }
       })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => {
+      const token = getToken();
+      if (!token) return;
+      getNotifications(token)
+        .then((res) => {
+          if (res?.status === "success" && Array.isArray(res.data)) {
+            setNotifications(res.data.map((n, i) => ({
+              id: n.id || i,
+              title: n.title || "Notification",
+              desc: n.message || n.description || "",
+              time: n.createdAt || n.time || "",
+              read: Number(n.isRead) === 1 || n.read === true,
+              icon: "bx bxs-bell",
+              color: "#2D3A8C",
+              bg: "#eef0fb",
+            })));
+          }
+        })
+        .catch(() => {});
+    };
+    window.addEventListener("notifications:changed", refresh);
+    const pollId = setInterval(refresh, 30000);
+    return () => {
+      window.removeEventListener("notifications:changed", refresh);
+      clearInterval(pollId);
+    };
   }, []);
 
   useEffect(() => {
@@ -215,7 +261,7 @@ const StaffNav = () => {
   useEffect(() => {
     if (collapsed) { setOpenMenu(null); return; }
     const match = STAFF_MENU_GROUPS.find(g => g.items.some(item => item.path === pathname));
-    if (match) setOpenMenu(match.title);
+    setOpenMenu(match ? match.title : null);
   }, [pathname, collapsed]);
 
   const MONTHS = ["January", "February", "March", "April", "May", "June",
@@ -233,9 +279,12 @@ const StaffNav = () => {
     const token = getToken();
     if (token) updateNotificationTime(token).catch(() => {});
   };
-  const clearAll = () => setNotifications([]);
-  const markRead = (id) => setNotifications(ns => ns.map(n => n.id === id ? { ...n, read: true } : n));
-  const logout = () => { removeToken(); navigate("/"); window.location.reload(); };
+  const markRead = (id) => {
+    setNotifications(ns => ns.map(n => n.id === id ? { ...n, read: true } : n));
+    const token = getToken();
+    if (token) markNotificationAsRead(id, token).catch(() => {});
+  };
+  const logout = () => { removeToken(); navigate("/", { replace: true }); };
   const closeFlyout = () => { if (collapsed) setOpenMenu(null); };
 
   const isDashboardActive = pathname === "/staff/dashboard" || pathname === "/";
@@ -424,7 +473,6 @@ const StaffNav = () => {
                 </div>
                 <div className="crm-nd-actions">
                   <button className="crm-nd-act-btn" onClick={markAllRead}><FiCheck /> Mark all read</button>
-                  <button className="crm-nd-act-btn crm-nd-act-danger" onClick={clearAll}><FiTrash2 /> Clear all</button>
                 </div>
                 <div className="crm-nd-list">
                   {notifications.length === 0 ? (
@@ -450,7 +498,12 @@ const StaffNav = () => {
                 </div>
                 {notifications.length > 0 && (
                   <div className="crm-nd-footer">
-                    <button className="crm-nd-view-all">View all notifications <FiChevronRight /></button>
+                    <button
+                      className="crm-nd-view-all"
+                      onClick={() => { setShowNotif(false); navigate("/staff/notifications"); }}
+                    >
+                      View all notifications <FiChevronRight />
+                    </button>
                   </div>
                 )}
               </div>
@@ -462,19 +515,23 @@ const StaffNav = () => {
           <Routes>
             <Route path="/" element={<StaffDashboard />} />
             <Route path="/staff/dashboard" element={<StaffDashboard />} />
-            <Route path="/staff/attendance" element={<Attendence />} />
-            <Route path="/staff/view-attendance" element={<ViewAttendance />} />
+            <Route path="/staff/notifications" element={<NotificationCenter />} />
+            <Route path="/staff/attendance" element={<StudentAttendanceEntry />} />
+            <Route path="/staff/view-attendance" element={<StudentAttendanceView />} />
+            <Route path="/staff/my-attendance" element={<MyStaffAttendance />} />
             <Route path="/staff/homework" element={<Homework />} />
             <Route path="/staff/assignment" element={<Assignment />} />
             <Route path="/staff/timetable" element={<Timetable />} />
             <Route path="/staff/examtype" element={<ExamType />} />
             <Route path="/staff/examportion" element={<ExamPortion />} />
+            <Route path="/staff/subjectmark" element={<Exam />} />
             <Route path="/staff/examresult" element={<Examresult />} />
             <Route path="/staff/leave" element={<LeaveManagement />} />
+            <Route path="/staff/events" element={<Event />} />
             <Route path="/staff/reports" element={<ReportsOverview />} />
             <Route path="/staff/reports/assignment" element={<AssignmentReport />} />
             <Route path="/staff/reports/exam" element={<ExamReport />} />
-            <Route path="/staff/reports/attendance" element={<AttendanceReport />} />
+            <Route path="/staff/reports/attendance" element={<AttendanceReportDashboard />} />
             <Route path="/staff/reports/homework" element={<HomeworkReport />} />
             <Route path="/staff/profile/:id" element={<Profile />} />
             <Route path="/staff/settings" element={<StaffSettingsPage />} />

@@ -54,9 +54,9 @@ export default function ViewAttendance() {
             list.map((r) => ({
               id: r.id,
               student: r.studentName || `${r.firstName || ""} ${r.lastName || ""}`.trim(),
-              admNo: r.admissionNo || r.studentId || "—",
-              className: r.className || "—",
-              sectionName: r.sectionName || "—",
+              admNo: r.admissionNo || r.studentId || "-",
+              className: r.className || "-",
+              sectionName: r.sectionName || "-",
               date: r.date || selDate,
               status: r.status === true || r.status === 1 || r.status === "Present" ? "Present" : "Absent",
             }))
@@ -171,7 +171,7 @@ export default function ViewAttendance() {
                     <td className="att-adm">{r.admNo}</td>
                     <td>
                       <span className="view-att-class-badge">
-                        {r.className}{r.sectionName && r.sectionName !== "—" ? `-${r.sectionName}` : ""}
+                        {r.className}{r.sectionName && r.sectionName !== "-" ? `-${r.sectionName}` : ""}
                       </span>
                     </td>
                     <td style={{ fontSize: 12, color: "#6b7280" }}>{r.date}</td>

@@ -1,6 +1,11 @@
 import { toast } from "react-toastify";
 
 export const handleApiResponse = (res, successMsg) => {
+  // Master helpers like getClass/getSection return the data array directly.
+  if (Array.isArray(res)) {
+    if (successMsg) toast.success(successMsg);
+    return res;
+  }
   if (res?.status === "success" || res?.status === "Success") {
     if (successMsg) toast.success(successMsg);
     return res;
@@ -20,8 +25,7 @@ export const runApi = async (fn, { successMsg, onSuccess, onError } = {}) => {
     const msg =
       err?.response?.data?.message ||
       err?.response?.data?.data ||
-      err?.message ||
-      "Network error";
+      err?.message ;
     // toast.error(typeof msg === "string" ? msg : "Request failed");
     if (onError) onError(err);
     return null;

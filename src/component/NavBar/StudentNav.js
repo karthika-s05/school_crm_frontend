@@ -2,16 +2,24 @@ import React, { useState, useRef, useEffect } from "react";
 import "./nav.css";
 import "./StudentNav.css";
 import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
-import { FiBell, FiSearch, FiChevronLeft, FiChevronRight, FiX, FiCheck, FiTrash2 } from "react-icons/fi";
+import { FiBell, FiSearch, FiChevronLeft, FiChevronRight, FiX, FiCheck } from "react-icons/fi";
 import { getUserData, removeToken, getToken } from "../../services/auth";
-import { getNotifications, updateNotificationTime } from "../../services/api";
+import {
+  getNotifications,
+  markNotificationAsRead,
+  updateNotificationTime,
+} from "../../services/api";
 import StudentDashboard from "../StudentDashboard/StudentDashboard";
-import Homework from "../Homework/Homework";
-import ViewAttendance from "../Atttendence/ViewAttendance";
+import StudentHomework from "../../pages/student/StudentHomework";
+import StudentAssignment from "../../pages/student/StudentAssignment";
+import StudentExamSchedule from "../../pages/student/StudentExamSchedule";
+import StudentExamResults from "../../pages/student/StudentExamResults";
+import StudentMyAttendance from "../../pages/attendance/StudentMyAttendance";
 import Timetable from "../../pages/Timetable/timetable";
-import Examresult from "../../pages/exam/examResults";
 import Event from "../../pages/Event/Event";
 import Profile from "../../pages/profile/profile";
+import LeaveManagement from "../../pages/services/LeaveManagement";
+import NotificationCenter from "../../pages/notifications/NotificationCenter";
 import "../../assets/illustrations/schoolTheme.css";
 import { SchoolAmbience } from "../../assets/illustrations/SchoolIllustrations";
 import {
@@ -30,6 +38,7 @@ const STUDENT_MENU_GROUPS = [
     title: "Homework",
     items: [
       { label: "Homework", path: "/student/homework" },
+      { label: "Assignments", path: "/student/assignment" },
     ],
   },
   {
@@ -41,6 +50,7 @@ const STUDENT_MENU_GROUPS = [
   {
     title: "Examination",
     items: [
+      { label: "Exam Schedule", path: "/student/exam-schedule" },
       { label: "Exam Results", path: "/student/examresult" },
     ],
   },
@@ -50,10 +60,17 @@ const STUDENT_MENU_GROUPS = [
       { label: "School Events", path: "/student/events" },
     ],
   },
+  {
+    title: "Leave", section: "Services",
+    items: [
+      { label: "My Leave", path: "/student/leave" },
+    ],
+  },
 ];
 
 const resolveStudentPageTitle = (pathname) => {
   if (pathname === "/student/dashboard" || pathname === "/") return { title: "Dashboard", parent: "Home" };
+  if (pathname === "/student/notifications") return { title: "Notifications", parent: "Home" };
   for (const group of STUDENT_MENU_GROUPS) {
     for (const item of group.items) {
       if (item.path === pathname) return { title: item.label, parent: group.title };
@@ -160,7 +177,7 @@ const StudentNav = () => {
             title: n.title || "Notification",
             desc: n.message || n.description || "",
             time: n.createdAt || n.time || "",
-            read: n.isRead === 1 || n.read === true,
+            read: Number(n.isRead) === 1 || n.read === true,
             icon: "bx bxs-bell",
             color: "#2D3A8C",
             bg: "#eef0fb",
@@ -168,6 +185,35 @@ const StudentNav = () => {
         }
       })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => {
+      const token = getToken();
+      if (!token) return;
+      getNotifications(token)
+        .then((res) => {
+          if (res?.status === "success" && Array.isArray(res.data)) {
+            setNotifications(res.data.map((n, i) => ({
+              id: n.id || i,
+              title: n.title || "Notification",
+              desc: n.message || n.description || "",
+              time: n.createdAt || n.time || "",
+              read: Number(n.isRead) === 1 || n.read === true,
+              icon: "bx bxs-bell",
+              color: "#2D3A8C",
+              bg: "#eef0fb",
+            })));
+          }
+        })
+        .catch(() => {});
+    };
+    window.addEventListener("notifications:changed", refresh);
+    const pollId = setInterval(refresh, 30000);
+    return () => {
+      window.removeEventListener("notifications:changed", refresh);
+      clearInterval(pollId);
+    };
   }, []);
 
   useEffect(() => {
@@ -187,7 +233,7 @@ const StudentNav = () => {
   useEffect(() => {
     if (collapsed) { setOpenMenu(null); return; }
     const match = STUDENT_MENU_GROUPS.find(g => g.items.some(item => item.path === pathname));
-    if (match) setOpenMenu(match.title);
+    setOpenMenu(match ? match.title : null);
   }, [pathname, collapsed]);
 
   const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -204,9 +250,12 @@ const StudentNav = () => {
     const token = getToken();
     if (token) updateNotificationTime(token).catch(() => {});
   };
-  const clearAll = () => setNotifications([]);
-  const markRead = (id) => setNotifications(ns => ns.map(n => n.id === id ? { ...n, read: true } : n));
-  const logout   = () => { removeToken(); navigate("/"); window.location.reload(); };
+  const markRead = (id) => {
+    setNotifications(ns => ns.map(n => n.id === id ? { ...n, read: true } : n));
+    const token = getToken();
+    if (token) markNotificationAsRead(id, token).catch(() => {});
+  };
+  const logout   = () => { removeToken(); navigate("/", { replace: true }); };
   const closeFlyout = () => { if (collapsed) setOpenMenu(null); };
 
   const isDashboardActive = pathname === "/student/dashboard" || pathname === "/";
@@ -388,7 +437,6 @@ const StudentNav = () => {
                 </div>
                 <div className="crm-nd-actions">
                   <button className="crm-nd-act-btn" onClick={markAllRead}><FiCheck /> Mark all read</button>
-                  <button className="crm-nd-act-btn crm-nd-act-danger" onClick={clearAll}><FiTrash2 /> Clear all</button>
                 </div>
                 <div className="crm-nd-list">
                   {notifications.length === 0 ? (
@@ -414,7 +462,12 @@ const StudentNav = () => {
                 </div>
                 {notifications.length > 0 && (
                   <div className="crm-nd-footer">
-                    <button className="crm-nd-view-all">View all notifications <FiChevronRight /></button>
+                    <button
+                      className="crm-nd-view-all"
+                      onClick={() => { setShowNotif(false); navigate("/student/notifications"); }}
+                    >
+                      View all notifications <FiChevronRight />
+                    </button>
                   </div>
                 )}
               </div>
@@ -426,11 +479,15 @@ const StudentNav = () => {
           <Routes>
             <Route path="/"                    element={<StudentDashboard />} />
             <Route path="/student/dashboard"   element={<StudentDashboard />} />
-            <Route path="/student/attendance"  element={<ViewAttendance />} />
-            <Route path="/student/homework"    element={<Homework />} />
+            <Route path="/student/notifications" element={<NotificationCenter />} />
+            <Route path="/student/attendance"  element={<StudentMyAttendance />} />
+            <Route path="/student/homework"    element={<StudentHomework />} />
+            <Route path="/student/assignment"  element={<StudentAssignment />} />
             <Route path="/student/timetable"   element={<Timetable />} />
-            <Route path="/student/examresult"  element={<Examresult />} />
+            <Route path="/student/exam-schedule" element={<StudentExamSchedule />} />
+            <Route path="/student/examresult"  element={<StudentExamResults />} />
             <Route path="/student/events"      element={<Event />} />
+            <Route path="/student/leave"       element={<LeaveManagement />} />
             <Route path="/student/profile/:id" element={<Profile />} />
             <Route path="/student/settings"    element={<StudentSettingsPage />} />
           </Routes>

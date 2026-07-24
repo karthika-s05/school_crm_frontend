@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────
-   useLeaveManagement.js — central data hook
+   useLeaveManagement.js - central data hook
 ───────────────────────────────────────────── */
 import { useState, useCallback, useEffect } from "react";
 import {
@@ -52,12 +52,8 @@ export function useLeaveManagement() {
           runApi(() => getStaffLeave(token)),   // All Staff Leaves
           runApi(() => getStudentLeave(token, 0, 0)),
         ]);
-        // myLeaves = records belonging to logged-in admin (filter by userName)
-        const adminName = getUserData("adminName") || getUserData("staffName") || "";
-        const allStaff = myRes?.data || [];
-        setMyLeaves(allStaff.filter((r) =>
-          (r.staffName || r.userName || "").toLowerCase() === adminName.toLowerCase()
-        ));
+        // getMyStaffLeave already returns only the logged-in user's leaves
+        setMyLeaves(myRes?.data || []);
         setStaffLeaves(staffRes?.data || []);
         setStudentLeaves(studentRes?.data || []);
       } else {
@@ -66,11 +62,7 @@ export function useLeaveManagement() {
           runApi(() => getMyStaffLeave(token)),
           runApi(() => getStudentLeave(token, 0, 0)),
         ]);
-        const staffName = getUserData("staffName") || "";
-        const allStaff = myRes?.data || [];
-        setMyLeaves(allStaff.filter((r) =>
-          (r.staffName || r.userName || "").toLowerCase() === staffName.toLowerCase()
-        ));
+        setMyLeaves(myRes?.data || []);
         setStudentLeaves(studentRes?.data || []);
       }
     } finally {

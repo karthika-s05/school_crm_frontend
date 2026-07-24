@@ -474,18 +474,7 @@ export default function Studendstationery() {
             )}
           </div>
         </div>
-        <ToastContainer
-          position="top-right"
-          autoClose={2000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          style={{ fontSize: "14px" }} 
-        />
+        <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
       </div>
     </>
   );

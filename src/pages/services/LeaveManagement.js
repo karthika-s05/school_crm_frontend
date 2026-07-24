@@ -29,10 +29,12 @@ const STATUS_COLOR = {
 };
 
 const STATUS_ICON = {
-  Accepted: "bx-check-circle",
-  Rejected: "bx-x-circle",
-  Pending: "bx-time-five",
+  accepted: "bx-check-circle",
+  rejected: "bx-x-circle",
+  pending: "bx-time-five",
 };
+
+const normStatus = (status) => (status || "Pending").toLowerCase();
 
 /* ─ Date helpers ─ */
 const calcDays = (start, end, leaveTime) => {
@@ -45,7 +47,7 @@ const calcDays = (start, end, leaveTime) => {
 };
 
 const fmt = (dateStr) => {
-  if (!dateStr) return "—";
+  if (!dateStr) return "-";
   try {
     return new Date(dateStr).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
   } catch { return dateStr; }
@@ -155,7 +157,8 @@ function ApplyLeaveForm({ isStaff, leaveTypes, onSubmit, onCancel, submitting })
 /* ─ Approve / Reject inline buttons ─ */
 function StatusActions({ row, onUpdate, type }) {
   const [busy, setBusy] = useState(false);
-  if (row.status === "Accepted" || row.status === "Rejected") return null;
+  const status = normStatus(row.status);
+  if (status === "accepted" || status === "rejected") return null;
 
   const handle = async (status) => {
     const remarks = window.prompt(`Enter remarks for ${status.toLowerCase()} leave (optional):`, "") ?? "";
@@ -219,23 +222,23 @@ function LeaveTable({ rows, loading, showActions, onUpdate, type, emptyMsg }) {
                     {(row.studentName || row.staffName || row.userName || "?")[0].toUpperCase()}
                   </div>
                   <div>
-                    <div className="mod-cell-name">{row.studentName || row.staffName || row.userName || "—"}</div>
+                    <div className="mod-cell-name">{row.studentName || row.staffName || row.userName || "-"}</div>
                     {row.className && <div className="mod-cell-sub">{row.className}{row.sectionName ? ` – ${row.sectionName}` : ""}</div>}
                   </div>
                 </div>
               </td>
               <td>{fmt(row.startDate || row.fromDate)}</td>
               <td>{fmt(row.endDate || row.toDate)}</td>
-              <td><span className="lv-days-chip">{row.noOfDays ?? "—"}</span></td>
-              <td className="lv-reason-cell" title={row.reason || ""}>{row.reason || "—"}</td>
-              <td>{row.leaveType || row.leaveTypeName || "—"}</td>
+              <td><span className="lv-days-chip">{row.noOfDays ?? "-"}</span></td>
+              <td className="lv-reason-cell" title={row.reason || ""}>{row.reason || "-"}</td>
+              <td>{row.leaveType || row.leaveTypeName || "-"}</td>
               <td>
-                <span className={`mod-badge ${STATUS_COLOR[row.status] || "mod-badge-gray"}`}>
-                  <i className={`bx ${STATUS_ICON[row.status] || "bx-circle"}`}></i>
+                <span className={`mod-badge ${STATUS_COLOR[normStatus(row.status)] || "mod-badge-gray"}`}>
+                  <i className={`bx ${STATUS_ICON[normStatus(row.status)] || "bx-circle"}`}></i>
                   {row.status || "Pending"}
                 </span>
               </td>
-              <td className="lv-reason-cell" title={row.remarks || ""}>{row.remarks || "—"}</td>
+              <td className="lv-reason-cell" title={row.remarks || ""}>{row.remarks || "-"}</td>
               {showActions && (
                 <td>
                   <StatusActions row={row} onUpdate={onUpdate} type={type} />
@@ -279,10 +282,6 @@ export default function LeaveManagement() {
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
-  useEffect(() => {
-    console.log("myLeaves State:", myLeaves);
-  }, [myLeaves]);
-
   /*  Load data  */
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -294,95 +293,111 @@ export default function LeaveManagement() {
     ];
 
     if (!isStudent) {
-      // Student Leave Requests (for Staff/Admin)
       calls.push(
         runApi(() => getStudentLeave(token, 0, 0), {
           onSuccess: (res) => setStudentLeaves(res.data || []),
         })
       );
 
-      // Staff Leave Requests (Admin view)
       calls.push(
         runApi(() => getStaffLeave(token), {
           onSuccess: (res) => setStaffLeaves(res.data || []),
         })
       );
 
-      // Logged-in Staff/Admin Leave History
       calls.push(
         runApi(() => getMyStaffLeave(token), {
+          onSuccess: (res) => setMyLeaves(res.data || []),
+        })
+      );
+    } else {
+      const admissionNo = getUserData("admissionNo") || "";
+      const studentName = (getUserData("studentName") || "").toLowerCase();
+      calls.push(
+        runApi(() => getStudentLeave(token, 0, 0), {
           onSuccess: (res) => {
-            console.log("My Staff Leave API:", res);
-            setMyLeaves(res.data || []);
+            const all = res.data || [];
+            const mine = all.filter((r) => {
+              const byAdmission =
+                admissionNo &&
+                String(r.admissionNo || r.userName || "") === String(admissionNo);
+              const byName =
+                studentName &&
+                String(r.studentName || "").toLowerCase() === studentName;
+              return byAdmission || byName;
+            });
+            // Prefer own rows; if SP already scoped to the student, use full list
+            const rows = mine.length > 0 ? mine : all;
+            setStudentLeaves(rows);
+            setMyLeaves(rows);
           },
         })
       );
-} else {
-  // Student Leave History
-  calls.push(
-    runApi(() => getStudentLeave(token, 0, 0), {
-      onSuccess: (res) => {
-        setStudentLeaves(res.data || []);
-        setMyLeaves(res.data || []);
-      },
-    })
-  );
-}
+    }
 
-await Promise.all(calls);
-setLoading(false);
+    await Promise.all(calls);
+    setLoading(false);
   }, [token, isStudent]);
 
-useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-/*  Status update  */
-const handleStatusUpdate = async (id, status, remarks, type) => {
-  const fn = type === "student"
-    ? () => updateStudentLeaveStatus({ id, status, remarks }, token)
-    : () => updateStaffLeaveStatus({ id, status, remarks }, token);
-  await runApi(fn, { successMsg: `Leave ${status.toLowerCase()} successfully`, onSuccess: loadData });
-};
+  /*  Status update  */
+  const handleStatusUpdate = async (id, status, remarks, type) => {
+    const fn = type === "student"
+      ? () => updateStudentLeaveStatus({ id, status, remarks }, token)
+      : () => updateStaffLeaveStatus({ id, status, remarks }, token);
+    await runApi(fn, { successMsg: `Leave ${status.toLowerCase()} successfully`, onSuccess: loadData });
+  };
 
-/*  Submit leave application  */
-const handleSubmit = async (form) => {
-  setSubmitting(true);
-  const body = isStudent
-    ? { startDate: form.startDate, endDate: form.endDate, reason: form.reason }
-    : {
-      startDate: form.startDate, endDate: form.endDate, reason: form.reason,
-      leaveTypeId: Number(form.leaveTypeId), leaveTime: form.leaveTime
-    };
-  const fn = isStudent ? () => createStudentLeave(body, token) : () => createStaffLeave(body, token);
-  await runApi(fn, {
-    successMsg: "Leave request submitted successfully!",
-    onSuccess: () => { setShowForm(false); loadData(); },
+  /*  Submit leave application  */
+  const handleSubmit = async (form) => {
+    setSubmitting(true);
+    if (!isStudent && !form.leaveTypeId) {
+      toast.error("Please select a leave type. Ask admin to create leave types if the list is empty.");
+      setSubmitting(false);
+      return;
+    }
+    const body = isStudent
+      ? { startDate: form.startDate, endDate: form.endDate, reason: form.reason }
+      : {
+        startDate: form.startDate, endDate: form.endDate, reason: form.reason,
+        leaveTypeId: Number(form.leaveTypeId), leaveTime: form.leaveTime
+      };
+    const fn = isStudent ? () => createStudentLeave(body, token) : () => createStaffLeave(body, token);
+    await runApi(fn, {
+      successMsg: "Leave request submitted successfully!",
+      onSuccess: () => { setShowForm(false); loadData(); },
+    });
+    setSubmitting(false);
+  };
+
+  /*  Stats  */
+  const statsOf = (list) => ({
+    total: list.length,
+    pending: list.filter((r) => normStatus(r.status) === "pending").length,
+    accepted: list.filter((r) => normStatus(r.status) === "accepted").length,
+    rejected: list.filter((r) => normStatus(r.status) === "rejected").length,
   });
-  setSubmitting(false);
-};
 
-/*  Stats  */
-const statsOf = (list) => ({
-  total: list.length,
-  pending: list.filter(r => (r.status || "pending") === "pending").length,
-  accepted: list.filter(r => r.status === "accepted").length,
-  rejected: list.filter(r => r.status === "rejected").length,
-});
+  const currentList =
+    tab === "staffLeaves" ? staffLeaves :
+    tab === "studentLeaves" ? studentLeaves :
+    myLeaves;
+  const stats = statsOf(currentList);
 
-const currentList = tab === "staffLeaves" ? staffLeaves : studentLeaves;
-const stats = statsOf(currentList);
-
-/*  Tab config  */
-const tabs = isStudent
-  ? [{ id: "myLeave", label: "My Leave History", icon: "bx-history" }]
-  : isAdmin
-    ? [
-      { id: "staffLeaves", label: "Staff Leaves", icon: "bx-briefcase" },
-      { id: "myLeave", label: "Apply My Leave", icon: "bx-calendar-plus" },
-    ]
-    : [
-      { id: "studentLeaves", label: "Student Leaves", icon: "bx-user" },
-      { id: "myLeave", label: "My Leave", icon: "bx-calendar-plus" },
-    ];
+  /*  Tab config  */
+  const tabs = isStudent
+    ? [{ id: "myLeave", label: "My Leave History", icon: "bx-history" }]
+    : isAdmin
+      ? [
+        { id: "staffLeaves", label: "Staff Leaves", icon: "bx-briefcase" },
+        { id: "studentLeaves", label: "Student Leaves", icon: "bx-user" },
+        { id: "myLeave", label: "Apply My Leave", icon: "bx-calendar-plus" },
+      ]
+      : [
+        { id: "studentLeaves", label: "Student Leaves", icon: "bx-user" },
+        { id: "myLeave", label: "My Leave", icon: "bx-calendar-plus" },
+      ];
 
 return (
   <div className="mod-wrap">
@@ -478,7 +493,7 @@ return (
         </div>
       </div>
     ) : tab === "staffLeaves" ? (
-      /* Admin view — Staff Leave list + Approve/Reject */
+      /* Admin view - Staff Leave list + Approve/Reject */
       <div className="mod-table-card">
         <div className="mod-table-toolbar">
           <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
@@ -498,7 +513,7 @@ return (
         </div>
       </div>
     ) : (
-      /* Staff view — Student Leave list + Approve/Reject */
+      /* Staff view - Student Leave list + Approve/Reject */
       <div className="mod-table-card">
         <div className="mod-table-toolbar">
           <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
@@ -519,7 +534,7 @@ return (
       </div>
     )}
 
-    <ToastContainer position="top-right" autoClose={3000} />
+    <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
   </div>
 );
 }

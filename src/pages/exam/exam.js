@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "../List/StudentDummyList.css";
@@ -7,13 +7,14 @@ import "../services/services.css";
 import "./exam.css";
 import {
   createExamreport,
+  getAcademicYear,
   getExam,
   getClass,
   getSection,
   getSubject,
   getStudentlist,
 } from "../../services/api";
-import { getToken } from "../../services/auth";
+import { getToken, getUserData } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
 
 const ROW_COUNT = 6;
@@ -29,11 +30,19 @@ const calculateRemark = (mark) => {
 
 export default function Examreport() {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = getToken();
+  const role = String(getUserData("role") || "").toLowerCase();
+  const portalBase = useMemo(() => {
+    if (location.pathname.startsWith("/staff")) return "/staff";
+    if (role === "staff") return "/staff";
+    return "/admin";
+  }, [location.pathname, role]);
   const [studentId, setStudentId] = useState("");
   const [examId, setExamId] = useState("");
   const [classId, setClassId] = useState("");
   const [sectionId, setSectionId] = useState("");
+  const [academicYear, setAcademicYear] = useState("");
   const [exams, setExams] = useState([]);
   const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
@@ -41,7 +50,11 @@ export default function Examreport() {
   const [students, setStudents] = useState([]);
   const [loadingMeta, setLoadingMeta] = useState(true);
   const [loadingStudents, setLoadingStudents] = useState(false);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [metaError, setMetaError] = useState("");
+  const [studentsError, setStudentsError] = useState("");
+  const [subjectsError, setSubjectsError] = useState("");
   const [rows, setRows] = useState(
     Array.from({ length: ROW_COUNT }, () => ({ subject: "", mark: "", remark: "" }))
   );
@@ -49,18 +62,29 @@ export default function Examreport() {
   useEffect(() => {
     const loadDropdowns = async () => {
       setLoadingMeta(true);
+      setMetaError("");
       try {
-        const [cls, sec, examRes, subj] = await Promise.all([
+        const [cls, sec, examRes, yearRes] = await Promise.all([
           getClass(0, token),
           getSection(0, token),
           getExam({}, token),
-          getSubject(0, token),
+          getAcademicYear(token),
         ]);
+        const yearList = Array.isArray(yearRes?.data) ? yearRes.data : [];
+        const activeYear =
+          yearList.find((item) => String(item.isActive) === "1") ||
+          yearList[0] ||
+          null;
         setClasses(Array.isArray(cls) ? cls : []);
         setSections(Array.isArray(sec) ? sec : []);
         setExams(Array.isArray(examRes?.data) ? examRes.data : []);
-        setSubjects(Array.isArray(subj) ? subj : []);
+        setAcademicYear(activeYear?.academicYear || activeYear?.name || "");
       } catch {
+        setClasses([]);
+        setSections([]);
+        setExams([]);
+        setAcademicYear("");
+        setMetaError("No data available");
         toast.error("Failed to load form data");
       } finally {
         setLoadingMeta(false);
@@ -73,10 +97,12 @@ export default function Examreport() {
     if (!classId || !sectionId) {
       setStudents([]);
       setStudentId("");
+      setStudentsError("");
       return;
     }
     const loadStudents = async () => {
       setLoadingStudents(true);
+      setStudentsError("");
       try {
         const res = await getStudentlist(
           { userName: 0, classId: parseInt(classId, 10), sectionId: parseInt(sectionId, 10) },
@@ -90,15 +116,48 @@ export default function Examreport() {
           : [];
         setStudents(list);
         setStudentId("");
+        if (!list.length) {
+          setStudentsError("No data available");
+        }
       } catch {
         toast.error("Failed to load students");
         setStudents([]);
+        setStudentsError("No data available");
       } finally {
         setLoadingStudents(false);
       }
     };
     loadStudents();
   }, [classId, sectionId, token]);
+
+  useEffect(() => {
+    if (!classId || !sectionId || !examId || !studentId) {
+      setSubjects([]);
+      setSubjectsError("");
+      setRows(Array.from({ length: ROW_COUNT }, () => ({ subject: "", mark: "", remark: "" })));
+      return;
+    }
+
+    const loadSubjects = async () => {
+      setLoadingSubjects(true);
+      setSubjectsError("");
+      try {
+        const subj = await getSubject(0, token);
+        const list = Array.isArray(subj) ? subj : [];
+        setSubjects(list);
+        if (!list.length) {
+          setSubjectsError("No data available");
+        }
+      } catch {
+        setSubjects([]);
+        setSubjectsError("No data available");
+      } finally {
+        setLoadingSubjects(false);
+      }
+    };
+
+    loadSubjects();
+  }, [classId, sectionId, examId, studentId, token]);
 
   const updateRow = (index, field, value) => {
     setRows((prev) => {
@@ -112,8 +171,7 @@ export default function Examreport() {
   };
 
   const handleSubmit = async (e) => {
-    try{
-      console.log("handleSubmit called");
+    try {
     e.preventDefault();
     const filled = rows.filter((r) => r.subject && r.mark !== "");
     if (!studentId || !examId || !classId || !sectionId) {
@@ -144,14 +202,19 @@ export default function Examreport() {
         setExamId("");
         setClassId("");
         setSectionId("");
+        setSubjects([]);
       },
     });
     setSubmitting(false);
-    }catch(error){
+    } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Failed to submit marks");
+      setSubmitting(false);
     }
   };
+
+  const metaUnavailable = !classes.length || !sections.length || !exams.length;
+  const subjectReady = Boolean(classId && sectionId && examId && studentId);
 
   return (
     <div className="sdl-wrap">
@@ -184,6 +247,10 @@ export default function Examreport() {
             <h3 className="exam-form-title">Subject Mark Entry</h3>
 
             <div className="exam-form-grid">
+              <div className="exam-field">
+                <label>Academic Year</label>
+                <input type="text" value={academicYear || "No data available"} readOnly />
+              </div>
               <div className="exam-field">
                 <label>Class</label>
                 <select value={classId} onChange={(e) => setClassId(e.target.value)}>
@@ -228,6 +295,18 @@ export default function Examreport() {
               </div>
             </div>
 
+            {(metaError || metaUnavailable || studentsError || subjectsError) && (
+              <div className="sdl-empty" style={{ marginTop: 16 }}>
+                <i className="bx bx-info-circle"></i>
+                <span>
+                  {metaError ||
+                    (metaUnavailable
+                      ? "No data available"
+                      : studentsError || subjectsError)}
+                </span>
+              </div>
+            )}
+
             <div className="sdl-table-card exam-marks-table">
               <table className="sdl-table">
                 <thead>
@@ -247,8 +326,15 @@ export default function Examreport() {
                           <select
                             value={row.subject}
                             onChange={(e) => updateRow(index, "subject", e.target.value)}
+                            disabled={!subjectReady || loadingSubjects || !subjects.length}
                           >
-                            <option value="">Select Subject</option>
+                            <option value="">
+                              {!subjectReady
+                                ? "Select class, section, student and exam first"
+                                : loadingSubjects
+                                  ? "Loading subjects..."
+                                  : "Select Subject"}
+                            </option>
                             {subjects.map((sub) => (
                               <option key={sub.id} value={sub.id}>{sub.name}</option>
                             ))}
@@ -264,6 +350,7 @@ export default function Examreport() {
                             placeholder="0–100"
                             value={row.mark}
                             onChange={(e) => updateRow(index, "mark", e.target.value)}
+                            disabled={!subjectReady || loadingSubjects || !subjects.length}
                           />
                         </div>
                       </td>
@@ -279,10 +366,10 @@ export default function Examreport() {
             </div>
 
             <div className="exam-form-actions">
-              <button type="button" className="exam-btn-cancel" onClick={() => navigate("/admin/examresult")} disabled={submitting}>
+              <button type="button" className="exam-btn-cancel" onClick={() => navigate(`${portalBase}/examresult`)} disabled={submitting}>
                 Cancel
               </button>
-              <button type="submit" className="exam-btn-submit" disabled={submitting}>
+              <button type="submit" className="exam-btn-submit" disabled={submitting || metaUnavailable || !subjectReady || !subjects.length}>
                 {submitting ? (
                   <><i className="bx bx-loader-alt bx-spin"></i> Submitting…</>
                 ) : (
@@ -294,7 +381,7 @@ export default function Examreport() {
         </form>
       )}
 
-      <ToastContainer position="top-right" autoClose={2000} style={{ fontSize: "14px" }} />
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
     </div>
   );
 }

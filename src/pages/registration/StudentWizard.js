@@ -9,6 +9,7 @@ import { getToken } from "../../services/auth";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./wizard.css";
+import { validateEmail, validateMobile, sanitizeMobileInput, isMobileFieldName } from "../../utils/validators";
 
 const STEPS = [
   { label: "Basic Info",    icon: "bx bxs-user" },
@@ -58,7 +59,10 @@ const initForm = {
   otherDoc: null,
 };
 
-const Field = ({ label, name, type = "text", value, onChange, error, options, required, placeholder }) => (
+const Field = ({
+  label, name, type = "text", value, onChange, error, options, required, placeholder,
+  maxLength, inputMode, pattern,
+}) => (
   <div className="wz-field">
     <label className="wz-label">
       {label}{required && <span className="wz-req">*</span>}
@@ -73,7 +77,18 @@ const Field = ({ label, name, type = "text", value, onChange, error, options, re
     ) : type === "textarea" ? (
       <textarea className={`wz-input wz-textarea${error ? " wz-error-border" : ""}`} name={name} value={value} onChange={onChange} placeholder={placeholder} rows={3} />
     ) : (
-      <input className={`wz-input${error ? " wz-error-border" : ""}`} type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} max={type === "date" ? new Date().toISOString().split("T")[0] : undefined} />
+      <input
+        className={`wz-input${error ? " wz-error-border" : ""}`}
+        type={type === "tel" ? "tel" : type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        inputMode={inputMode}
+        pattern={pattern}
+        max={type === "date" ? new Date().toISOString().split("T")[0] : undefined}
+      />
     )}
     {error && <span className="wz-error">{error}</span>}
   </div>
@@ -297,9 +312,25 @@ export default function StudentWizard() {
 
   const handleChange = e => {
     const { name, value, files } = e.target;
-    const val = files ? files[0] : value;
-    setForm(p => ({ ...p, [name]: val }));
-    setErrors(p => ({ ...p, [name]: "" }));
+    if (files) {
+      setForm(p => ({ ...p, [name]: files[0] }));
+      setErrors(p => ({ ...p, [name]: "" }));
+      return;
+    }
+    const nextValue = isMobileFieldName(name) ? sanitizeMobileInput(value) : value;
+    setForm(p => ({ ...p, [name]: nextValue }));
+    if (isMobileFieldName(name) && nextValue.length === 10) {
+      const labels = {
+        fatherMobile: "Father Mobile",
+        motherMobile: "Mother Mobile",
+        guardianMobile: "Guardian Mobile",
+        studentMobile: "Student Mobile",
+      };
+      const err = validateMobile(nextValue, { label: labels[name] || "Mobile" });
+      setErrors(p => ({ ...p, [name]: err }));
+    } else {
+      setErrors(p => ({ ...p, [name]: "" }));
+    }
   };
 
   const saveDraft = () => {
@@ -323,18 +354,51 @@ export default function StudentWizard() {
     }
     if (s === 2) {
       if (!form.fatherName.trim()) e.fatherName = "Father Name is required";
-      if (!form.fatherMobile.trim()) e.fatherMobile = "Father Mobile is required";
+      const fatherMobileErr = validateMobile(form.fatherMobile, {
+        required: true,
+        label: "Father Mobile",
+      });
+      if (fatherMobileErr) e.fatherMobile = fatherMobileErr;
+      if (form.motherMobile?.trim()) {
+        const err = validateMobile(form.motherMobile, { label: "Mother Mobile" });
+        if (err) e.motherMobile = err;
+      }
+      if (form.guardianMobile?.trim()) {
+        const err = validateMobile(form.guardianMobile, { label: "Guardian Mobile" });
+        if (err) e.guardianMobile = err;
+      }
+      if (form.fatherEmail?.trim()) {
+        const err = validateEmail(form.fatherEmail, { label: "Father Email" });
+        if (err) e.fatherEmail = err;
+      }
+      if (form.motherEmail?.trim()) {
+        const err = validateEmail(form.motherEmail, { label: "Mother Email" });
+        if (err) e.motherEmail = err;
+      }
+      if (form.stdEmail?.trim()) {
+        const err = validateEmail(form.stdEmail, { label: "Student Email" });
+        if (err) e.stdEmail = err;
+      }
+      if (form.studentMobile?.trim()) {
+        const err = validateMobile(form.studentMobile, { label: "Student Mobile" });
+        if (err) e.studentMobile = err;
+      }
     }
     if (s === 3) {
       if (!form.address1.trim()) e.address1 = "Address is required";
       if (!form.pincode.trim()) e.pincode = "Pincode is required";
+      else if (!/^\d{6}$/.test(form.pincode.trim())) e.pincode = "Pincode must be 6 digits";
     }
     return e;
   };
 
   const next = () => {
     const e = validate(step);
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (Object.keys(e).length) {
+      setErrors(e);
+      toast.error(Object.values(e)[0]);
+      return;
+    }
     saveDraftSilent();
     setStep(s => s + 1);
     setEditStep(null);
@@ -376,9 +440,9 @@ export default function StudentWizard() {
         const res = await updateStudent(buildStudentUpdatePayload(form, routeId), token);
         if (res.status?.toLowerCase() === "success") {
           toast.success(res.message || "Student updated successfully!", {
-            onClose: () => navigate(`/studentinfo/${routeId}`),
+            onClose: () => navigate("/admin/students"),
           });
-          navigate(`/studentinfo/${routeId}`);
+          navigate("/admin/students");
         } else {
           toast.error(getRegistrationErrorMessage(res));
         }
@@ -393,7 +457,7 @@ export default function StudentWizard() {
         toast.success((res.message || "Student registered successfully!") + adm, {
           onClose: () => navigate("/admin/students"),
         });
-        navigate("/students");
+        navigate("/admin/students");
       } else {
         toast.error(getRegistrationErrorMessage(res));
       }
@@ -502,19 +566,53 @@ export default function StudentWizard() {
             <p className="wz-section-hdr"><i className="bx bxs-user"></i> Father Details</p>
             <div className="wz-grid">
               <Field label="Father Name" name="fatherName" value={form.fatherName} onChange={handleChange} error={errors.fatherName} required />
-              <Field label="Father Mobile" name="fatherMobile" value={form.fatherMobile} onChange={handleChange} error={errors.fatherMobile} required />
+              <Field
+                label="Father Mobile"
+                name="fatherMobile"
+                type="tel"
+                value={form.fatherMobile}
+                onChange={handleChange}
+                error={errors.fatherMobile}
+                required
+                maxLength={10}
+                inputMode="numeric"
+                pattern="[6-9][0-9]{9}"
+                placeholder="10-digit mobile (starts with 6–9)"
+              />
               <Field label="Father Occupation" name="fatherOccupation" value={form.fatherOccupation} onChange={handleChange} />
             </div>
             <p className="wz-section-hdr"><i className="bx bxs-user"></i> Mother Details</p>
             <div className="wz-grid">
               <Field label="Mother Name" name="motherName" value={form.motherName} onChange={handleChange} />
-              <Field label="Mother Mobile" name="motherMobile" value={form.motherMobile} onChange={handleChange} />
+              <Field
+                label="Mother Mobile"
+                name="motherMobile"
+                type="tel"
+                value={form.motherMobile}
+                onChange={handleChange}
+                error={errors.motherMobile}
+                maxLength={10}
+                inputMode="numeric"
+                pattern="[6-9][0-9]{9}"
+                placeholder="Optional 10-digit mobile"
+              />
               <Field label="Mother Occupation" name="motherOccupation" value={form.motherOccupation} onChange={handleChange} />
             </div>
             <p className="wz-section-hdr"><i className="bx bxs-user-circle"></i> Guardian Details</p>
             <div className="wz-grid">
               <Field label="Guardian Name" name="guardianName" value={form.guardianName} onChange={handleChange} />
-              <Field label="Guardian Mobile" name="guardianMobile" value={form.guardianMobile} onChange={handleChange} />
+              <Field
+                label="Guardian Mobile"
+                name="guardianMobile"
+                type="tel"
+                value={form.guardianMobile}
+                onChange={handleChange}
+                error={errors.guardianMobile}
+                maxLength={10}
+                inputMode="numeric"
+                pattern="[6-9][0-9]{9}"
+                placeholder="Optional 10-digit mobile"
+              />
               <Field label="Relation" name="guardianRelation" value={form.guardianRelation} onChange={handleChange} />
             </div>
           </>
@@ -604,7 +702,7 @@ export default function StudentWizard() {
         </div>
       </div>
 
-      <ToastContainer position="top-right" autoClose={2500} />
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
     </div>
   );
 }

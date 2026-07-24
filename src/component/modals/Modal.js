@@ -15,6 +15,14 @@ import {
   getTimeTable,
 } from "../../services/api";
 import { getToken } from "../../services/auth";
+import { toast } from "react-toastify";
+import {
+  firstErrorMessage,
+  validateFormField,
+  validateFormValues,
+  sanitizeMobileInput,
+  isMobileFieldName,
+} from "../../utils/validators";
 
 const toSelectOptions = (rows, labelKey = "name") =>
   (Array.isArray(rows) ? rows : []).map((row) => ({
@@ -538,32 +546,58 @@ const Modal = ({
 
   const handleInputChange = async (e) => {
     let { name, value, type } = e.target;
-  
-    // Trim leading and trailing spaces
-    value = value.trim();
-  
-  
-    let errorMessage = "";
-  
-    // Replace single quotes and double quotes with spaces
-    value = value.replace(/['"]/g, " ");
-  
-  
-    if (value === "") {
-      errorMessage = `${name} is required.`;
+
+    if (type !== "file" && typeof value === "string") {
+      value = value.replace(/['"]/g, " ");
     }
-  
+
+    if (type !== "file" && isMobileFieldName(name)) {
+      value = sanitizeMobileInput(value);
+    }
+
+    let errorMessage = "";
+    const fieldMeta = (inputData || []).find((f) => f.name === name);
+    const label = fieldMeta?.label || name;
+
+    if (type === "file") {
+      errorMessage = validateFormField(name, e.target.files?.[0], {
+        required: true,
+        label,
+      });
+    } else {
+      errorMessage = validateFormField(name, value, { required: true, label });
+      // While typing mobile, only show format error once 10 digits entered
+      if (isMobileFieldName(name) && String(value).length > 0 && String(value).length < 10) {
+        errorMessage = "";
+      }
+    }
+
     if (name === "fromDate" || name === "startDate") {
       setDate(value);
     }
-  
+
     setValidationErrors({ ...validationErrors, [name]: errorMessage });
-  
-  
+
     setFormData((prevInputValue) => ({
       ...prevInputValue,
       [name]: type === "file" ? e.target.files[0] : value,
     }));
+  };
+
+  const handleFormSubmit = (e) => {
+    if (e?.preventDefault) e.preventDefault();
+    const fields = (inputData || []).map((f) => ({
+      name: f.name,
+      label: f.label,
+      required: true,
+    }));
+    const errors = validateFormValues(fields, formData || {});
+    setValidationErrors(errors);
+    if (Object.keys(errors).length) {
+      toast.error(firstErrorMessage(errors));
+      return;
+    }
+    if (typeof onSubmit === "function") onSubmit(e);
   };
 
 
@@ -632,10 +666,10 @@ const Modal = ({
                 </div>
 
                 <div className="btn-style" style={{gap:'10px'}}>
-                  <button class="custom-button" onClick={onSubmit}>
+                  <button type="button" className="custom-button" onClick={handleFormSubmit}>
                     {editData ? "Update" : "Submit"}
                   </button>
-                  <button class="cancel-button" onClick={closeModal}>
+                  <button type="button" className="cancel-button" onClick={closeModal}>
                     Cancel
                   </button>
                   &nbsp;&nbsp;

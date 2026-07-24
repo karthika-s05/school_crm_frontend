@@ -49,7 +49,7 @@ export default function LeaveTable({
             const status     = row.status || "Pending";
             const statusKey  = status.toLowerCase();
             const badgeClass = STATUS_COLOR[statusKey] || "mod-badge-gray";
-            const iconClass  = STATUS_ICON[status]     || "bx-circle";
+            const iconClass  = STATUS_ICON[statusKey] || "bx-circle";
 
             return (
               <tr key={row.id || i}>
@@ -73,12 +73,12 @@ export default function LeaveTable({
                 <td>{fmt(row.startDate || row.fromDate)}</td>
                 <td>{fmt(row.endDate   || row.toDate)}</td>
                 <td>
-                  <span className="lv-days-chip">{row.noOfDays ?? "—"}</span>
+                  <span className="lv-days-chip">{row.noOfDays ?? "-"}</span>
                 </td>
                 <td className="lv-reason-cell" title={row.reason || ""}>
-                  {row.reason || "—"}
+                  {row.reason || "-"}
                 </td>
-                <td>{row.leaveType || row.leaveTypeName || "—"}</td>
+                <td>{row.leaveType || row.leaveTypeName || "-"}</td>
                 <td>
                   <span className={`mod-badge ${badgeClass}`}>
                     <i className={`bx ${iconClass}`}></i>
@@ -86,7 +86,7 @@ export default function LeaveTable({
                   </span>
                 </td>
                 <td className="lv-reason-cell" title={row.remarks || ""}>
-                  {row.remarks || "—"}
+                  {row.remarks || "-"}
                 </td>
                 {showActions && (
                   <td>

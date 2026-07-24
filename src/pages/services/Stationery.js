@@ -36,13 +36,13 @@ const mapApiProduct = (item) => {
   const reorder = Number(item.reorder ?? 20);
   return {
     id: item.id,
-    name: item.product ?? item.name ?? "—",
+    name: item.product ?? item.name ?? "-",
     category: item.category ?? "Stationery",
     unitPrice: Number(item.unitPrice ?? item.price ?? 0),
     stock,
     reorder,
     unit: item.unit ?? "Piece",
-    supplier: item.supplier ?? "—",
+    supplier: item.supplier ?? "-",
     status: item.status ?? deriveStatus(stock, reorder),
     classId: item.classId,
     sectionId: item.sectionId,
@@ -56,11 +56,11 @@ const mapApiOrder = (item, classLabel) => {
   const total = Number(item.total ?? 0);
   return {
     id: item.id ?? item.studentId,
-    admNo: item.studentId ?? item.admissionNo ?? "—",
-    student: item.studentName ?? item.student ?? "—",
+    admNo: item.studentId ?? item.admissionNo ?? "-",
+    student: item.studentName ?? item.student ?? "-",
     cls: classLabel,
     items: [{ productId: item.id, productName: item.product, qty: issue || total }],
-    date: item.date ?? item.issueDate ?? "—",
+    date: item.date ?? item.issueDate ?? "-",
     total,
     status: pending > 0 ? "Pending" : "Issued",
     _raw: item,
@@ -109,7 +109,7 @@ export default function Stationery() {
     const list = Array.isArray(res?.data) ? res.data : [];
     const c = classes.find((x) => x.id === cId);
     const s = sections.find((x) => x.id === sId);
-    const label = c && s ? `${c.name}-${s.name}` : "—";
+    const label = c && s ? `${c.name}-${s.name}` : "-";
     setOrders(list.map((item) => mapApiOrder(item, label)));
   }, [classes, sections]);
 

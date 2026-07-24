@@ -1,19 +1,23 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "../../component/modules.css";
 import { getClass, getReportsOverview, getSection } from "../../services/api";
-import { getToken } from "../../services/auth";
+import { getToken, getUserData } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
-
-const REPORT_CARDS = [
-  { title: "Assignment Report", sub: "Track assignment submissions", path: "/assignment", icon: "bx bx-task",           color: "#2D3A8C", bg: "#eef0fb" },
-  { title: "Exam Report",       sub: "View exam results & marks",   path: "/examtable",  icon: "bx bx-book-open",      color: "#E8541A", bg: "#fdf0eb" },
-  { title: "Attendance Report", sub: "Daily & monthly attendance",  path: "/reports/attendance", icon: "bx bx-calendar-check", color: "#16a34a", bg: "#dcfce7" },
-  { title: "Homework Report",   sub: "Homework completion status",  path: "/reports/homework",   icon: "bx bx-notepad",        color: "#7c3aed", bg: "#f5f3ff" },
-];
 
 export default function ReportsOverview() {
   const token = getToken();
+  const role = String(getUserData("role") || "").toLowerCase();
+  const portalBase = role === "staff" ? "/staff" : "/admin";
+  const reportCards = useMemo(
+    () => [
+      { title: "Assignment Report", sub: "Track assignment submissions", path: `${portalBase}/reports/assignment`, icon: "bx bx-task", color: "#2D3A8C", bg: "#eef0fb" },
+      { title: "Exam Report", sub: "View exam results & marks", path: `${portalBase}/reports/exam`, icon: "bx bx-book-open", color: "#E8541A", bg: "#fdf0eb" },
+      { title: "Attendance Report", sub: "Daily & monthly attendance", path: `${portalBase}/reports/attendance`, icon: "bx bx-calendar-check", color: "#16a34a", bg: "#dcfce7" },
+      { title: "Homework Report", sub: "Homework completion status", path: `${portalBase}/reports/homework`, icon: "bx bx-notepad", color: "#7c3aed", bg: "#f5f3ff" },
+    ],
+    [portalBase]
+  );
   const [classes,   setClasses]   = useState([]);
   const [sections,  setSections]  = useState([]);
   const [classId,   setClassId]   = useState("");
@@ -49,10 +53,10 @@ export default function ReportsOverview() {
   useEffect(() => { if (classId && sectionId) fetchOverview(); }, [fetchOverview, classId, sectionId]);
 
   const statCards = [
-    { label: "Total Assignments", value: overview?.assignment?.total ?? "—",  sub: `Active: ${overview?.assignment?.active ?? 0}`,  icon: "bx bx-task",           color: "#2D3A8C", bg: "#eef0fb" },
-    { label: "Total Homework",    value: overview?.homework?.total    ?? "—",  sub: "Assigned tasks",                                icon: "bx bx-book",           color: "#d97706", bg: "#fef3c7" },
-    { label: "Attendance Rate",   value: overview?.attendance?.rate   ?? "—",  sub: "This month",                                    icon: "bx bx-calendar-check", color: "#16a34a", bg: "#dcfce7" },
-    { label: "Upcoming Exams",    value: overview?.exams?.upcoming    ?? "—",  sub: "Scheduled",                                     icon: "bx bx-edit",           color: "#E8541A", bg: "#fdf0eb" },
+    { label: "Total Assignments", value: overview?.assignment?.total ?? "-",  sub: `Active: ${overview?.assignment?.active ?? 0}`,  icon: "bx bx-task",           color: "#2D3A8C", bg: "#eef0fb" },
+    { label: "Total Homework",    value: overview?.homework?.total    ?? "-",  sub: "Assigned tasks",                                icon: "bx bx-book",           color: "#d97706", bg: "#fef3c7" },
+    { label: "Attendance Rate",   value: overview?.attendance?.rate   ?? "-",  sub: "This month",                                    icon: "bx bx-calendar-check", color: "#16a34a", bg: "#dcfce7" },
+    { label: "Upcoming Exams",    value: overview?.exams?.upcoming    ?? "-",  sub: "Scheduled",                                     icon: "bx bx-edit",           color: "#E8541A", bg: "#fdf0eb" },
   ];
 
   return (
@@ -114,7 +118,7 @@ export default function ReportsOverview() {
           Report Modules
         </h3>
         <div className="mod-report-grid">
-          {REPORT_CARDS.map(card => (
+          {reportCards.map(card => (
             <Link key={card.path} to={card.path} className="mod-report-card">
               <div className="mod-report-card-icon" style={{ background: card.bg, color: card.color }}>
                 <i className={card.icon}></i>

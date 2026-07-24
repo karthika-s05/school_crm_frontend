@@ -136,13 +136,13 @@ export default function ExamType() {
 
   return (
     <div className="sdl-wrap">
-      <ToastContainer position="top-right" autoClose={2000} style={{ fontSize: "14px" }} />
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
 
       <div className="sdl-stats" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
         {[
           { label: "Total Types", val: data.length, icon: "bx bxs-notepad", color: "#2D3A8C", bg: "#eef0fb" },
           { label: "Active", val: data.length, icon: "bx bxs-check-circle", color: "#16a34a", bg: "#dcfce7" },
-          { label: "Max Marks", val: maxMarksStat || "—", icon: "bx bxs-trophy", color: "#E8541A", bg: "#fdf0eb" },
+          { label: "Max Marks", val: maxMarksStat || "-", icon: "bx bxs-trophy", color: "#E8541A", bg: "#fdf0eb" },
         ].map((s, i) => (
           <div className="sdl-stat-card" key={i}>
             <div className="sdl-stat-icon" style={{ background: s.bg, color: s.color }}>

@@ -16,6 +16,7 @@ import {
   postTransportRoute,
 } from "../../services/api";
 import { runApi } from "../../utils/apiHelper";
+import { validateMobile, sanitizeMobileInput } from "../../utils/validators";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -150,6 +151,14 @@ export default function Transport() {
       toast.error("Bus number, driver, route, and driver phone are required");
       return;
     }
+    const phoneErr = validateMobile(form.driverPhone, {
+      required: true,
+      label: "Driver phone",
+    });
+    if (phoneErr) {
+      toast.error(phoneErr);
+      return;
+    }
     const token = getToken();
     if (!token) return;
 
@@ -269,7 +278,7 @@ export default function Transport() {
           <i className="bx bx-loader-alt bx-spin"></i>
           <span>Loading transport data…</span>
         </div>
-        <ToastContainer position="top-right" autoClose={2500} />
+        <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
       </div>
     );
   }
@@ -397,11 +406,11 @@ export default function Transport() {
                     <div className="svc-bus-meta">
                       <span>
                         <i className="bx bxs-user"></i>
-                        {b.driver || "—"}
+                        {b.driver || "-"}
                       </span>
                       <span>
                         <i className="bx bx-phone"></i>
-                        {b.driverPhone || "—"}
+                        {b.driverPhone || "-"}
                       </span>
                     </div>
                     <div className="svc-cap-wrap">
@@ -525,14 +534,14 @@ export default function Transport() {
                             </td>
                             <td className="sdl-adm">{s.admNo}</td>
                             <td>
-                              <span className="sdl-class-badge">{s.cls || "—"}</span>
+                              <span className="sdl-class-badge">{s.cls || "-"}</span>
                             </td>
                             <td>
-                              <span className="svc-route-badge">{bus?.busNo || "—"}</span>
+                              <span className="svc-route-badge">{bus?.busNo || "-"}</span>
                             </td>
                             <td>
                               <span className="svc-stop-chip" style={{ margin: 0 }}>
-                                {s.stop || "—"}
+                                {s.stop || "-"}
                               </span>
                             </td>
                             <td>
@@ -697,10 +706,10 @@ export default function Transport() {
                               </div>
                             </td>
                             <td>
-                              <span className="sdl-class-badge">{s.cls || "—"}</span>
+                              <span className="sdl-class-badge">{s.cls || "-"}</span>
                             </td>
                             <td>
-                              <span className="svc-route-badge">{bus?.busNo || "—"}</span>
+                              <span className="svc-route-badge">{bus?.busNo || "-"}</span>
                             </td>
                             <td>
                               <strong>₹{s.annualFee.toLocaleString()}</strong>
@@ -767,8 +776,23 @@ export default function Transport() {
                     <label>{lbl}</label>
                     <input
                       value={form[name] || ""}
-                      onChange={(e) => fc({ [name]: e.target.value })}
-                      placeholder={`Enter ${lbl}`}
+                      type={name === "driverPhone" ? "tel" : "text"}
+                      inputMode={name === "driverPhone" ? "numeric" : undefined}
+                      maxLength={name === "driverPhone" ? 10 : undefined}
+                      pattern={name === "driverPhone" ? "[6-9][0-9]{9}" : undefined}
+                      onChange={(e) =>
+                        fc({
+                          [name]:
+                            name === "driverPhone"
+                              ? sanitizeMobileInput(e.target.value)
+                              : e.target.value,
+                        })
+                      }
+                      placeholder={
+                        name === "driverPhone"
+                          ? "10-digit mobile (starts with 6–9)"
+                          : `Enter ${lbl}`
+                      }
                     />
                   </div>
                 ))}
@@ -871,7 +895,7 @@ export default function Transport() {
         />
       )}
 
-      <ToastContainer position="top-right" autoClose={2500} />
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
     </div>
   );
 }

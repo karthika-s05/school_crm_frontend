@@ -221,10 +221,13 @@ const InputWithLabel = ({
                 <input
                   className="effect-1"
                   ref={inputRef}
-                  type={type}
+                  type={/mobile|phone|contact/i.test(String(name)) ? "tel" : type}
                   name={name}
                   value={value ?? ""}
                   onChange={onChange}
+                  maxLength={/mobile|phone|contact/i.test(String(name)) ? 10 : undefined}
+                  inputMode={/mobile|phone|contact/i.test(String(name)) ? "numeric" : undefined}
+                  pattern={/mobile|phone|contact/i.test(String(name)) ? "[6-9][0-9]{9}" : undefined}
                 />
                 {validationErrors[name] && (
                   <p className="error-message1">{validationErrors[name]}</p>

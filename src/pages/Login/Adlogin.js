@@ -1,17 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash, faUser, faLock } from "@fortawesome/free-solid-svg-icons";
 import { useFormik } from "formik";
-import { useNavigate } from "react-router-dom";
 import { login } from "../../services/api";
-import { setToken, setUserData } from "../../services/auth";
+import { setToken, setUserData, notifyAuthChanged, POST_LOGIN_REDIRECT_KEY } from "../../services/auth";
 import { ToastContainer, toast } from "react-toastify";
 import "./adlogin.css";
 import "../../assets/illustrations/schoolTheme.css";
 import { SchoolCampusScene } from "../../assets/illustrations/SchoolIllustrations";
 
 export default function Adlogin() {
-  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const inputRef = useRef(null);
@@ -52,12 +51,13 @@ export default function Adlogin() {
       const redirectPath = userData.role === "Staff" ? "/staff/dashboard"
         : userData.role === "Student" ? "/student/dashboard"
         : "/dashboard";
-      toast.success("Login successful!", {
-        onClose: () => {
-          navigate(redirectPath);
-          window.location.reload();
-        },
+      // Prefer client-side handoff (no full reload). IIS 404 happens when the
+      // browser requests /dashboard as a real file after window.location.reload().
+      sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, redirectPath);
+      flushSync(() => {
+        notifyAuthChanged();
       });
+      toast.success("Login successful!");
     } catch (error) {
       console.error("Login error:", error);
       setErrorMessage("Invalid credentials. Please try again.");
@@ -174,14 +174,7 @@ export default function Adlogin() {
         </div>
       </div>
 
-      <ToastContainer
-        position="top-right"
-        autoClose={1000}
-        hideProgressBar={false}
-        closeOnClick
-        pauseOnHover
-        style={{ fontSize: "14px" }}
-      />
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
     </div>
   );
 }

@@ -567,3 +567,15 @@
   .sfd-prod-grid { grid-template-columns: repeat(2, 1fr); }
   .sfd-perf-footer { grid-template-columns: 1fr 1fr 1fr; }
 }
+
+.sfd-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80px;
+  color: #9ca3af;
+  font-size: 13px;
+  text-align: center;
+  padding: 12px;
+  list-style: none;
+}

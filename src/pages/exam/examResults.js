@@ -1,13 +1,20 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "../List/StudentDummyList.css";
 import "../services/services.css";
 import "./exam.css";
 import TableActionMenu from "../../component/Table/TableActionMenu";
-import { getExamResultlist, getExam, getClass, getSection } from "../../services/api";
-import { getToken } from "../../services/auth";
+import {
+  getExamResultlist,
+  getExam,
+  getClass,
+  getSection,
+  publishExamResult,
+  unpublishExamResult,
+} from "../../services/api";
+import { getToken, getUserData } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
 
 const PER_PAGE = 10;
@@ -23,14 +30,14 @@ const initials = (n) =>
 const mapResultItem = (item) => ({
   id: item.id,
   student: item.studentName,
-  admNo: item.admissionNo || item.registrationNo || "—",
+  admNo: item.admissionNo || item.registrationNo || "-",
   examName: item.examName,
   className: item.className,
   sectionName: item.sectionName,
-  subjectName: item.subjectName || "—",
+  subjectName: item.subjectName || "-",
   mark: item.obtainedMark ?? item.mark ?? 0,
   total: item.totalMark ?? item.total ?? 0,
-  remarks: item.remarks || "—",
+  remarks: item.remarks || "-",
   result:
     item.result ||
     (Number(item.obtainedMark) >= Number(item.passMark ?? 40) ? "Pass" : "Fail"),
@@ -38,7 +45,17 @@ const mapResultItem = (item) => ({
 
 export default function Examresult() {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = getToken();
+  const role = String(getUserData("role") || "").toLowerCase();
+  const portalBase = useMemo(() => {
+    if (location.pathname.startsWith("/staff")) return "/staff";
+    if (location.pathname.startsWith("/student")) return "/student";
+    if (role === "staff") return "/staff";
+    if (role === "student") return "/student";
+    return "/admin";
+  }, [location.pathname, role]);
+  const subjectMarkPath = `${portalBase}/subjectmark`;
   const [data, setData] = useState([]);
   const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
@@ -50,6 +67,7 @@ export default function Examresult() {
   const [examFilter, setExamFilter] = useState("");
   const [resultFilter, setResultFilter] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [publishing, setPublishing] = useState(false);
 
   const loadResults = useCallback(async () => {
     if (!clsFilter || !sectionFilter || !examFilter) {
@@ -121,6 +139,8 @@ export default function Examresult() {
 
   const totalPgs = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const canPublish = portalBase !== "/student";
+  const allPublished = data.length > 0 && data.every((item) => item.isPublished);
 
   const passCount = data.filter((r) => r.result === "Pass").length;
   const failCount = data.filter((r) => r.result === "Fail").length;
@@ -135,16 +155,39 @@ export default function Examresult() {
     setPage(1);
   };
 
+  const handlePublishToggle = async () => {
+    if (!clsFilter || !sectionFilter || !examFilter) return;
+    setPublishing(true);
+    await runApi(
+      () =>
+        (allPublished ? unpublishExamResult : publishExamResult)(
+          {
+            examId: parseInt(examFilter, 10),
+            classId: parseInt(clsFilter, 10),
+            sectionId: parseInt(sectionFilter, 10),
+          },
+          token
+        ),
+      {
+        successMsg: allPublished
+          ? "Exam result moved to draft"
+          : "Exam result published",
+        onSuccess: () => loadResults(),
+      }
+    );
+    setPublishing(false);
+  };
+
   return (
     <div className="sdl-wrap">
-      <ToastContainer position="top-right" autoClose={2000} style={{ fontSize: "14px" }} />
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
 
       <div className="sdl-stats" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
         {[
           { label: "Total Records", val: data.length, icon: "bx bxs-spreadsheet", color: "#2D3A8C", bg: "#eef0fb" },
           { label: "Pass", val: passCount, icon: "bx bxs-check-circle", color: "#16a34a", bg: "#dcfce7" },
           { label: "Fail", val: failCount, icon: "bx bxs-x-circle", color: "#ef4444", bg: "#fef2f2" },
-          { label: "Avg Mark", val: data.length ? `${avgMark}/${avgTotal}` : "—", icon: "bx bxs-bar-chart-alt-2", color: "#d97706", bg: "#fef3c7" },
+          { label: "Avg Mark", val: data.length ? `${avgMark}/${avgTotal}` : "-", icon: "bx bxs-bar-chart-alt-2", color: "#d97706", bg: "#fef3c7" },
         ].map((s, i) => (
           <div className="sdl-stat-card" key={i}>
             <div className="sdl-stat-icon" style={{ background: s.bg, color: s.color }}>
@@ -220,11 +263,36 @@ export default function Examresult() {
               <i className="bx bx-x"></i> Clear
             </button>
           )}
-          <button className="sdl-add-btn" onClick={() => navigate("/admin/subjectmark")}>
+          <button className="sdl-add-btn" onClick={() => navigate(subjectMarkPath)}>
             <i className="bx bx-plus"></i> Add Marks
           </button>
+          {canPublish && (
+            <button
+              className="sdl-add-btn"
+              type="button"
+              onClick={handlePublishToggle}
+              disabled={publishing || !clsFilter || !sectionFilter || !examFilter || !data.length}
+              style={{
+                background: allPublished ? "#fff7ed" : "#ecfdf5",
+                color: allPublished ? "#c2410c" : "#166534",
+                border: `1px solid ${allPublished ? "#fdba74" : "#86efac"}`,
+              }}
+            >
+              <i className={`bx ${publishing ? "bx-loader-alt bx-spin" : allPublished ? "bx-reset" : "bx-upload"}`}></i>
+              {allPublished ? " Move To Draft" : " Publish"}
+            </button>
+          )}
         </div>
       </div>
+
+      {canPublish && (
+        <div style={{ marginBottom: 12, color: "#64748b", fontSize: 13 }}>
+          Status:{" "}
+          <strong style={{ color: allPublished ? "#16a34a" : "#d97706" }}>
+            {data.length ? (allPublished ? "Published" : "Draft") : "No data"}
+          </strong>
+        </div>
+      )}
 
       <div className="sdl-table-card">
         {loading ? (
@@ -285,7 +353,7 @@ export default function Examresult() {
                       <span className={`sdl-status ${(item.result || "").toLowerCase()}`}>{item.result}</span>
                     </td>
                     <td>
-                      <TableActionMenu onEdit={() => navigate("/admin/subjectmark")} onDelete={() => {}} />
+                      <TableActionMenu onEdit={() => navigate(subjectMarkPath)} onDelete={() => {}} />
                     </td>
                   </tr>
                 ))

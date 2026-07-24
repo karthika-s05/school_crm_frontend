@@ -27,7 +27,7 @@ const EMPTY_FORM = {
   date: "",
 };
 
-// Normalise the homework list response — handles both array and { data: [] } shapes
+// Normalise the homework list response - handles both array and { data: [] } shapes
 const normalizeList = (res) => {
   if (!res) return [];
   if (Array.isArray(res)) return res;
@@ -128,7 +128,7 @@ export default function Homework() {
   const paged      = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const subjectLabel = (id) =>
-    subjects.find((s) => s.id === Number(id))?.name || String(id || "—");
+    subjects.find((s) => s.id === Number(id))?.name || String(id || "-");
 
   //  Open Add modal 
   const openAdd = () => {
@@ -177,6 +177,18 @@ export default function Homework() {
 
   //  POST /create_update_homework 
   const handleSave = async () => {
+    if (!form.classId) {
+      toast.warning("Class is required");
+      return;
+    }
+    if (!form.sectionId) {
+      toast.warning("Section is required");
+      return;
+    }
+    if (!form.subjectId) {
+      toast.warning("Subject is required");
+      return;
+    }
     if (!form.description.trim()) {
       toast.warning("Description is required");
       return;
@@ -371,7 +383,7 @@ export default function Homework() {
                       </div>
                     </td>
 
-                    {/* Description — truncated */}
+                    {/* Description - truncated */}
                     <td style={{ maxWidth: 260 }}>
                       <span style={{
                         display: "block",
@@ -379,7 +391,7 @@ export default function Homework() {
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
                       }}>
-                        {r.description || "—"}
+                        {r.description || "-"}
                       </span>
                     </td>
 
@@ -390,7 +402,7 @@ export default function Homework() {
                       </span>
                     </td>
 
-                    <td>{r.date || "—"}</td>
+                    <td>{r.date || "-"}</td>
 
                     <td>
                       <span className={`mod-badge ${status.cls}`}>{status.label}</span>
@@ -468,7 +480,7 @@ export default function Homework() {
         )}
       </div>
 
-      {/*  Add / Edit Modal — POST /create_update_homework  */}
+      {/*  Add / Edit Modal - POST /create_update_homework  */}
       {showModal && (
         <div className="mod-modal-overlay" onClick={() => !saving && setShowModal(false)}>
           <div className="mod-modal" onClick={(e) => e.stopPropagation()}>
@@ -599,9 +611,9 @@ export default function Homework() {
                 ["Subject",     viewItem.subject || viewItem.subjectName || subjectLabel(viewItem.subjectId)],
                 ["Class",       viewItem.className  || `Class ${viewItem.classId   || filter.classId}`],
                 ["Section",     viewItem.sectionName || `Section ${viewItem.sectionId || filter.sectionId}`],
-                ["Due Date",    viewItem.date        || "—"],
+                ["Due Date",    viewItem.date        || "-"],
                 ["Status",      getStatus(viewItem.date).label],
-                ["Description", viewItem.description || "—"],
+                ["Description", viewItem.description || "-"],
               ].map(([label, value]) => (
                 <div className="mod-detail-row" key={label}>
                   <span className="mod-detail-label">{label}</span>
@@ -627,7 +639,7 @@ export default function Homework() {
         </div>
       )}
 
-      <ToastContainer position="top-right" autoClose={2500} style={{ fontSize: 14 }} />
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
     </div>
   );
 }

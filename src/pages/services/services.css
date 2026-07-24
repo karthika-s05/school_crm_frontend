@@ -409,6 +409,71 @@
 
 .svc-btn-cancel:hover { background: #f1f5f9; }
 
+.svc-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background: linear-gradient(135deg, #2D3A8C, #3b82f6);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: opacity .18s;
+}
+
+.svc-btn-primary:hover { opacity: .9; }
+.svc-btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+
+.svc-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: background .15s;
+}
+
+.svc-btn-ghost:hover { background: #f1f5f9; }
+
+.svc-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 6px;
+  font-family: "Poppins", sans-serif;
+}
+
+.svc-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-family: "Poppins", sans-serif;
+  color: #1e293b;
+  background: #fff;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.svc-input:focus { border-color: #2D3A8C; }
+
+.sdl-status.paid { background: #f0fdf4; color: #16a34a; }
+.sdl-status.partial { background: #fffbeb; color: #d97706; }
+.sdl-status.unpaid { background: #fef2f2; color: #ef4444; }
+
 .svc-btn-save {
   display: flex;
   align-items: center;

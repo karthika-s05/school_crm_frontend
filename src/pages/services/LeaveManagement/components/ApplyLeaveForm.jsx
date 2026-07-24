@@ -81,7 +81,7 @@ export default function ApplyLeaveForm({
             )}
           </div>
 
-          {/* Leave Type — Staff / Admin only */}
+          {/* Leave Type - Staff / Admin only */}
           {isStaff && (
             <div className="mod-form-group">
               <label>Leave Type <span className="lv-required">*</span></label>
@@ -101,7 +101,7 @@ export default function ApplyLeaveForm({
             </div>
           )}
 
-          {/* Duration — Staff / Admin only */}
+          {/* Duration - Staff / Admin only */}
           {isStaff && (
             <div className="mod-form-group">
               <label>Leave Duration</label>

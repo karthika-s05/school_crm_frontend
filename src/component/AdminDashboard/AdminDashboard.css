@@ -56,7 +56,7 @@
 .kst-r1 {
   display: flex;
   gap: 16px;
-  /* margin-bottom: 16px; */
+  margin-bottom: 16px;
   align-items: stretch;
 }
 

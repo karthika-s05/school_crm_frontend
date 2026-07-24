@@ -5,7 +5,7 @@ import {
   getHomework,
   getExam,
   getexamPortion,
-  getViewAttendance,
+  getStdAttendance,
   getTimeTable,
   getEvent,
   getExamResultlist,
@@ -57,7 +57,7 @@ const StudentPortal = () => {
   const [subjectTeachers, setSubjectTeachers] = useState([]);
   const [leaves,          setLeaves]          = useState([]);
   const [leaveTypes,      setLeaveTypes]      = useState([]);
-  const [leaveForm,       setLeaveForm]       = useState({ leaveTypeId: "", fromDate: "", toDate: "", reason: "" });
+  const [leaveForm,       setLeaveForm]       = useState({ leaveTypeId: "", startDate: "", endDate: "", reason: "" });
   const [leaveMsg,        setLeaveMsg]        = useState("");
   const [loading,         setLoading]         = useState(false);
 
@@ -69,9 +69,10 @@ const StudentPortal = () => {
     setLoading(true);
 
     if (activeTab === "Attendance") {
+      // Monthly summary API scoped to the logged-in student (JWT-based)
       runApi(
-        () => getViewAttendance({ classId, sectionId, month: today.getMonth() + 1, year: today.getFullYear() }, token),
-        { onSuccess: (res) => setAttendance(res.data || []) }
+        () => getStdAttendance({ month: today.getMonth() + 1 }, token),
+        { onSuccess: (res) => setAttendance(Array.isArray(res.data) ? res.data : []) }
       ).finally(() => setLoading(false));
     }
 
@@ -135,7 +136,9 @@ const StudentPortal = () => {
     }
   }, [activeTab, classId, sectionId]);
 
-  const myAttRow = attendance.find((r) => r.admissionNo === admissionNo) || attendance[0];
+  // get_student_attendance returns: [{ WorkingDays, prestent, absent, percentage, leaveDate: [...] }]
+  const myAttRow = attendance[0] || null;
+  const absentDates = Array.isArray(myAttRow?.leaveDate) ? myAttRow.leaveDate : [];
 
   const handleLeaveSubmit = async (e) => {
     e.preventDefault();
@@ -143,7 +146,7 @@ const StudentPortal = () => {
     await runApi(() => createStudentLeave(leaveForm, token), {
       onSuccess: () => {
         setLeaveMsg("Leave applied successfully!");
-        setLeaveForm({ leaveTypeId: "", fromDate: "", toDate: "", reason: "" });
+        setLeaveForm({ leaveTypeId: "", startDate: "", endDate: "", reason: "" });
         runApi(() => getStudentLeave(token), { onSuccess: (res) => setLeaves(res.data || []) });
       },
       onError: () => setLeaveMsg("Failed to apply leave. Please try again."),
@@ -183,15 +186,15 @@ const StudentPortal = () => {
               <>
                 <div className="sp-att-summary">
                   {[
-                    { label: "Present",    value: myAttRow.presentDays ?? "--", color: "#16a34a", bg: "#dcfce7" },
-                    { label: "Absent",     value: myAttRow.absentDays  ?? "--", color: "#ef4444", bg: "#fee2e2" },
-                    { label: "Total Days", value: myAttRow.totalDays   ?? "--", color: "#2D3A8C", bg: "#eef0fb" },
+                    { label: "Present",      value: myAttRow.prestent ?? myAttRow.present ?? "--", color: "#16a34a" },
+                    { label: "Absent",       value: myAttRow.absent      ?? "--", color: "#ef4444" },
+                    { label: "Working Days", value: myAttRow.WorkingDays ?? "--", color: "#2D3A8C" },
                     {
                       label: "Percentage",
-                      value: myAttRow.presentDays && myAttRow.totalDays
-                        ? `${Math.round((myAttRow.presentDays / myAttRow.totalDays) * 100)}%`
+                      value: myAttRow.percentage != null
+                        ? `${Math.round(Number(myAttRow.percentage))}%`
                         : "--",
-                      color: "#d97706", bg: "#fef3c7",
+                      color: "#d97706",
                     },
                   ].map((s, i) => (
                     <div className="sp-att-card" key={i} style={{ borderTop: `3px solid ${s.color}` }}>
@@ -200,25 +203,28 @@ const StudentPortal = () => {
                     </div>
                   ))}
                 </div>
-                <div className="sp-table-wrap">
-                  <table className="sp-table">
-                    <thead>
-                      <tr><th>Admission No</th><th>Student Name</th><th>Present</th><th>Absent</th><th>Total</th><th>%</th></tr>
-                    </thead>
-                    <tbody>
-                      {attendance.map((row, i) => (
-                        <tr key={i} className={row.admissionNo === admissionNo ? "sp-highlight" : ""}>
-                          <td>{row.admissionNo}</td>
-                          <td>{row.studentName}</td>
-                          <td style={{ color: "#16a34a", fontWeight: 600 }}>{row.presentDays}</td>
-                          <td style={{ color: "#ef4444", fontWeight: 600 }}>{row.absentDays}</td>
-                          <td>{row.totalDays}</td>
-                          <td>{row.presentDays && row.totalDays ? `${Math.round((row.presentDays / row.totalDays) * 100)}%` : "--"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <h4 className="sp-section-title">Absent Dates This Month</h4>
+                {absentDates.length === 0 ? (
+                  <div className="sp-empty">No absences this month. Great job!</div>
+                ) : (
+                  <div className="sp-table-wrap">
+                    <table className="sp-table">
+                      <thead>
+                        <tr><th>#</th><th>Date</th></tr>
+                      </thead>
+                      <tbody>
+                        {absentDates.map((d, i) => (
+                          <tr key={i}>
+                            <td>{i + 1}</td>
+                            <td style={{ color: "#ef4444", fontWeight: 600 }}>
+                              {String(d).slice(0, 10)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </>
             ) : (
               <div className="sp-empty">No attendance data available for this month.</div>
@@ -517,13 +523,13 @@ const StudentPortal = () => {
                   </div>
                   <div className="sp-form-group">
                     <label>From Date</label>
-                    <input type="date" value={leaveForm.fromDate}
-                      onChange={(e) => setLeaveForm(f => ({ ...f, fromDate: e.target.value }))} required />
+                    <input type="date" value={leaveForm.startDate}
+                      onChange={(e) => setLeaveForm(f => ({ ...f, startDate: e.target.value }))} required />
                   </div>
                   <div className="sp-form-group">
                     <label>To Date</label>
-                    <input type="date" value={leaveForm.toDate}
-                      onChange={(e) => setLeaveForm(f => ({ ...f, toDate: e.target.value }))} required />
+                    <input type="date" value={leaveForm.endDate}
+                      onChange={(e) => setLeaveForm(f => ({ ...f, endDate: e.target.value }))} required />
                   </div>
                 </div>
                 <div className="sp-form-group sp-form-full">
@@ -559,8 +565,8 @@ const StudentPortal = () => {
                         <tr key={i}>
                           <td>{i + 1}</td>
                           <td>{lv.leaveType || lv.leaveTypeName || "--"}</td>
-                          <td>{lv.fromDate}</td>
-                          <td>{lv.toDate}</td>
+                          <td>{lv.startDate || lv.fromDate}</td>
+                          <td>{lv.endDate || lv.toDate}</td>
                           <td>{lv.reason}</td>
                           <td><span className={`sp-result-pill ${status}`}>{status}</span></td>
                         </tr>

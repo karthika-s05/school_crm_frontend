@@ -190,7 +190,7 @@ export default function ExamPortion() {
 
   return (
     <div className="sdl-wrap">
-      <ToastContainer position="top-right" autoClose={2000} style={{ fontSize: "14px" }} />
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
 
       <div className="sdl-stats" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
         {[

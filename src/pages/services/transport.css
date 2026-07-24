@@ -177,7 +177,7 @@
   flex-wrap: wrap;
 }
 
-/* Fleet grid — equal-height cards */
+/* Fleet grid - equal-height cards */
 .transport-fleet-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

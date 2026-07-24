@@ -73,7 +73,16 @@ export default function Assignment() {
   };
 
   const handleSave = async () => {
-    if (!form.title || !form.startDate || !form.endDate) { toast.warning("Title and dates are required"); return; }
+    const fieldErrors = [];
+    if (!form.title?.trim()) fieldErrors.push("Title is required");
+    if (!form.startDate) fieldErrors.push("Start date is required");
+    if (!form.endDate) fieldErrors.push("End date is required");
+    if (!form.classId && !filter.classId) fieldErrors.push("Class is required");
+    if (!form.sectionId && !filter.sectionId) fieldErrors.push("Section is required");
+    if (fieldErrors.length) {
+      toast.warning(fieldErrors[0]);
+      return;
+    }
     setSaving(true);
     await runApi(
       () => createAssignment({ id: form.id, classId: Number(form.classId || filter.classId), sectionId: Number(form.sectionId || filter.sectionId), subjectId: Number(form.subjectId) || 0, title: form.title, description: form.description, startDate: form.startDate, endDate: form.endDate }, token),
@@ -87,7 +96,7 @@ export default function Assignment() {
     await runApi(() => deletetAssignment(id, token), { successMsg: "Deleted!", onSuccess: fetchAssignments });
   };
 
-  const subjectName = (id) => subjects.find(s => s.id === Number(id))?.name || id || "—";
+  const subjectName = (id) => subjects.find(s => s.id === Number(id))?.name || id || "-";
 
   const getStatus = (r) => {
     const now = new Date();
@@ -183,8 +192,8 @@ export default function Assignment() {
                     </td>
                     <td>{r.subject || subjectName(r.subjectId)}</td>
                     <td><span className="mod-badge mod-badge-blue">{r.className || `${filter.className}`} – {r.section || `Sec ${filter.section}`}</span></td>
-                    <td>{r.startDate || "—"}</td>
-                    <td>{r.endDate || "—"}</td>
+                    <td>{r.startDate || "-"}</td>
+                    <td>{r.endDate || "-"}</td>
                     <td><span className={`mod-badge ${statusBadge(status)}`}>{status}</span></td>
                     <td>
                       <div style={{ display: "flex", gap: 6 }}>
@@ -292,8 +301,8 @@ export default function Assignment() {
                 ["Subject",     viewItem.subject || subjectName(viewItem.subjectId)],
                 ["Class",       viewItem.className || `Class ${filter.classId}`],
                 ["Section",     viewItem.section || `Section ${filter.sectionId}`],
-                ["Start Date",  viewItem.startDate || "—"],
-                ["End Date",    viewItem.endDate || "—"],
+                ["Start Date",  viewItem.startDate || "-"],
+                ["End Date",    viewItem.endDate || "-"],
                 ["Status",      getStatus(viewItem)],
                 ["Description", viewItem.description],
               ].map(([label, value]) => (
@@ -310,7 +319,7 @@ export default function Assignment() {
         </div>
       )}
 
-      <ToastContainer position="top-right" autoClose={2500} style={{ fontSize: 14 }} />
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────
-   leaveHelpers.js — pure utility functions
+   leaveHelpers.js - pure utility functions
 ───────────────────────────────────────────── */
 
 export const STATUS_COLOR = {
@@ -9,9 +9,9 @@ export const STATUS_COLOR = {
 };
 
 export const STATUS_ICON = {
-  Accepted: "bx-check-circle",
-  Rejected: "bx-x-circle",
-  Pending:  "bx-time-five",
+  accepted: "bx-check-circle",
+  rejected: "bx-x-circle",
+  pending:  "bx-time-five",
 };
 
 export const EMPTY_FORM = {
@@ -34,7 +34,7 @@ export const calcDays = (start, end, leaveTime) => {
 
 /** Format a date string to "DD Mon YYYY" */
 export const fmt = (dateStr) => {
-  if (!dateStr) return "—";
+  if (!dateStr) return "-";
   try {
     return new Date(dateStr).toLocaleDateString("en-IN", {
       day: "2-digit", month: "short", year: "numeric",
@@ -44,12 +44,14 @@ export const fmt = (dateStr) => {
   }
 };
 
+const normStatus = (status) => (status || "Pending").toLowerCase();
+
 /** Derive stats object from a leave list */
 export const statsOf = (list) => ({
   total:    list.length,
-  pending:  list.filter((r) => (r.status || "Pending") === "Pending").length,
-  accepted: list.filter((r) => r.status === "Accepted").length,
-  rejected: list.filter((r) => r.status === "Rejected").length,
+  pending:  list.filter((r) => normStatus(r.status) === "pending").length,
+  accepted: list.filter((r) => normStatus(r.status) === "accepted").length,
+  rejected: list.filter((r) => normStatus(r.status) === "rejected").length,
 });
 
 /** Filter a leave list by search query (name / reason / type / status) */
@@ -73,4 +75,4 @@ export const filterByStatus = (list, status) => {
 
 /** Get display name from a leave row */
 export const getRowName = (row) =>
-  row.studentName || row.staffName || row.userName || "—";
+  row.studentName || row.staffName || row.userName || "-";

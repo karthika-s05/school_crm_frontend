@@ -2,8 +2,9 @@ import React, { useState } from "react";
 
 export default function StatusActions({ row, onUpdate, type }) {
   const [busy, setBusy] = useState(false);
+  const status = (row.status || "Pending").toLowerCase();
 
-  if (row.status === "Accepted" || row.status === "Rejected") return null;
+  if (status === "accepted" || status === "rejected") return null;
 
   const handle = async (status) => {
     const remarks = window.prompt(

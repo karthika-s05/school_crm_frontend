@@ -1,14 +1,18 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "./nav.css";
 import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
 
 import {
   FiBell, FiSearch,
-  FiChevronLeft, FiChevronRight, FiX, FiCheck, FiTrash2,
+  FiChevronLeft, FiChevronRight, FiX, FiCheck,
 } from "react-icons/fi";
 
 import { getUserData, removeToken, getToken } from "../../services/auth";
-import { getNotifications, updateNotificationTime } from "../../services/api";
+import {
+  getNotifications,
+  markNotificationAsRead,
+  updateNotificationTime,
+} from "../../services/api";
 
 import Dashboard from "../../pages/dashboard";
 import Master from "../../pages/master";
@@ -16,7 +20,6 @@ import Registration from "../../pages/registration/registration";
 import List from "../../pages/List/list";
 import Profile from "../../pages/profile/profile";
 import Timetable from "../../pages/Timetable/timetable";
-import Attendence from "../Atttendence/Attendence";
 import Assignment from "../Assignment/Assignment";
 import Homework from "../Homework/Homework";
 import Event from "../../pages/Event/Event";
@@ -29,13 +32,15 @@ import ExamPortion from "../../pages/exam/ExamPortion";
 import ExamReport from "../../pages/report/ExamReport";
 import AssignmentReport from "../../pages/report/AssignmentReport";
 import ReportsOverview from "../../pages/report/ReportsOverview";
-import AttendanceReport from "../../pages/report/AttendanceReport";
 import HomeworkReport from "../../pages/report/HomeworkReport";
 import LeaveManagement from "../../pages/services/LeaveManagement";
-import ViewAttendance from "../Atttendence/ViewAttendance";
+import NotificationCenter from "../../pages/notifications/NotificationCenter";
 import Studendstationery from "../stationery/Studendstationery";
-import Staffattendance from "../Atttendence/Staffattendance";
-import Staffview from "../Atttendence/Staffview";
+import StudentAttendanceEntry from "../../pages/attendance/StudentAttendanceEntry";
+import StudentAttendanceView from "../../pages/attendance/StudentAttendanceView";
+import StaffAttendanceMark from "../../pages/attendance/StaffAttendanceMark";
+import StaffAttendanceView from "../../pages/attendance/StaffAttendanceView";
+import AttendanceReportDashboard from "../../pages/attendance/AttendanceReportDashboard";
 import Nationality from "../../pages/master/nationality/Nationality";
 import Studendlist from "../../pages/List/Studendlist";
 import StudentWizard from "../../pages/registration/StudentWizard";
@@ -45,6 +50,7 @@ import Nextpage from "../../pages/List/Nextpage";
 import StudentDummyList from "../../pages/List/StudentDummyList";
 import Transport from "../../pages/services/Transport";
 import Stationery from "../../pages/services/Stationery";
+import FeesCollection from "../../pages/services/FeesCollection";
 import StudentPortal from "../../pages/student/StudentPortal";
 import "../../assets/illustrations/schoolTheme.css";
 import { SchoolAmbience, SchoolBellIcon } from "../../assets/illustrations/SchoolIllustrations";
@@ -111,6 +117,15 @@ const ADMIN_MENU_GROUPS = [
     ],
   },
   {
+    title: "Attendance", icon: null,
+    items: [
+      { label: "Student Attendance",      path: "/admin/attendance/student",      state: undefined },
+      { label: "View Student Attendance", path: "/admin/attendance/student/view", state: undefined },
+      { label: "Staff Attendance",        path: "/admin/attendance/staff",        state: undefined },
+      { label: "View Staff Attendance",   path: "/admin/attendance/staff/view",   state: undefined },
+    ],
+  },
+  {
     title: "Examination", icon: null,
     items: [
       { label: "Exam Type",    path: "/admin/examtype",    state: undefined },
@@ -126,6 +141,12 @@ const ADMIN_MENU_GROUPS = [
     ],
   },
   {
+    title: "Fees", icon: null,
+    items: [
+      { label: "Fees Collection", path: "/admin/fees", state: undefined },
+    ],
+  },
+  {
     title: "Transport", icon: null,
     items: [
       { label: "Transport", path: "/admin/transport", state: undefined },
@@ -135,6 +156,12 @@ const ADMIN_MENU_GROUPS = [
     title: "Leave", icon: null, section: "Operations",
     items: [
       { label: "Leave Management", path: "/admin/leave", state: undefined },
+    ],
+  },
+  {
+    title: "Administration", icon: null,
+    items: [
+      { label: "Events & Announcements", path: "/admin/events", state: undefined },
     ],
   },
   {
@@ -242,6 +269,18 @@ const getMenuGroups = (role) => {
   return ADMIN_MENU_GROUPS;
 };
 
+/** Sidebar active match: path + optional state (dashboard navigates often omit state). */
+const isMenuItemActive = (item, pathname, locationState, siblings = []) => {
+  if (!item?.path || item.path !== pathname) return false;
+  if (item.state == null || item.state === "") return true;
+  if (locationState != null && locationState !== "") {
+    return item.state === locationState;
+  }
+  // No router state (e.g. Quick Action): highlight only if this path isn't shared.
+  const peers = siblings.filter((i) => i.path === pathname && i.state != null && i.state !== "");
+  return peers.length <= 1;
+};
+
 // Flatten nested master subGroups into items for resolvePageTitle
 const flattenGroups = (groups) =>
   groups.map(g =>
@@ -259,9 +298,10 @@ const MENU_GROUPS = [
 // Resolve active page title + parent from pathname + state
 const resolvePageTitle = (pathname, state) => {
   if (pathname === "/dashboard" || pathname === "/") return { title: "Dashboard", parent: "Home" };
+  if (pathname === "/notifications") return { title: "Notifications", parent: "Home" };
   for (const group of MENU_GROUPS) {
     for (const item of group.items) {
-      if (item.path === pathname && (!item.state || item.state === state)) {
+      if (isMenuItemActive(item, pathname, state, group.items)) {
         return { title: item.label, parent: group.title };
       }
     }
@@ -274,8 +314,9 @@ const resolvePageTitle = (pathname, state) => {
   if (pathname === "/admin/reports/attendance") return { title: "Attendance Report", parent: "Reports"    };
   if (pathname === "/admin/reports/homework")   return { title: "Homework Report",   parent: "Reports"    };
   if (pathname === "/admin/leave")              return { title: "Leave Management",  parent: "Operations" };
-  if (pathname === "/admin/view-attendance")    return { title: "View Attendance",   parent: "Attendance" };
-  if (pathname === "/admin/my-attendance")      return { title: "My Attendance",     parent: "Attendance" };
+  if (pathname === "/admin/events")             return { title: "Events & Announcements", parent: "Administration" };
+  if (pathname === "/admin/view-attendance")    return { title: "View Student Attendance", parent: "Attendance" };
+  if (pathname === "/admin/my-attendance")      return { title: "View Staff Attendance",   parent: "Attendance" };
   if (pathname === "/admin/attendance")         return { title: "Student Attendance",parent: "Attendance" };
   if (pathname.startsWith("/releiving"))        return { title: "Relieving",         parent: "Staff"      };
   if (pathname.startsWith("/admin/studentinfo"))return { title: "Document Upload",   parent: "Student"    };
@@ -283,6 +324,7 @@ const resolvePageTitle = (pathname, state) => {
   if (pathname.startsWith("/admin/staff/"))     return { title: "Registration",      parent: "Staff"      };
   if (pathname === "/admin/timetable")          return { title: "Class Time Table",  parent: "Time Table" };
   if (pathname.startsWith("/admin/transport"))  return { title: "Transport",         parent: "Services"   };
+  if (pathname.startsWith("/admin/fees"))        return { title: "Fees Collection",  parent: "Services"   };
   if (pathname.startsWith("/admin/stationery")) return { title: "Stationery",        parent: "Services"   };
   if (pathname === "/admin/settings")           return { title: "Settings",          parent: "Home"       };
   return { title: "Dashboard", parent: "Home" };
@@ -294,7 +336,7 @@ const MenuGroup = ({ title, items, openMenu, setOpenMenu, collapsed, pathname, l
   const isOpen = openMenu === title;
 
   const hasActiveChild = items.some(item =>
-    item.path === pathname && (!item.state || item.state === locationState)
+    isMenuItemActive(item, pathname, locationState, items)
   );
 
   const handleToggle = () => {
@@ -310,9 +352,7 @@ const MenuGroup = ({ title, items, openMenu, setOpenMenu, collapsed, pathname, l
   };
 
   const subLinks = items.map((item, i) => {
-    const isSubActive =
-      item.path === pathname &&
-      (!item.state || item.state === locationState);
+    const isSubActive = isMenuItemActive(item, pathname, locationState, items);
     return (
       <Link
         key={i}
@@ -322,7 +362,7 @@ const MenuGroup = ({ title, items, openMenu, setOpenMenu, collapsed, pathname, l
         onClick={() => onFlyoutNavigate?.()}
       >
         <span className="crm-sub-icon"><SchoolSubMenuIcon label={item.label} /></span>
-        {item.label}
+        <span className="crm-sub-label">{item.label}</span>
       </Link>
     );
   });
@@ -375,7 +415,7 @@ const NestedMenuGroup = ({ title, subGroups, openMenu, setOpenMenu, openSubGroup
 
   const allItems = subGroups.flatMap(sg => sg.items);
   const hasActiveChild = allItems.some(
-    item => item.path === pathname && (!item.state || item.state === locationState)
+    item => isMenuItemActive(item, pathname, locationState, allItems)
   );
 
   const handleToggle = () => {
@@ -392,7 +432,7 @@ const NestedMenuGroup = ({ title, subGroups, openMenu, setOpenMenu, openSubGroup
 
   const renderSubLinks = (items) =>
     items.map((item, i) => {
-      const isSubActive = item.path === pathname && (!item.state || item.state === locationState);
+      const isSubActive = isMenuItemActive(item, pathname, locationState, items);
       return (
         <Link
           key={i}
@@ -402,7 +442,7 @@ const NestedMenuGroup = ({ title, subGroups, openMenu, setOpenMenu, openSubGroup
           onClick={() => onFlyoutNavigate?.()}
         >
           <span className="crm-sub-icon"><SchoolSubMenuIcon label={item.label} /></span>
-          {item.label}
+          <span className="crm-sub-label">{item.label}</span>
         </Link>
       );
     });
@@ -431,7 +471,7 @@ const NestedMenuGroup = ({ title, subGroups, openMenu, setOpenMenu, openSubGroup
             const sgKey = `${title}-${sg.label}`;
             const sgOpen = openSubGroup === sgKey;
             const sgHasActive = sg.items.some(
-              item => item.path === pathname && (!item.state || item.state === locationState)
+              item => isMenuItemActive(item, pathname, locationState, sg.items)
             );
             return (
               <div key={si} className="crm-nested-group">
@@ -488,7 +528,6 @@ export default function Nav() {
       : role === "Staff"
       ? getUserData("staffName")
       : getUserData("adminName");
-  const MENU_GROUPS_FOR_ROLE = useMemo(() => flattenGroups(getMenuGroups(role)), [role]);
 
   const [collapsed, setCollapsed] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
@@ -517,7 +556,7 @@ export default function Nav() {
               title: n.title || "Notification",
               desc: n.message || n.description || "",
               time: n.createdAt || n.time || "",
-              read: n.isRead === 1 || n.read === true,
+              read: Number(n.isRead) === 1 || n.read === true,
               icon: "bx bxs-bell",
               color: "#2D3A8C",
               bg: "#eef0fb",
@@ -526,6 +565,37 @@ export default function Nav() {
         }
       })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => {
+      const token = getToken();
+      if (!token) return;
+      getNotifications(token)
+        .then((res) => {
+          if (res?.status === "success" && Array.isArray(res.data)) {
+            setNotifications(res.data.map((n, i) => ({
+              id: n.id || i,
+              title: n.title || "Notification",
+              desc: n.message || n.description || "",
+              time: n.createdAt || n.time || "",
+              read: Number(n.isRead) === 1 || n.read === true,
+              icon: "bx bxs-bell",
+              color: "#2D3A8C",
+              bg: "#eef0fb",
+            })));
+          }
+        })
+        .catch(() => {});
+    };
+    window.addEventListener("notifications:changed", refresh);
+    // Poll so notifications created by other users (e.g. staff leave
+    // applications) appear without a page reload.
+    const pollId = setInterval(refresh, 30000);
+    return () => {
+      window.removeEventListener("notifications:changed", refresh);
+      clearInterval(pollId);
+    };
   }, []);
 
   useEffect(() => {
@@ -547,15 +617,28 @@ export default function Nav() {
   useEffect(() => {
     if (collapsed) {
       setOpenMenu(null);
+      setOpenSubGroup(null);
       return;
     }
-    const match = MENU_GROUPS_FOR_ROLE.find(g =>
-      g.items.some(item =>
-        item.path === pathname && (!item.state || item.state === locState)
-      )
-    );
+    const groups = getMenuGroups(role);
+    let matchedSub = null;
+    const match = groups.find((g) => {
+      if (g.isNested) {
+        for (const sg of g.subGroups || []) {
+          if (sg.items.some((item) => isMenuItemActive(item, pathname, locState, sg.items))) {
+            matchedSub = `${g.title}-${sg.label}`;
+            return true;
+          }
+        }
+        return false;
+      }
+      return (g.items || []).some((item) =>
+        isMenuItemActive(item, pathname, locState, g.items)
+      );
+    });
     setOpenMenu(match ? match.title : null);
-  }, [pathname, locState, collapsed, MENU_GROUPS_FOR_ROLE]);
+    setOpenSubGroup(matchedSub);
+  }, [pathname, locState, collapsed, role]);
 
   const MONTHS = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
@@ -574,10 +657,13 @@ export default function Nav() {
     const token = getToken();
     if (token) updateNotificationTime(token).catch(() => {});
   };
-  const clearAll = () => setNotifications([]);
-  const markRead = (id) => setNotifications(ns => ns.map(n => n.id === id ? { ...n, read: true } : n));
+  const markRead = (id) => {
+    setNotifications(ns => ns.map(n => n.id === id ? { ...n, read: true } : n));
+    const token = getToken();
+    if (token) markNotificationAsRead(id, token).catch(() => {});
+  };
 
-  const logout = () => { removeToken(); navigate("/"); window.location.reload(); };
+  const logout = () => { removeToken(); navigate("/", { replace: true }); };
 
   const closeFlyout = () => { if (collapsed) setOpenMenu(null); };
   const isDashboardActive = pathname === "/dashboard" || pathname === "/";
@@ -705,10 +791,10 @@ export default function Nav() {
 
           <div className="crm-header-right">
             {/* Search */}
-            <div className="crm-search">
+            {/* <div className="crm-search">
               <FiSearch />
               <input placeholder="Search students, staff, classes..." />
-            </div>
+            </div> */}
 
             {/* Date card */}
             <div className="crm-date-wrap" ref={calRef}>
@@ -798,7 +884,6 @@ export default function Nav() {
 
                 <div className="crm-nd-actions">
                   <button className="crm-nd-act-btn" onClick={markAllRead}><FiCheck /> Mark all read</button>
-                  <button className="crm-nd-act-btn crm-nd-act-danger" onClick={clearAll}><FiTrash2 /> Clear all</button>
                 </div>
 
                 <div className="crm-nd-list">
@@ -830,7 +915,12 @@ export default function Nav() {
 
                 {notifications.length > 0 && (
                   <div className="crm-nd-footer">
-                    <button className="crm-nd-view-all">View all notifications <FiChevronRight /></button>
+                    <button
+                      className="crm-nd-view-all"
+                      onClick={() => { setShowNotif(false); navigate("/notifications"); }}
+                    >
+                      View all notifications <FiChevronRight />
+                    </button>
                   </div>
                 )}
               </div>
@@ -842,6 +932,7 @@ export default function Nav() {
           <Routes>
             <Route path="/"                          element={<Dashboard />} />
             <Route path="/dashboard"           element={<Dashboard />} />
+            <Route path="/notifications"              element={<NotificationCenter />} />
             <Route path="/admin/master"              element={<Master />} />
             <Route path="/admin/nationality"         element={<Nationality />} />
             <Route path="/admin/students"            element={<StudentDummyList />} />
@@ -852,12 +943,18 @@ export default function Nav() {
             <Route path="/admin/staff/:id"           element={<StaffWizard />} />
             <Route path="/admin/studentinfo/:id"     element={<Studentinfo />} />
             <Route path="/admin/transport"           element={<Transport />} />
+            <Route path="/admin/fees"                element={<FeesCollection />} />
             <Route path="/admin/stationery"          element={<Stationery />} />
             <Route path="/admin/timetable"           element={<Timetable />} />
             <Route path="/admin/profile/:id"         element={<Profile />} />
-            <Route path="/admin/attendance"          element={<Staffattendance />} />
-            <Route path="/admin/view-attendance"     element={<ViewAttendance />} />
-            <Route path="/admin/my-attendance"       element={<Staffview />} />
+            <Route path="/admin/attendance/student"       element={<StudentAttendanceEntry />} />
+            <Route path="/admin/attendance/student/view"  element={<StudentAttendanceView />} />
+            <Route path="/admin/attendance/staff"         element={<StaffAttendanceMark />} />
+            <Route path="/admin/attendance/staff/view"    element={<StaffAttendanceView />} />
+            {/* Legacy path aliases */}
+            <Route path="/admin/attendance"          element={<StudentAttendanceEntry />} />
+            <Route path="/admin/view-attendance"     element={<StudentAttendanceView />} />
+            <Route path="/admin/my-attendance"       element={<StaffAttendanceView />} />
             <Route path="/admin/subjectmark"         element={<Exam />} />
             <Route path="/admin/examtype"            element={<ExamType />} />
             <Route path="/admin/examportion"         element={<ExamPortion />} />
@@ -865,9 +962,10 @@ export default function Nav() {
             <Route path="/admin/reports"             element={<ReportsOverview />} />
             <Route path="/admin/reports/assignment"  element={<AssignmentReport />} />
             <Route path="/admin/reports/exam"        element={<ExamReport />} />
-            <Route path="/admin/reports/attendance"  element={<AttendanceReport />} />
+            <Route path="/admin/reports/attendance"  element={<AttendanceReportDashboard />} />
             <Route path="/admin/reports/homework"    element={<HomeworkReport />} />
             <Route path="/admin/leave"               element={<LeaveManagement />} />
+            <Route path="/admin/events"              element={<Event />} />
             <Route path="/admin/settings"            element={<SettingsPage />} />
             <Route path="/releiving/:id"             element={<Registration />} />
             <Route path="/admin/class&section"       element={<Master/>} />
