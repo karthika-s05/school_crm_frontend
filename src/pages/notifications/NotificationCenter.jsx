@@ -9,10 +9,14 @@ import {
 import { getToken } from "../../services/auth";
 import {
   deleteNotification,
-  getNotifications,
   markNotificationAsRead,
   updateNotificationTime,
 } from "../../services/api";
+import {
+  emitNotificationsChanged,
+  fetchNotifications,
+  NOTIFICATION_POLL_MS,
+} from "../../utils/notificationBus";
 import "./NotificationCenter.css";
 
 const TYPES = [
@@ -44,8 +48,6 @@ const formatDate = (value) => {
   });
 };
 
-const emitChange = () => window.dispatchEvent(new Event("notifications:changed"));
-
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState([]);
   const [type, setType] = useState("All");
@@ -59,7 +61,7 @@ export default function NotificationCenter() {
     setLoading(true);
     setError("");
     try {
-      const response = await getNotifications(token, { type, limit: 250 });
+      const response = await fetchNotifications(token, { type, limit: 250 });
       if (response?.status !== "success") {
         throw new Error(response?.message || "Unable to load notifications");
       }
@@ -72,14 +74,17 @@ export default function NotificationCenter() {
   }, [type]);
 
   useEffect(() => {
-    load();
-  }, [load]);
-
-  useEffect(() => {
-    const pollId = setInterval(load, 30000);
-    const handleChange = () => load();
+    let active = true;
+    const run = async () => {
+      if (!active) return;
+      await load();
+    };
+    run();
+    const handleChange = () => run();
     window.addEventListener("notifications:changed", handleChange);
+    const pollId = setInterval(run, NOTIFICATION_POLL_MS);
     return () => {
+      active = false;
       clearInterval(pollId);
       window.removeEventListener("notifications:changed", handleChange);
     };
@@ -106,7 +111,7 @@ export default function NotificationCenter() {
     );
     try {
       await markNotificationAsRead(id, token);
-      emitChange();
+      emitNotificationsChanged();
     } catch (_) {
       load();
     }
@@ -117,7 +122,7 @@ export default function NotificationCenter() {
     setNotifications((items) => items.map((item) => ({ ...item, isRead: 1 })));
     try {
       await updateNotificationTime(token);
-      emitChange();
+      emitNotificationsChanged();
     } catch (_) {
       load();
     }
@@ -130,7 +135,7 @@ export default function NotificationCenter() {
       setNotifications((items) =>
         items.filter((item) => Number(item.id) !== Number(id))
       );
-      emitChange();
+      emitNotificationsChanged();
     } catch (deleteError) {
       setError(
         deleteError?.response?.data?.message || "Notification could not be deleted"

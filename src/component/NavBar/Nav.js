@@ -9,10 +9,11 @@ import {
 
 import { getUserData, removeToken, getToken } from "../../services/auth";
 import {
-  getNotifications,
   markNotificationAsRead,
   updateNotificationTime,
 } from "../../services/api";
+import useNavNotifications from "../../hooks/useNavNotifications";
+import { emitNotificationsChanged } from "../../utils/notificationBus";
 
 import Dashboard from "../../pages/dashboard";
 import Master from "../../pages/master";
@@ -262,6 +263,16 @@ const STUDENT_MENU_GROUPS = [
     ],
   },
 ];
+
+const formatTime = (value) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+};
 
 const getMenuGroups = (role) => {
   if (role === "Staff") return STAFF_MENU_GROUPS;
@@ -539,64 +550,9 @@ export default function Nav() {
   const today = new Date();
 
   const [showNotif, setShowNotif] = useState(false);
-  const [notifications, setNotifications] = useState([]);
+  const { notifications, unreadCount, setNotifications } = useNavNotifications();
   const notifRef = useRef(null);
   const profileRef = useRef(null);
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    getNotifications(token)
-      .then((res) => {
-        if (res?.status === "success" && Array.isArray(res.data)) {
-          setNotifications(
-            res.data.map((n, i) => ({
-              id: n.id || i,
-              title: n.title || "Notification",
-              desc: n.message || n.description || "",
-              time: n.createdAt || n.time || "",
-              read: Number(n.isRead) === 1 || n.read === true,
-              icon: "bx bxs-bell",
-              color: "#2D3A8C",
-              bg: "#eef0fb",
-            }))
-          );
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const refresh = () => {
-      const token = getToken();
-      if (!token) return;
-      getNotifications(token)
-        .then((res) => {
-          if (res?.status === "success" && Array.isArray(res.data)) {
-            setNotifications(res.data.map((n, i) => ({
-              id: n.id || i,
-              title: n.title || "Notification",
-              desc: n.message || n.description || "",
-              time: n.createdAt || n.time || "",
-              read: Number(n.isRead) === 1 || n.read === true,
-              icon: "bx bxs-bell",
-              color: "#2D3A8C",
-              bg: "#eef0fb",
-            })));
-          }
-        })
-        .catch(() => {});
-    };
-    window.addEventListener("notifications:changed", refresh);
-    // Poll so notifications created by other users (e.g. staff leave
-    // applications) appear without a page reload.
-    const pollId = setInterval(refresh, 30000);
-    return () => {
-      window.removeEventListener("notifications:changed", refresh);
-      clearInterval(pollId);
-    };
-  }, []);
 
   useEffect(() => {
     const handler = (e) => {
@@ -655,12 +611,20 @@ export default function Nav() {
   const markAllRead = () => {
     setNotifications(ns => ns.map(n => ({ ...n, read: true })));
     const token = getToken();
-    if (token) updateNotificationTime(token).catch(() => {});
+    if (token) {
+      updateNotificationTime(token)
+        .then(() => emitNotificationsChanged())
+        .catch(() => {});
+    }
   };
   const markRead = (id) => {
     setNotifications(ns => ns.map(n => n.id === id ? { ...n, read: true } : n));
     const token = getToken();
-    if (token) markNotificationAsRead(id, token).catch(() => {});
+    if (token) {
+      markNotificationAsRead(id, token)
+        .then(() => emitNotificationsChanged())
+        .catch(() => {});
+    }
   };
 
   const logout = () => { removeToken(); navigate("/", { replace: true }); };
@@ -907,7 +871,7 @@ export default function Nav() {
                           {!n.read && <span className="crm-nd-unread-dot"></span>}
                         </div>
                         <p className="crm-nd-item-desc">{n.desc}</p>
-                        <span className="crm-nd-item-time">{n.time}</span>
+                        <span className="crm-nd-item-time">{formatTime(n.time)}</span>
                       </div>
                     </div>
                   ))}

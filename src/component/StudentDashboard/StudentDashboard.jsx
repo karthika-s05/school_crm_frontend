@@ -7,7 +7,6 @@ import {
   getexamPortion,
   getStudentExamReport,
   getStdAttendance,
-  getNotifications,
   getDay,
   getTimeTable,
   getEventSummary,
@@ -15,6 +14,7 @@ import {
 } from "../../services/api";
 import { getToken, getUserData } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
+import { fetchNotifications } from "../../utils/notificationBus";
 import { StudentMascot } from "../../assets/illustrations/SchoolIllustrations";
 
 /** School day: 09:15 AM – 04:30 PM (12-hour clock). */
@@ -358,7 +358,7 @@ const StudentDashboard = () => {
               });
             },
           }),
-          runApi(() => getNotifications(token), {
+          runApi(() => fetchNotifications(token), {
             onSuccess: (res) => setNotifications(asList(res?.data ?? res)),
           }),
           runApi(() => getEventSummary(token), {

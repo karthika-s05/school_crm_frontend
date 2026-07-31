@@ -26,6 +26,8 @@ import {
   unpublishEvent,
 } from "../../services/api";
 import { runApi } from "../../utils/apiHelper";
+import { emitNotificationsChanged } from "../../utils/notificationBus";
+import ModalPortal from "../../component/modals/ModalPortal";
 import "./Event.css";
 
 const EMPTY_FORM = {
@@ -46,7 +48,7 @@ const EMPTY_FORM = {
 };
 
 const formatDate = (value) => {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleDateString("en-IN", {
@@ -217,7 +219,7 @@ const EventsPage = () => {
   };
 
   const saveEvent = async ({ publish = false } = {}) => {
-    // Sync guard — React state alone cannot block rapid double-clicks.
+    // Sync guard - React state alone cannot block rapid double-clicks.
     if (savingRef.current) return;
     if (!form.title.trim() || !form.eventDate || !form.eventType || !form.audienceType) {
       setError("Title, type, date and audience are required.");
@@ -257,7 +259,7 @@ const EventsPage = () => {
           ? [form.classId]
           : form.classIds || [];
 
-    // Always save as Draft first, then publish once — avoids create+publish double notify
+    // Always save as Draft first, then publish once - avoids create+publish double notify
     // and prevents duplicate rows from overlapping submit handlers.
     const payload = {
       id: Number(form.id) || 0,
@@ -305,7 +307,7 @@ const EventsPage = () => {
 
       setShowModal(false);
       setFile(null);
-      window.dispatchEvent(new window.Event("notifications:changed"));
+      emitNotificationsChanged();
       await loadEvents();
     } finally {
       savingRef.current = false;
@@ -330,7 +332,7 @@ const EventsPage = () => {
       await runApi(() => publishEvent(item.id, token), {
         successMsg: "Event published",
       });
-      window.dispatchEvent(new window.Event("notifications:changed"));
+      emitNotificationsChanged();
     }
     loadEvents();
   };
@@ -523,11 +525,12 @@ const EventsPage = () => {
       )}
 
       {showModal && (
-        <div className="evt-modal-backdrop">
-          <div className="evt-modal">
+        <ModalPortal>
+        <div className="evt-modal-backdrop" onClick={() => setShowModal(false)}>
+          <div className="evt-modal" onClick={(e) => e.stopPropagation()}>
             <div className="evt-modal-header">
               <h3>{form.id ? "Edit Event" : "Create Event"}</h3>
-              <button type="button" onClick={() => setShowModal(false)}><FiX /></button>
+              <button type="button" onClick={() => setShowModal(false)} aria-label="Close"><FiX /></button>
             </div>
             <div className="evt-modal-body">
               <label>Title
@@ -668,19 +671,21 @@ const EventsPage = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {viewItem && (
+        <ModalPortal>
         <div className="evt-modal-backdrop" onClick={() => setViewItem(null)}>
           <div className="evt-modal" onClick={(e) => e.stopPropagation()}>
             <div className="evt-modal-header">
               <h3>{viewItem.title}</h3>
-              <button type="button" onClick={() => setViewItem(null)}><FiX /></button>
+              <button type="button" onClick={() => setViewItem(null)} aria-label="Close"><FiX /></button>
             </div>
             <div className="evt-modal-body">
               <p><strong>Type:</strong> {viewItem.eventType}</p>
               <p><strong>Date:</strong> {formatDate(viewItem.eventDate)} {viewItem.eventTime || ""}</p>
-              <p><strong>Venue:</strong> {viewItem.venue || "—"}</p>
+              <p><strong>Venue:</strong> {viewItem.venue || "-"}</p>
               <p><strong>Priority:</strong> {viewItem.priority}</p>
               <p><strong>Posted By:</strong> {viewItem.postedBy || viewItem.createdBy}</p>
               <p>{viewItem.description}</p>
@@ -692,14 +697,16 @@ const EventsPage = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {historyOpen && (
+        <ModalPortal>
         <div className="evt-modal-backdrop" onClick={() => setHistoryOpen(false)}>
           <div className="evt-modal" onClick={(e) => e.stopPropagation()}>
             <div className="evt-modal-header">
               <h3>Event History</h3>
-              <button type="button" onClick={() => setHistoryOpen(false)}><FiX /></button>
+              <button type="button" onClick={() => setHistoryOpen(false)} aria-label="Close"><FiX /></button>
             </div>
             <div className="evt-modal-body">
               {historyRows.length === 0 ? (
@@ -716,6 +723,7 @@ const EventsPage = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </section>
   );

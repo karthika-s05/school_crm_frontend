@@ -5,10 +5,11 @@ import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom"
 import { FiBell, FiSearch, FiChevronLeft, FiChevronRight, FiX, FiCheck } from "react-icons/fi";
 import { getUserData, removeToken, getToken } from "../../services/auth";
 import {
-  getNotifications,
   markNotificationAsRead,
   updateNotificationTime,
 } from "../../services/api";
+import useNavNotifications from "../../hooks/useNavNotifications";
+import { emitNotificationsChanged } from "../../utils/notificationBus";
 import StudentDashboard from "../StudentDashboard/StudentDashboard";
 import StudentHomework from "../../pages/student/StudentHomework";
 import StudentAssignment from "../../pages/student/StudentAssignment";
@@ -158,63 +159,12 @@ const StudentNav = () => {
   const [showCal,      setShowCal]      = useState(false);
   const [calDate,      setCalDate]      = useState(new Date());
   const [showNotif,    setShowNotif]    = useState(false);
-  const [notifications,setNotifications]= useState([]);
+  const { notifications, unreadCount, setNotifications } = useNavNotifications();
 
   const calRef     = useRef(null);
   const notifRef   = useRef(null);
   const profileRef = useRef(null);
   const today      = new Date();
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    getNotifications(token)
-      .then(res => {
-        if (res?.status === "success" && Array.isArray(res.data)) {
-          setNotifications(res.data.map((n, i) => ({
-            id: n.id || i,
-            title: n.title || "Notification",
-            desc: n.message || n.description || "",
-            time: n.createdAt || n.time || "",
-            read: Number(n.isRead) === 1 || n.read === true,
-            icon: "bx bxs-bell",
-            color: "#2D3A8C",
-            bg: "#eef0fb",
-          })));
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const refresh = () => {
-      const token = getToken();
-      if (!token) return;
-      getNotifications(token)
-        .then((res) => {
-          if (res?.status === "success" && Array.isArray(res.data)) {
-            setNotifications(res.data.map((n, i) => ({
-              id: n.id || i,
-              title: n.title || "Notification",
-              desc: n.message || n.description || "",
-              time: n.createdAt || n.time || "",
-              read: Number(n.isRead) === 1 || n.read === true,
-              icon: "bx bxs-bell",
-              color: "#2D3A8C",
-              bg: "#eef0fb",
-            })));
-          }
-        })
-        .catch(() => {});
-    };
-    window.addEventListener("notifications:changed", refresh);
-    const pollId = setInterval(refresh, 30000);
-    return () => {
-      window.removeEventListener("notifications:changed", refresh);
-      clearInterval(pollId);
-    };
-  }, []);
 
   useEffect(() => {
     const handler = (e) => {
@@ -248,12 +198,20 @@ const StudentNav = () => {
   const markAllRead = () => {
     setNotifications(ns => ns.map(n => ({ ...n, read: true })));
     const token = getToken();
-    if (token) updateNotificationTime(token).catch(() => {});
+    if (token) {
+      updateNotificationTime(token)
+        .then(() => emitNotificationsChanged())
+        .catch(() => {});
+    }
   };
   const markRead = (id) => {
     setNotifications(ns => ns.map(n => n.id === id ? { ...n, read: true } : n));
     const token = getToken();
-    if (token) markNotificationAsRead(id, token).catch(() => {});
+    if (token) {
+      markNotificationAsRead(id, token)
+        .then(() => emitNotificationsChanged())
+        .catch(() => {});
+    }
   };
   const logout   = () => { removeToken(); navigate("/", { replace: true }); };
   const closeFlyout = () => { if (collapsed) setOpenMenu(null); };
