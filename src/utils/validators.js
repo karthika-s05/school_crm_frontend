@@ -36,7 +36,7 @@ export const isMobileFieldName = (name = "") =>
   );
 
 export const requiredError = (label = "This field") =>
-  `${label} is required`;
+  `${label} is required.`;
 
 export const validateRequired = (value, label = "This field") =>
   isBlank(value) ? requiredError(label) : "";

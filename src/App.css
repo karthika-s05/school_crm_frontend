@@ -75,3 +75,19 @@ ul.breadcrumb li:last-child a {
   bottom: 1rem;
   right: 1rem;
 }
+
+/* Global popup safety: always above sidebar/header, fully on-screen */
+.modal-overlay,
+.modal-overlays,
+.mod-modal-overlay,
+.av2-modal-overlay,
+.evt-modal-backdrop,
+.svc-overlay,
+.svc-modal-overlay,
+.sdl-drawer-overlay,
+.sdl-filter-overlay,
+.wz-confirm-overlay,
+.crm-notif-overlay {
+  position: fixed !important;
+  z-index: 10000 !important;
+}

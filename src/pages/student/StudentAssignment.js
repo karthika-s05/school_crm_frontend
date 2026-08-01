@@ -12,6 +12,23 @@ const STATUS_STYLE = {
   Submitted:     { bg: "#dcfce7", color: "#16a34a", icon: "bx-check-circle" },
 };
 
+const isAssignmentOpen = (a) => {
+  const publishFlag = String(a.status || "").toLowerCase();
+  if (publishFlag === "false" || publishFlag === "0") return false;
+  if (publishFlag === "true" || publishFlag === "1") {
+    const end = a.endDate ? new Date(a.endDate) : null;
+    return !end || end >= new Date(new Date().toDateString());
+  }
+  return (
+    a.isPublished === true ||
+    a.status === 1 ||
+    a.status === true ||
+    ["Active", "Upcoming"].includes(a.status) ||
+    a.status === "open" ||
+    a.isOpen
+  );
+};
+
 const StudentAssignment = () => {
   const token = getToken();
 
@@ -33,15 +50,19 @@ const StudentAssignment = () => {
     setError("");
     runApi(() => getStudentAssignment(token), {
       onSuccess: (res) => {
-        const list = res.data || [];
+        const list = Array.isArray(res?.data) ? res.data : [];
         setAssignments(list);
         const init = {};
         list.forEach(a => { init[a.id] = a.progressStatus || "Not Started"; });
         setProgress(init);
       },
-      onError: () => {
+      onError: (err) => {
         setAssignments([]);
-        setError("Unable to load assignments.");
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          (typeof err === "string" ? err : null);
+        setError(msg || "Unable to load assignments.");
       },
     }).finally(() => setLoading(false));
   }, [token]);
@@ -49,13 +70,19 @@ const StudentAssignment = () => {
   const handleStatusChange = async (id, newStatus) => {
     const previous = progress[id] || "Not Started";
     if (previous === newStatus) return;
-    setProgress(p => ({ ...p, [id]: newStatus }));
+    setProgress((p) => ({ ...p, [id]: newStatus }));
+    setAssignments((list) =>
+      list.map((a) => (String(a.id) === String(id) ? { ...a, progressStatus: newStatus } : a))
+    );
     setSaving(id);
     const ok = await runApi(() => updateAssignmentProgress({ id, status: newStatus }, token), {
       successMsg: "Progress updated!",
     });
     if (!ok) {
       setProgress((p) => ({ ...p, [id]: previous }));
+      setAssignments((list) =>
+        list.map((a) => (String(a.id) === String(id) ? { ...a, progressStatus: previous } : a))
+      );
     }
     setSaving(null);
   };
@@ -68,8 +95,6 @@ const StudentAssignment = () => {
   const filtered = filter === "All"
     ? assignments
     : assignments.filter(a => (progress[a.id] || "Not Started") === filter);
-
-  const isOpen = (a) => a.status === 1 || a.status === "open" || a.isOpen;
 
   if (loading) {
     return (
@@ -145,7 +170,7 @@ const StudentAssignment = () => {
           {filtered.map((a, i) => {
             const status  = progress[a.id] || "Not Started";
             const style   = STATUS_STYLE[status];
-            const open    = isOpen(a);
+            const open    = isAssignmentOpen(a);
             const isExpanded = expanded === (a.id || i);
             return (
               <div className="sm-asgn-card" key={a.id || i}>
@@ -158,9 +183,20 @@ const StudentAssignment = () => {
                       <div className="sm-asgn-title">{a.title}</div>
                       <div className="sm-asgn-meta">
                         <span className="sm-subject-pill">{a.subjectName || a.subject || "Subject"}</span>
+                        {(a.className || a.sectionName || a.section) && (
+                          <span className="sm-meta-chip">
+                            <i className="bx bx-book"></i>{" "}
+                            {[a.className, a.sectionName || a.section].filter(Boolean).join(" – ")}
+                          </span>
+                        )}
                         <span className="sm-date-text">
                           <i className="bx bx-calendar"></i> {a.startDate} – {a.endDate}
                         </span>
+                        {a.staffName && (
+                          <span className="sm-meta-chip">
+                            <i className="bx bx-user"></i> {a.staffName}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

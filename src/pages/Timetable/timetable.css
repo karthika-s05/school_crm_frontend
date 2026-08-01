@@ -303,6 +303,50 @@ tr:last-child .tt-td-cell { border-bottom: none; }
 .tt-empty i { font-size: 52px; }
 .tt-empty p { font-size: 14px; font-weight: 500; margin: 0; max-width: 380px; }
 
+.tt-warning-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: var(--tt-radius);
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.tt-warning-banner.mild {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+.tt-warning-banner i {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.tt-td-unconfigured {
+  background: #fafafa;
+}
+.tt-cell-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 72px;
+  padding: 8px;
+  text-align: center;
+  color: var(--tt-text-3);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.tt-cell-hint i {
+  font-size: 18px;
+  opacity: 0.7;
+}
+
 /* ═══════════════════════════════════════════════════════════
    READ-ONLY VIEW  (Staff & Student)
 ═══════════════════════════════════════════════════════════ */

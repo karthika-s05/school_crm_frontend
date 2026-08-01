@@ -6,6 +6,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getToken } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
+import ModalPortal from "../../component/modals/ModalPortal";
 import {
   getClass,
   getSection,
@@ -337,10 +338,10 @@ export default function FeesCollection() {
       <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
       <div className="svc-header">
         <div>
-          <h2 style={{ margin: 0, color: "#2D3A8C" }}>Fees Collection</h2>
+          {/* <h2 style={{ margin: 0, color: "#2D3A8C" }}>Fees Collection</h2>
           <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
             Define class fee structures, collect school fees, and manage transport fees
-          </p>
+          </p> */}
         </div>
         <div className="svc-tabs">
           {TABS.map((label, i) => (
@@ -625,6 +626,9 @@ export default function FeesCollection() {
                     setLedgerFilters((f) => ({ ...f, search: e.target.value }))
                   }
                 />
+                {ledgerFilters.search && (
+                  <i className="bx bx-x sdl-search-clear" onClick={() => setLedgerFilters((f) => ({ ...f, search: "" }))} />
+                )}
               </div>
               <button type="button" className="svc-btn-primary" onClick={loadLedger}>
                 Apply
@@ -755,6 +759,9 @@ export default function FeesCollection() {
                   value={transportSearch}
                   onChange={(e) => setTransportSearch(e.target.value)}
                 />
+                {transportSearch && (
+                  <i className="bx bx-x sdl-search-clear" onClick={() => setTransportSearch("")} />
+                )}
               </div>
               <select
                 className="svc-select"
@@ -842,31 +849,29 @@ export default function FeesCollection() {
       )}
 
       {collectModal && (
+        <ModalPortal>
         <div
           className="svc-modal-overlay"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(15,23,42,.45)",
-            display: "grid",
-            placeItems: "center",
-            zIndex: 50,
-          }}
           onClick={() => setCollectModal(null)}
         >
           <div
-            className="svc-modal"
-            style={{
-              background: "#fff",
-              borderRadius: 14,
-              padding: 22,
-              width: "min(420px, 92vw)",
-              boxShadow: "0 20px 40px rgba(0,0,0,.18)",
-            }}
+            className="svc-modal svc-modal-sm"
+            style={{ padding: 22 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ marginTop: 0, color: "#2D3A8C" }}>Collect fee</h3>
-            <p style={{ color: "#64748b", fontSize: 13 }}>
+            <div className="svc-modal-hdr">
+              <span className="svc-modal-title">Collect fee</span>
+              <button
+                type="button"
+                className="svc-modal-close"
+                onClick={() => setCollectModal(null)}
+                aria-label="Close"
+              >
+                <i className="bx bx-x"></i>
+              </button>
+            </div>
+            <div className="svc-modal-body">
+            <p style={{ color: "#64748b", fontSize: 13, marginTop: 0 }}>
               {collectModal.studentName || collectModal.studentId} · {collectModal.feeName} · Due{" "}
               {fmtMoney(collectModal.amountDue)}
             </p>
@@ -880,7 +885,7 @@ export default function FeesCollection() {
               onChange={(e) => setCollectAmount(e.target.value)}
               style={{ width: "100%", marginBottom: 14 }}
             />
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
               <button type="button" className="svc-btn-ghost" onClick={() => setCollectModal(null)}>
                 Cancel
               </button>
@@ -891,8 +896,10 @@ export default function FeesCollection() {
                 Mark fully paid
               </button>
             </div>
+            </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

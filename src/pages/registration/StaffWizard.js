@@ -13,6 +13,7 @@ import {
   validateMobile,
   sanitizeMobileInput,
   isMobileFieldName,
+  isBlank,
 } from "../../utils/validators";
 
 const STEPS = [
@@ -24,8 +25,20 @@ const STEPS = [
 ];
 
 const DRAFT_KEY = "staff_reg_draft";
+const REQUIRED_MSG = "This field is required.";
 const GENDER_ID_MAP = { Male: 1, Female: 2 };
 const GENDER_LABEL_MAP = { 1: "Male", 2: "Female", Male: "Male", Female: "Female" };
+
+// Clear any previously saved registration draft so forms always start empty.
+try {
+  localStorage.removeItem(DRAFT_KEY);
+} catch {}
+
+const hasStaffPhoto = (form) =>
+  form.photo instanceof File ||
+  (!!String(form.photoUrl || "").trim() &&
+    !String(form.photoUrl).toLowerCase().includes("noimage") &&
+    !String(form.photoUrl).toLowerCase().includes("men2.jpg"));
 
 const formatDate = (value) => {
   if (!value) return "";
@@ -41,6 +54,8 @@ const mapStaffToForm = (staff) => ({
   dateOfBirth: formatDate(staff.dateOfBirth || staff.date_of_birth),
   bloodGroupId: staff.bloodGroupId || "",
   maritalStatus: staff.maritalStatus || "",
+  photo: null,
+  photoUrl: staff.photoUrl || staff.image || "",
   department: staff.department || "",
   designation: staff.designation || staff.position || "",
   dateOfJoining: formatDate(staff.dateOfJoining || staff.date_of_joining),
@@ -103,7 +118,7 @@ const buildStaffPayload = (form, staffId) => ({
 
 const initForm = {
   employeeId: "", firstName: "", lastName: "", gender: "",
-  dateOfBirth: "", bloodGroupId: "", maritalStatus: "", photo: null,
+  dateOfBirth: "", bloodGroupId: "", maritalStatus: "", photo: null, photoUrl: "",
   department: "", designation: "", dateOfJoining: "", qualification: "",
   experience: "", employmentType: "Full-Time",
   email: "", mobile: "", alternateMobile: "", emergencyContact: "",
@@ -115,7 +130,7 @@ const initForm = {
 
 const Field = ({
   label, name, type = "text", value, onChange, error, options, required, placeholder,
-  maxLength, inputMode, pattern,
+  maxLength, inputMode, pattern, accept,
 }) => (
   <div className="wz-field">
     <label className="wz-label">
@@ -127,7 +142,13 @@ const Field = ({
         {(options || []).map(o => <option key={o.id} value={o.id}>{o.value}</option>)}
       </select>
     ) : type === "file" ? (
-      <input className="wz-input wz-file" type="file" name={name} onChange={onChange} />
+      <input
+        className={`wz-input wz-file${error ? " wz-error-border" : ""}`}
+        type="file"
+        name={name}
+        accept={accept}
+        onChange={onChange}
+      />
     ) : (
       <input
         className={`wz-input${error ? " wz-error-border" : ""}`}
@@ -164,14 +185,6 @@ export default function StaffWizard() {
   const [loading, setLoading] = useState(isEdit);
 
   useEffect(() => {
-    if (isEdit) return;
-    try {
-      const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}");
-      if (Object.keys(draft).length) setForm((p) => ({ ...p, ...draft }));
-    } catch {}
-  }, [isEdit]);
-
-  useEffect(() => {
     const load = async (fn, id, key) => {
       try {
         const res = await fn(id, token);
@@ -206,11 +219,7 @@ export default function StaffWizard() {
       try {
         const res = await getStafflist(routeId, token);
         const rows = Array.isArray(res?.data) ? res.data : [];
-        const staff = rows.find(
-          (row) =>
-            String(row.staffId || row.staffID) === String(routeId) ||
-            String(row.id) === String(routeId)
-        ) || rows[0];
+        const staff = rows[0];
         if (!staff) {
           toast.error("Staff not found.");
           return;
@@ -251,51 +260,77 @@ export default function StaffWizard() {
     }
   };
 
-  const saveDraft = () => {
-    const s = { ...form };
-    delete s.photo; delete s.certDoc; delete s.idProof;
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(s));
-    toast.info("Draft saved!", { autoClose: 1500 });
-  };
-
-  const saveDraftSilent = () => {
-    try {
-      const s = { ...form }; delete s.photo; delete s.certDoc; delete s.idProof;
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(s));
-    } catch {}
-  };
-
-  const validate = s => {
+  const validate = (s) => {
     const e = {};
+    const req = (value) => (isBlank(value) ? REQUIRED_MSG : "");
+
     if (s === 0) {
-      if (!form.firstName.trim()) e.firstName = "First Name is required";
-      if (!form.lastName.trim()) e.lastName = "Last Name is required";
-      if (!form.gender) e.gender = "Gender is required";
-      if (!form.dateOfBirth) e.dateOfBirth = "Date of Birth is required";
+      if (req(form.firstName)) e.firstName = REQUIRED_MSG;
+      if (req(form.lastName)) e.lastName = REQUIRED_MSG;
+      if (req(form.gender)) e.gender = REQUIRED_MSG;
+      if (req(form.dateOfBirth)) e.dateOfBirth = REQUIRED_MSG;
+      if (req(form.bloodGroupId)) e.bloodGroupId = REQUIRED_MSG;
+      if (req(form.maritalStatus)) e.maritalStatus = REQUIRED_MSG;
+      if (req(form.religionId)) e.religionId = REQUIRED_MSG;
+      if (req(form.communityId)) e.communityId = REQUIRED_MSG;
+      if (!hasStaffPhoto(form)) e.photo = REQUIRED_MSG;
     }
     if (s === 1) {
-      if (!form.department.trim()) e.department = "Department is required";
-      if (!form.designation.trim()) e.designation = "Designation is required";
-      if (!form.dateOfJoining) e.dateOfJoining = "Date of Joining is required";
+      if (req(form.department)) e.department = REQUIRED_MSG;
+      if (req(form.designation)) e.designation = REQUIRED_MSG;
+      if (req(form.dateOfJoining)) e.dateOfJoining = REQUIRED_MSG;
+      if (req(form.qualification)) e.qualification = REQUIRED_MSG;
+      if (req(form.experience)) e.experience = REQUIRED_MSG;
+      if (req(form.employmentType)) e.employmentType = REQUIRED_MSG;
     }
     if (s === 2) {
-      const emailErr = validateEmail(form.email, { required: true, label: "Email" });
-      if (emailErr) e.email = emailErr;
-      const mobileErr = validateMobile(form.mobile, { required: true, label: "Mobile" });
-      if (mobileErr) e.mobile = mobileErr;
-      if (form.alternateMobile?.trim()) {
-        const altErr = validateMobile(form.alternateMobile, { label: "Alternate mobile" });
-        if (altErr) e.alternateMobile = altErr;
+      if (isBlank(form.email)) e.email = REQUIRED_MSG;
+      else {
+        const emailErr = validateEmail(form.email, { required: true, label: "Email" });
+        if (emailErr) e.email = emailErr.endsWith(".") ? emailErr : `${emailErr}.`;
       }
-      if (form.emergencyContact?.trim()) {
-        const emErr = validateMobile(form.emergencyContact, { label: "Emergency contact" });
-        if (emErr) e.emergencyContact = emErr;
+      if (isBlank(form.mobile)) e.mobile = REQUIRED_MSG;
+      else {
+        const mobileErr = validateMobile(form.mobile, { required: true, label: "Mobile" });
+        if (mobileErr) e.mobile = mobileErr.endsWith(".") ? mobileErr : `${mobileErr}.`;
+      }
+      if (isBlank(form.alternateMobile)) e.alternateMobile = REQUIRED_MSG;
+      else {
+        const altErr = validateMobile(form.alternateMobile, {
+          required: true,
+          label: "Alternate mobile",
+        });
+        if (altErr) e.alternateMobile = altErr.endsWith(".") ? altErr : `${altErr}.`;
+      }
+      if (isBlank(form.emergencyContact)) e.emergencyContact = REQUIRED_MSG;
+      else {
+        const emErr = validateMobile(form.emergencyContact, {
+          required: true,
+          label: "Emergency contact",
+        });
+        if (emErr) e.emergencyContact = emErr.endsWith(".") ? emErr : `${emErr}.`;
       }
     }
     if (s === 3) {
-      if (!form.address1.trim()) e.address1 = "Address is required";
-      if (!form.pincode.trim()) e.pincode = "Pincode is required";
-      else if (!/^\d{6}$/.test(form.pincode.trim())) e.pincode = "Pincode must be 6 digits";
+      if (req(form.address1)) e.address1 = REQUIRED_MSG;
+      if (req(form.address2)) e.address2 = REQUIRED_MSG;
+      if (req(form.nationalityId)) e.nationalityId = REQUIRED_MSG;
+      if (req(form.stateId)) e.stateId = REQUIRED_MSG;
+      if (req(form.cityId)) e.cityId = REQUIRED_MSG;
+      if (req(form.country)) e.country = REQUIRED_MSG;
+      if (isBlank(form.pincode)) e.pincode = REQUIRED_MSG;
+      else if (!/^\d{6}$/.test(String(form.pincode).trim())) {
+        e.pincode = "Pincode must be 6 digits.";
+      }
+    }
+    if (s === 4) {
+      if (req(form.bankName)) e.bankName = REQUIRED_MSG;
+      if (req(form.accountNo)) e.accountNo = REQUIRED_MSG;
+      if (req(form.ifscNo)) e.ifscNo = REQUIRED_MSG;
+      if (req(form.adharCardNo)) e.adharCardNo = REQUIRED_MSG;
+      if (req(form.panCard)) e.panCard = REQUIRED_MSG;
+      if (!(form.certDoc instanceof File) && !isEdit) e.certDoc = REQUIRED_MSG;
+      if (!(form.idProof instanceof File) && !isEdit) e.idProof = REQUIRED_MSG;
     }
     return e;
   };
@@ -307,17 +342,25 @@ export default function StaffWizard() {
       toast.error(Object.values(e)[0]);
       return;
     }
-    saveDraftSilent();
-    setStep(s => s + 1);
+    setStep((s) => s + 1);
   };
 
-  const prev = () => setStep(s => s - 1);
+  const prev = () => setStep((s) => s - 1);
 
   const handleSubmit = async () => {
-    const allErrors = { ...validate(0), ...validate(1), ...validate(2), ...validate(3) };
+    const stepErrors = [
+      validate(0),
+      validate(1),
+      validate(2),
+      validate(3),
+      validate(4),
+    ];
+    const allErrors = Object.assign({}, ...stepErrors);
     if (Object.keys(allErrors).length) {
       setErrors(allErrors);
-      toast.error("Please complete all required fields before submitting.");
+      const firstStep = stepErrors.findIndex((err) => Object.keys(err).length);
+      if (firstStep >= 0) setStep(firstStep);
+      toast.error(Object.values(allErrors)[0] || "This field is required.");
       return;
     }
 
@@ -328,7 +371,6 @@ export default function StaffWizard() {
         ? await updateStaff(payload, token)
         : await registerStaff(payload, token);
       if (res.status?.toLowerCase() === "success") {
-        localStorage.removeItem(DRAFT_KEY);
         toast.success(res.message || (isEdit ? "Staff updated!" : "Staff registered successfully!"), {
           onClose: () => navigate("/admin/staff", { state: "Staff List" }),
         });
@@ -404,11 +446,24 @@ export default function StaffWizard() {
             <Field label="Last Name" name="lastName" value={form.lastName} onChange={handleChange} error={errors.lastName} required />
             <Field label="Gender" name="gender" type="select" value={form.gender} onChange={handleChange} error={errors.gender} options={dd.gender} required />
             <Field label="Date of Birth" name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={handleChange} error={errors.dateOfBirth} required />
-            <Field label="Blood Group" name="bloodGroupId" type="select" value={form.bloodGroupId} onChange={handleChange} options={dd.bloodGroupId} />
-            <Field label="Marital Status" name="maritalStatus" type="select" value={form.maritalStatus} onChange={handleChange} options={dd.maritalStatus} />
-            <Field label="Religion" name="religionId" type="select" value={form.religionId} onChange={handleChange} options={dd.religionId} />
-            <Field label="Community" name="communityId" type="select" value={form.communityId} onChange={handleChange} options={dd.communityId} />
-            <Field label="Staff Photo" name="photo" type="file" onChange={handleChange} />
+            <Field label="Blood Group" name="bloodGroupId" type="select" value={form.bloodGroupId} onChange={handleChange} error={errors.bloodGroupId} options={dd.bloodGroupId} required />
+            <Field label="Marital Status" name="maritalStatus" type="select" value={form.maritalStatus} onChange={handleChange} error={errors.maritalStatus} options={dd.maritalStatus} required />
+            <Field label="Religion" name="religionId" type="select" value={form.religionId} onChange={handleChange} error={errors.religionId} options={dd.religionId} required />
+            <Field label="Community" name="communityId" type="select" value={form.communityId} onChange={handleChange} error={errors.communityId} options={dd.communityId} required />
+            <Field
+              label="Staff Photo"
+              name="photo"
+              type="file"
+              onChange={handleChange}
+              error={errors.photo}
+              accept="image/*"
+              required
+            />
+            {hasStaffPhoto(form) && !(form.photo instanceof File) && form.photoUrl ? (
+              <p className="wz-hint" style={{ gridColumn: "1 / -1", margin: 0, color: "#64748b", fontSize: 12 }}>
+                Existing photo on file. Upload a new file to replace it.
+              </p>
+            ) : null}
           </div>
         )}
 
@@ -418,9 +473,9 @@ export default function StaffWizard() {
             <Field label="Department" name="department" value={form.department} onChange={handleChange} error={errors.department} required />
             <Field label="Designation / Position" name="designation" value={form.designation} onChange={handleChange} error={errors.designation} required />
             <Field label="Date of Joining" name="dateOfJoining" type="date" value={form.dateOfJoining} onChange={handleChange} error={errors.dateOfJoining} required />
-            <Field label="Qualification" name="qualification" value={form.qualification} onChange={handleChange} />
-            <Field label="Experience (Years)" name="experience" type="number" value={form.experience} onChange={handleChange} />
-            <Field label="Employment Type" name="employmentType" type="select" value={form.employmentType} onChange={handleChange} options={dd.employmentType} />
+            <Field label="Qualification" name="qualification" value={form.qualification} onChange={handleChange} error={errors.qualification} required />
+            <Field label="Experience (Years)" name="experience" type="number" value={form.experience} onChange={handleChange} error={errors.experience} required />
+            <Field label="Employment Type" name="employmentType" type="select" value={form.employmentType} onChange={handleChange} error={errors.employmentType} options={dd.employmentType} required />
           </div>
         )}
 
@@ -448,10 +503,11 @@ export default function StaffWizard() {
               value={form.alternateMobile}
               onChange={handleChange}
               error={errors.alternateMobile}
+              required
               maxLength={10}
               inputMode="numeric"
               pattern="[6-9][0-9]{9}"
-              placeholder="Optional 10-digit mobile"
+              placeholder="10-digit mobile"
             />
             <Field
               label="Emergency Contact"
@@ -460,10 +516,11 @@ export default function StaffWizard() {
               value={form.emergencyContact}
               onChange={handleChange}
               error={errors.emergencyContact}
+              required
               maxLength={10}
               inputMode="numeric"
               pattern="[6-9][0-9]{9}"
-              placeholder="Optional 10-digit mobile"
+              placeholder="10-digit mobile"
             />
           </div>
         )}
@@ -472,11 +529,11 @@ export default function StaffWizard() {
         {step === 3 && (
           <div className="wz-grid">
             <Field label="Address Line 1" name="address1" value={form.address1} onChange={handleChange} error={errors.address1} required />
-            <Field label="Address Line 2" name="address2" value={form.address2} onChange={handleChange} />
-            <Field label="Nationality" name="nationalityId" type="select" value={form.nationalityId} onChange={handleChange} options={dd.nationalityId} />
-            <Field label="State" name="stateId" type="select" value={form.stateId} onChange={handleChange} options={dd.stateId} />
-            <Field label="City" name="cityId" type="select" value={form.cityId} onChange={handleChange} options={dd.cityId} />
-            <Field label="Country" name="country" value={form.country} onChange={handleChange} />
+            <Field label="Address Line 2" name="address2" value={form.address2} onChange={handleChange} error={errors.address2} required />
+            <Field label="Nationality" name="nationalityId" type="select" value={form.nationalityId} onChange={handleChange} error={errors.nationalityId} options={dd.nationalityId} required />
+            <Field label="State" name="stateId" type="select" value={form.stateId} onChange={handleChange} error={errors.stateId} options={dd.stateId} required />
+            <Field label="City" name="cityId" type="select" value={form.cityId} onChange={handleChange} error={errors.cityId} options={dd.cityId} required />
+            <Field label="Country" name="country" value={form.country} onChange={handleChange} error={errors.country} required />
             <Field label="Pincode" name="pincode" value={form.pincode} onChange={handleChange} error={errors.pincode} required />
           </div>
         )}
@@ -486,16 +543,16 @@ export default function StaffWizard() {
           <>
             <p className="wz-section-hdr"><i className="bx bxs-bank"></i> Bank Details</p>
             <div className="wz-grid">
-              <Field label="Bank Name" name="bankName" value={form.bankName} onChange={handleChange} />
-              <Field label="Account Number" name="accountNo" value={form.accountNo} onChange={handleChange} />
-              <Field label="IFSC Code" name="ifscNo" value={form.ifscNo} onChange={handleChange} />
+              <Field label="Bank Name" name="bankName" value={form.bankName} onChange={handleChange} error={errors.bankName} required />
+              <Field label="Account Number" name="accountNo" value={form.accountNo} onChange={handleChange} error={errors.accountNo} required />
+              <Field label="IFSC Code" name="ifscNo" value={form.ifscNo} onChange={handleChange} error={errors.ifscNo} required />
             </div>
             <p className="wz-section-hdr"><i className="bx bxs-id-card"></i> Identity Documents</p>
             <div className="wz-grid">
-              <Field label="Aadhaar Number" name="adharCardNo" value={form.adharCardNo} onChange={handleChange} />
-              <Field label="PAN Number" name="panCard" value={form.panCard} onChange={handleChange} />
-              <Field label="Upload Certificate" name="certDoc" type="file" onChange={handleChange} />
-              <Field label="Upload ID Proof" name="idProof" type="file" onChange={handleChange} />
+              <Field label="Aadhaar Number" name="adharCardNo" value={form.adharCardNo} onChange={handleChange} error={errors.adharCardNo} required />
+              <Field label="PAN Number" name="panCard" value={form.panCard} onChange={handleChange} error={errors.panCard} required />
+              <Field label="Upload Certificate" name="certDoc" type="file" onChange={handleChange} error={errors.certDoc} required />
+              <Field label="Upload ID Proof" name="idProof" type="file" onChange={handleChange} error={errors.idProof} required />
             </div>
 
             {/* Review summary */}

@@ -63,13 +63,23 @@ const StudentHomework = () => {
   const handleStatusChange = async (id, newStatus) => {
     const previous = progress[id] || "Pending";
     if (previous === newStatus) return;
-    setProgress(p => ({ ...p, [id]: newStatus }));
+    setProgress((p) => ({ ...p, [id]: newStatus }));
+    setHomework((list) =>
+      list.map((hw) =>
+        String(hw.id) === String(id) ? { ...hw, progressStatus: newStatus } : hw
+      )
+    );
     setSaving(id);
     const ok = await runApi(() => updateHomeworkProgress({ id, status: newStatus }, token), {
       successMsg: "Progress updated!",
     });
     if (!ok) {
       setProgress((p) => ({ ...p, [id]: previous }));
+      setHomework((list) =>
+        list.map((hw) =>
+          String(hw.id) === String(id) ? { ...hw, progressStatus: previous } : hw
+        )
+      );
     }
     setSaving(null);
   };

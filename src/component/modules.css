@@ -372,17 +372,18 @@
 
 @keyframes mod-spin { to { transform: rotate(360deg); } }
 
-/* Modal */
+/* Modal - above sidebar/header; full viewport */
 .mod-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(15,23,42,.45);
   backdrop-filter: blur(3px);
-  z-index: 1000;
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  box-sizing: border-box;
   animation: mod-fade-in .2s ease;
 }
 
@@ -393,8 +394,10 @@
   border-radius: 18px;
   width: 100%;
   max-width: 520px;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 24px 60px rgba(15,23,42,.18);
   animation: mod-slide-up .25s ease;
 }
@@ -408,8 +411,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px 16px;
+  gap: 12px;
+  padding: 18px 20px 14px;
   border-bottom: 1px solid #f0f2f8;
+  flex-shrink: 0;
 }
 
 .mod-modal-header h3 {
@@ -417,6 +422,9 @@
   font-weight: 700;
   color: #111827;
   margin: 0;
+  padding-right: 8px;
+  line-height: 1.35;
+  min-width: 0;
 }
 
 .mod-modal-close {
@@ -432,18 +440,25 @@
   font-size: 18px;
   color: #6b7280;
   transition: all .15s;
+  flex-shrink: 0;
 }
 
 .mod-modal-close:hover { background: #fee2e2; color: #ef4444; }
 
-.mod-modal-body { padding: 20px 24px; }
+.mod-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+}
 
 .mod-modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding: 16px 24px 20px;
+  padding: 14px 20px 18px;
   border-top: 1px solid #f0f2f8;
+  flex-shrink: 0;
 }
 
 /* Form fields inside modal */

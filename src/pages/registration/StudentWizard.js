@@ -1,15 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   getBloodGroup, getCity, getClass, getCommunity,
   getNationality, getReligion, getSection, getState, studentStaff,
-  getStudentlist, updateStudent, getsectionList,
+  getStudentlist, updateStudent, getsectionList, createStudentImage,
 } from "../../services/api";
 import { getToken } from "../../services/auth";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./wizard.css";
-import { validateEmail, validateMobile, sanitizeMobileInput, isMobileFieldName } from "../../utils/validators";
+import {
+  validateEmail,
+  validateMobile,
+  sanitizeMobileInput,
+  isMobileFieldName,
+  requiredError,
+  isBlank,
+} from "../../utils/validators";
 
 const STEPS = [
   { label: "Basic Info",    icon: "bx bxs-user" },
@@ -20,60 +27,90 @@ const STEPS = [
 ];
 
 const DRAFT_KEY = "student_reg_draft";
+const NO_IMAGE_HINT = "noImage";
+
+// Clear any previously saved registration draft so forms always start empty.
+try {
+  localStorage.removeItem(DRAFT_KEY);
+} catch {}
 
 const initForm = {
-  firstName: "", 
-  lastName: "", 
+  firstName: "",
+  lastName: "",
   gender: "",
-  dateOfBirth: "", 
-  bloodGroupId: "", 
-  nationalityId: "", 
+  dateOfBirth: "",
+  bloodGroupId: "",
+  nationalityId: "",
   religionId: "",
-  communityId: "", 
+  communityId: "",
   photo: null,
-  academicYear: "", 
-  classId: "", 
-  sectionId: "", 
+  photoUrl: "",
+  academicYear: "",
+  classId: "",
+  sectionId: "",
   rollNo: "",
-  admissionDate: "", 
-  previousSchool: "", 
+  admissionDate: "",
+  previousSchool: "",
   previousReason: "",
-  fatherName: "", 
-  fatherMobile: "", 
+  fatherName: "",
+  fatherMobile: "",
   fatherOccupation: "",
-  motherName: "", 
-  motherMobile: "", 
+  motherName: "",
+  motherMobile: "",
   motherOccupation: "",
-  guardianName: "", 
-  guardianMobile: "", 
+  guardianName: "",
+  guardianMobile: "",
   guardianRelation: "",
-  address1: "", 
-  address2: "", 
-  cityId: "", 
-  stateId: "", 
-  country: "India", 
+  address1: "",
+  address2: "",
+  cityId: "",
+  stateId: "",
+  country: "India",
   pincode: "",
-  aadhaarDoc: null, 
-  birthCert: null, 
-  tc: null, 
+  aadhaarDoc: null,
+  birthCert: null,
+  tc: null,
   otherDoc: null,
 };
 
+const idStr = (value) =>
+  value === null || value === undefined || value === "" ? "" : String(value);
+
 const Field = ({
   label, name, type = "text", value, onChange, error, options, required, placeholder,
-  maxLength, inputMode, pattern,
+  maxLength, inputMode, pattern, previewUrl, accept,
 }) => (
   <div className="wz-field">
     <label className="wz-label">
       {label}{required && <span className="wz-req">*</span>}
     </label>
     {type === "select" ? (
-      <select className={`wz-input${error ? " wz-error-border" : ""}`} name={name} value={value} onChange={onChange}>
+      <select
+        className={`wz-input${error ? " wz-error-border" : ""}`}
+        name={name}
+        value={idStr(value)}
+        onChange={onChange}
+      >
         <option value="">Select {label}</option>
-        {(options || []).map(o => <option key={o.id} value={o.id}>{o.value}</option>)}
+        {(options || []).map((o) => (
+          <option key={o.id} value={idStr(o.id)}>{o.value}</option>
+        ))}
       </select>
     ) : type === "file" ? (
-      <input className={`wz-input wz-file${error ? " wz-error-border" : ""}`} type="file" name={name} onChange={onChange} />
+      <div className="wz-file-wrap">
+        {previewUrl ? (
+          <div className="wz-photo-preview">
+            <img src={previewUrl} alt={label} />
+          </div>
+        ) : null}
+        <input
+          className={`wz-input wz-file${error ? " wz-error-border" : ""}`}
+          type="file"
+          name={name}
+          accept={accept || "image/*"}
+          onChange={onChange}
+        />
+      </div>
     ) : type === "textarea" ? (
       <textarea className={`wz-input wz-textarea${error ? " wz-error-border" : ""}`} name={name} value={value} onChange={onChange} placeholder={placeholder} rows={3} />
     ) : (
@@ -103,35 +140,76 @@ const formatDate = (value) => {
   return str.includes("T") ? str.split("T")[0] : str.slice(0, 10);
 };
 
+const hasExistingPhoto = (url) => {
+  const value = String(url || "").trim().toLowerCase();
+  return (
+    !!value &&
+    !value.includes(NO_IMAGE_HINT.toLowerCase()) &&
+    !value.includes("men2.jpg")
+  );
+};
+
+const resolveStudentPhotoUrl = (url) => {
+  if (!hasExistingPhoto(url)) return "";
+  const raw = String(url).trim().replace(/\\/g, "/");
+  const adminBase = String(
+    process.env.REACT_APP_ADMIN_URL || ""
+  ).replace(/\/$/, "");
+  const uploadsIdx = raw.toLowerCase().indexOf("/uploads/");
+  if (adminBase && uploadsIdx >= 0) {
+    return `${adminBase}${raw.slice(uploadsIdx)}`;
+  }
+  if (adminBase && raw.startsWith("uploads/")) {
+    return `${adminBase}/${raw}`;
+  }
+  return raw;
+};
+
 const mapStudentToForm = (student) => ({
   firstName: student.firstName || "",
   lastName: student.lastName || "",
   gender: GENDER_LABEL_MAP[student.genderId] || student.gender || "",
   dateOfBirth: formatDate(student.dateOfBirth),
-  bloodGroupId: student.bloodGroupId || "",
-  nationalityId: student.nationalityId || "",
-  religionId: student.religionId || "",
-  communityId: student.communityId || "",
-  classId: student.classId || "",
-  sectionId: student.sectionId || "",
-  rollNo: student.registrationNo || "",
-  admissionDate: formatDate(student.dateOfJoining),
-  previousSchool: student.previousSchool || "",
-  previousReason: student.reasonForReleaving || student.studentReleavingReason || "",
+  bloodGroupId: idStr(student.bloodGroupId),
+  nationalityId: idStr(student.nationalityId),
+  religionId: idStr(student.religionId),
+  communityId: idStr(student.communityId),
+  photo: null,
+  photoUrl: resolveStudentPhotoUrl(student.photoUrl || student.image),
+  academicYear: student.academicYear || student.academicyear || "",
+  classId: idStr(student.classId),
+  sectionId: idStr(student.sectionId),
+  rollNo: student.registrationNo || student.rollNo || "",
+  admissionDate: formatDate(student.dateOfJoining || student.admissionDate),
+  previousSchool: student.previousSchool || student.schoolName || "",
+  previousReason:
+    student.reasonForReleaving ||
+    student.studentReleavingReason ||
+    student.previousReason ||
+    "",
   fatherName: student.fatherName || "",
-  fatherMobile: student.parentMobileNo1 || student.mobile || "",
+  fatherMobile: student.parentMobileNo1 || student.fatherMobileNo || student.mobile || "",
   fatherOccupation: student.fatherOccupation || "",
   motherName: student.motherName || "",
-  motherMobile: student.parentMobileNo2 || "",
+  motherMobile: student.parentMobileNo2 || student.motherMobileNo || "",
   motherOccupation: student.motherOccupation || "",
   guardianName: student.guardianName || "",
-  guardianMobile: student.parentMobileNo3 || student.parentMobileNo4 || "",
-  guardianRelation: "",
-  address1: student.address1 || "",
+  guardianMobile:
+    student.parentMobileNo3 ||
+    student.parentMobileNo4 ||
+    student.guardianMobileno ||
+    student.guardianMobile ||
+    "",
+  guardianRelation:
+    student.guardianRelation ||
+    student.relation ||
+    student.guardianrelation ||
+    "",
+  address1: student.address1 || student.address || "",
   address2: student.address2 || "",
-  cityId: student.cityId || "",
-  stateId: student.stateId || "",
-  country: "India",
+  cityId: idStr(student.cityId),
+  stateId: idStr(student.stateId),
+  country: student.country || "India",
   pincode: student.pincode || "",
 });
 
@@ -242,22 +320,35 @@ export default function StudentWizard() {
   const isEdit = routeId && routeId !== "new";
   const token = getToken();
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState(() => {
-    if (routeId && routeId !== "new") return initForm;
-    try { return { ...initForm, ...JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}") }; }
-    catch { return initForm; }
-  });
+  const [form, setForm] = useState(initForm);
   const [errors, setErrors] = useState({});
   const [dd, setDd] = useState({ genderId: [{ id: "Male", value: "Male" }, { id: "Female", value: "Female" }], nationalityId: [], religionId: [], communityId: [], bloodGroupId: [], classId: [], sectionId: [], stateId: [], cityId: [] });
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [editStep, setEditStep] = useState(null);
 
+  const photoPreviewUrl = useMemo(() => {
+    if (form.photo instanceof File) {
+      return URL.createObjectURL(form.photo);
+    }
+    return hasExistingPhoto(form.photoUrl) ? form.photoUrl : "";
+  }, [form.photo, form.photoUrl]);
+
+  useEffect(() => {
+    if (!(form.photo instanceof File)) return undefined;
+    return () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    };
+  }, [form.photo, photoPreviewUrl]);
+
   useEffect(() => {
     const load = async (fn, id, key, map) => {
       try {
         const res = await fn(id, token);
-        const data = (map ? map(res) : res).map(v => ({ id: v.id, value: v.name || v.value }));
+        const data = (map ? map(res) : res).map((v) => ({
+          id: idStr(v.id),
+          value: v.name || v.value,
+        }));
         setDd(p => ({ ...p, [key]: data }));
       } catch {}
     };
@@ -276,7 +367,10 @@ export default function StudentWizard() {
     const loadSections = async () => {
       try {
         const res = await getsectionList({ id: 0, classId: form.classId }, token);
-        const sections = (res?.data || []).map((v) => ({ id: v.id, value: v.name }));
+        const sections = (res?.data || []).map((v) => ({
+          id: idStr(v.id),
+          value: v.name,
+        }));
         setDd((p) => ({ ...p, sectionId: sections }));
       } catch {}
     };
@@ -313,8 +407,13 @@ export default function StudentWizard() {
   const handleChange = e => {
     const { name, value, files } = e.target;
     if (files) {
-      setForm(p => ({ ...p, [name]: files[0] }));
-      setErrors(p => ({ ...p, [name]: "" }));
+      const file = files[0] || null;
+      setForm((p) => ({
+        ...p,
+        [name]: file,
+        ...(name === "photo" && file ? { photoUrl: p.photoUrl } : {}),
+      }));
+      setErrors((p) => ({ ...p, [name]: "" }));
       return;
     }
     const nextValue = isMobileFieldName(name) ? sanitizeMobileInput(value) : value;
@@ -326,68 +425,105 @@ export default function StudentWizard() {
         guardianMobile: "Guardian Mobile",
         studentMobile: "Student Mobile",
       };
-      const err = validateMobile(nextValue, { label: labels[name] || "Mobile" });
+      const err = validateMobile(nextValue, {
+        required: name !== "guardianMobile",
+        label: labels[name] || "Mobile",
+      });
       setErrors(p => ({ ...p, [name]: err }));
     } else {
       setErrors(p => ({ ...p, [name]: "" }));
     }
   };
 
-  const saveDraft = () => {
-    const saveable = { ...form };
-    delete saveable.photo; delete saveable.aadhaarDoc; delete saveable.birthCert; delete saveable.tc; delete saveable.otherDoc;
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(saveable));
-    toast.info("Draft saved!", { autoClose: 1500 });
-  };
-
   const validate = (s) => {
     const e = {};
     if (s === 0) {
-      if (!form.firstName.trim()) e.firstName = "First Name is required";
-      if (!form.gender) e.gender = "Gender is required";
-      if (!form.dateOfBirth) e.dateOfBirth = "Date of Birth is required";
+      if (isBlank(form.firstName)) e.firstName = requiredError("First Name");
+      if (isBlank(form.lastName)) e.lastName = requiredError("Last Name");
+      if (isBlank(form.gender)) e.gender = requiredError("Gender");
+      if (isBlank(form.dateOfBirth)) e.dateOfBirth = requiredError("Date of Birth");
+      if (isBlank(form.bloodGroupId)) e.bloodGroupId = requiredError("Blood Group");
+      if (isBlank(form.nationalityId)) e.nationalityId = requiredError("Nationality");
+      if (isBlank(form.religionId)) e.religionId = requiredError("Religion");
+      if (isBlank(form.communityId)) e.communityId = requiredError("Community");
+      if (!(form.photo instanceof File) && !hasExistingPhoto(form.photoUrl)) {
+        e.photo = requiredError("Student Photo");
+      }
     }
     if (s === 1) {
-      if (!form.classId) e.classId = "Class is required";
-      if (!form.sectionId) e.sectionId = "Section is required";
-      if (!form.admissionDate) e.admissionDate = "Admission Date is required";
+      if (isBlank(form.academicYear)) e.academicYear = requiredError("Academic Year");
+      if (isBlank(form.classId)) e.classId = requiredError("Class");
+      if (isBlank(form.sectionId)) e.sectionId = requiredError("Section");
+      if (isBlank(form.rollNo)) e.rollNo = requiredError("Roll Number");
+      if (isBlank(form.admissionDate)) e.admissionDate = requiredError("Admission Date");
+      // Reason for Leaving is optional
     }
     if (s === 2) {
-      if (!form.fatherName.trim()) e.fatherName = "Father Name is required";
+      if (isBlank(form.fatherName)) e.fatherName = requiredError("Father Name");
       const fatherMobileErr = validateMobile(form.fatherMobile, {
         required: true,
         label: "Father Mobile",
       });
-      if (fatherMobileErr) e.fatherMobile = fatherMobileErr;
-      if (form.motherMobile?.trim()) {
-        const err = validateMobile(form.motherMobile, { label: "Mother Mobile" });
-        if (err) e.motherMobile = err;
+      if (fatherMobileErr) {
+        e.fatherMobile = fatherMobileErr.endsWith(".")
+          ? fatherMobileErr
+          : `${fatherMobileErr}.`;
       }
-      if (form.guardianMobile?.trim()) {
-        const err = validateMobile(form.guardianMobile, { label: "Guardian Mobile" });
-        if (err) e.guardianMobile = err;
+      if (isBlank(form.fatherOccupation)) {
+        e.fatherOccupation = requiredError("Father Occupation");
+      }
+      if (isBlank(form.motherName)) e.motherName = requiredError("Mother Name");
+      const motherMobileErr = validateMobile(form.motherMobile, {
+        required: true,
+        label: "Mother Mobile",
+      });
+      if (motherMobileErr) {
+        e.motherMobile = motherMobileErr.endsWith(".")
+          ? motherMobileErr
+          : `${motherMobileErr}.`;
+      }
+      if (isBlank(form.motherOccupation)) {
+        e.motherOccupation = requiredError("Mother Occupation");
+      }
+      // Guardian Details are optional — validate format only when provided
+      if (!isBlank(form.guardianMobile)) {
+        const guardianMobileErr = validateMobile(form.guardianMobile, {
+          required: false,
+          label: "Guardian Mobile",
+        });
+        if (guardianMobileErr) {
+          e.guardianMobile = guardianMobileErr.endsWith(".")
+            ? guardianMobileErr
+            : `${guardianMobileErr}.`;
+        }
       }
       if (form.fatherEmail?.trim()) {
         const err = validateEmail(form.fatherEmail, { label: "Father Email" });
-        if (err) e.fatherEmail = err;
+        if (err) e.fatherEmail = err.endsWith(".") ? err : `${err}.`;
       }
       if (form.motherEmail?.trim()) {
         const err = validateEmail(form.motherEmail, { label: "Mother Email" });
-        if (err) e.motherEmail = err;
+        if (err) e.motherEmail = err.endsWith(".") ? err : `${err}.`;
       }
       if (form.stdEmail?.trim()) {
         const err = validateEmail(form.stdEmail, { label: "Student Email" });
-        if (err) e.stdEmail = err;
+        if (err) e.stdEmail = err.endsWith(".") ? err : `${err}.`;
       }
       if (form.studentMobile?.trim()) {
         const err = validateMobile(form.studentMobile, { label: "Student Mobile" });
-        if (err) e.studentMobile = err;
+        if (err) e.studentMobile = err.endsWith(".") ? err : `${err}.`;
       }
     }
     if (s === 3) {
-      if (!form.address1.trim()) e.address1 = "Address is required";
-      if (!form.pincode.trim()) e.pincode = "Pincode is required";
-      else if (!/^\d{6}$/.test(form.pincode.trim())) e.pincode = "Pincode must be 6 digits";
+      if (isBlank(form.address1)) e.address1 = requiredError("Address Line 1");
+      if (isBlank(form.address2)) e.address2 = requiredError("Address Line 2");
+      if (isBlank(form.stateId)) e.stateId = requiredError("State");
+      if (isBlank(form.cityId)) e.cityId = requiredError("City");
+      if (isBlank(form.country)) e.country = requiredError("Country");
+      if (isBlank(form.pincode)) e.pincode = requiredError("Pincode");
+      else if (!/^\d{6}$/.test(String(form.pincode).trim())) {
+        e.pincode = "Pincode must be 6 digits.";
+      }
     }
     return e;
   };
@@ -399,22 +535,32 @@ export default function StudentWizard() {
       toast.error(Object.values(e)[0]);
       return;
     }
-    saveDraftSilent();
     setStep(s => s + 1);
     setEditStep(null);
   };
 
-  const saveDraftSilent = () => {
-    try {
-      const s = { ...form };
-      delete s.photo; delete s.aadhaarDoc; delete s.birthCert; delete s.tc; delete s.otherDoc;
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(s));
-    } catch {}
-  };
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
 
   const prev = () => setStep(s => s - 1);
 
   const goEdit = (s) => { setEditStep(s); setStep(s); };
+
+  const hasDraft = () => {
+    const skip = new Set(["country"]);
+    return Object.entries(form).some(([k, v]) => !skip.has(k) && v !== "" && v !== null);
+  };
+
+  const handleCancel = () => {
+    if (!isEdit && hasDraft()) {
+      setShowDiscardModal(true);
+      return;
+    }
+    navigate("/admin/students", { state: "Student List" });
+  };
+
+  const handleDiscardConfirm = () => {
+    navigate("/admin/students", { state: "Student List" });
+  };
 
   const getRegistrationErrorMessage = (res) => {
     if (!res) return "Registration failed.";
@@ -425,12 +571,32 @@ export default function StudentWizard() {
     return "Registration failed.";
   };
 
+  const uploadStudentPhotoIfNeeded = async (admissionNo) => {
+    if (!(form.photo instanceof File) || !admissionNo) return;
+    try {
+      await createStudentImage(
+        { id: admissionNo, photoUrl: form.photo },
+        token
+      );
+    } catch (err) {
+      toast.warning(
+        err?.response?.data?.message ||
+          "Student saved, but photo upload failed. You can upload it from Student Documents."
+      );
+    }
+  };
+
   const handleSubmit = async () => {
-    const e = validate(step);
-    const allErrors = { ...validate(0), ...validate(1), ...validate(2), ...validate(3) };
+    const stepErrors = [validate(0), validate(1), validate(2), validate(3)];
+    const allErrors = Object.assign({}, ...stepErrors);
     if (Object.keys(allErrors).length) {
       setErrors(allErrors);
-      toast.error("Please complete all required fields before submitting.");
+      const firstStep = stepErrors.findIndex((err) => Object.keys(err).length);
+      if (firstStep >= 0) setStep(firstStep);
+      toast.error(
+        Object.values(allErrors)[0] ||
+          "Please complete all required fields before submitting."
+      );
       return;
     }
 
@@ -439,6 +605,7 @@ export default function StudentWizard() {
       if (isEdit) {
         const res = await updateStudent(buildStudentUpdatePayload(form, routeId), token);
         if (res.status?.toLowerCase() === "success") {
+          await uploadStudentPhotoIfNeeded(routeId);
           toast.success(res.message || "Student updated successfully!", {
             onClose: () => navigate("/admin/students"),
           });
@@ -452,8 +619,9 @@ export default function StudentWizard() {
       const payload = buildStudentStaffPayload(form);
       const res = await studentStaff(payload, token);
       if (res.status?.toLowerCase() === "success") {
-        localStorage.removeItem(DRAFT_KEY);
-        const adm = res.admissionNo ? ` Admission No: ${res.admissionNo}.` : "";
+        const admissionNo = res.admissionNo || res.data?.admissionNo || "";
+        await uploadStudentPhotoIfNeeded(admissionNo);
+        const adm = admissionNo ? ` Admission No: ${admissionNo}.` : "";
         toast.success((res.message || "Student registered successfully!") + adm, {
           onClose: () => navigate("/admin/students"),
         });
@@ -536,27 +704,36 @@ export default function StudentWizard() {
         {step === 0 && (
           <div className="wz-grid">
             <Field label="First Name" name="firstName" value={form.firstName} onChange={handleChange} error={errors.firstName} required />
-            <Field label="Last Name" name="lastName" value={form.lastName} onChange={handleChange} error={errors.lastName} />
+            <Field label="Last Name" name="lastName" value={form.lastName} onChange={handleChange} error={errors.lastName} required />
             <Field label="Gender" name="gender" type="select" value={form.gender} onChange={handleChange} error={errors.gender} options={dd.genderId} required />
             <Field label="Date of Birth" name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={handleChange} error={errors.dateOfBirth} required />
-            <Field label="Blood Group" name="bloodGroupId" type="select" value={form.bloodGroupId} onChange={handleChange} options={dd.bloodGroupId} />
-            <Field label="Nationality" name="nationalityId" type="select" value={form.nationalityId} onChange={handleChange} options={dd.nationalityId} />
-            <Field label="Religion" name="religionId" type="select" value={form.religionId} onChange={handleChange} options={dd.religionId} />
-            <Field label="Community" name="communityId" type="select" value={form.communityId} onChange={handleChange} options={dd.communityId} />
-            <Field label="Student Photo" name="photo" type="file" onChange={handleChange} />
+            <Field label="Blood Group" name="bloodGroupId" type="select" value={form.bloodGroupId} onChange={handleChange} error={errors.bloodGroupId} options={dd.bloodGroupId} required />
+            <Field label="Nationality" name="nationalityId" type="select" value={form.nationalityId} onChange={handleChange} error={errors.nationalityId} options={dd.nationalityId} required />
+            <Field label="Religion" name="religionId" type="select" value={form.religionId} onChange={handleChange} error={errors.religionId} options={dd.religionId} required />
+            <Field label="Community" name="communityId" type="select" value={form.communityId} onChange={handleChange} error={errors.communityId} options={dd.communityId} required />
+            <Field
+              label="Student Photo"
+              name="photo"
+              type="file"
+              onChange={handleChange}
+              error={errors.photo}
+              previewUrl={photoPreviewUrl}
+              accept="image/*"
+              required
+            />
           </div>
         )}
 
         {/*  Step 1: Academic  */}
         {step === 1 && (
           <div className="wz-grid">
-            <Field label="Academic Year" name="academicYear" value={form.academicYear} onChange={handleChange} placeholder="e.g. 2024-25" />
+            <Field label="Academic Year" name="academicYear" value={form.academicYear} onChange={handleChange} error={errors.academicYear} placeholder="e.g. 2024-25" required />
             <Field label="Class" name="classId" type="select" value={form.classId} onChange={handleChange} error={errors.classId} options={dd.classId} required />
             <Field label="Section" name="sectionId" type="select" value={form.sectionId} onChange={handleChange} error={errors.sectionId} options={dd.sectionId} required />
-            <Field label="Roll Number" name="rollNo" value={form.rollNo} onChange={handleChange} />
+            <Field label="Roll Number" name="rollNo" value={form.rollNo} onChange={handleChange} error={errors.rollNo} required />
             <Field label="Admission Date" name="admissionDate" type="date" value={form.admissionDate} onChange={handleChange} error={errors.admissionDate} required />
-            <Field label="Previous School" name="previousSchool" value={form.previousSchool} onChange={handleChange} />
-            <Field label="Reason for Leaving" name="previousReason" value={form.previousReason} onChange={handleChange} />
+            <Field label="Previous School" name="previousSchool" value={form.previousSchool} onChange={handleChange} error={errors.previousSchool} />
+            <Field label="Reason for Leaving" name="previousReason" value={form.previousReason} onChange={handleChange} error={errors.previousReason} />
           </div>
         )}
 
@@ -579,11 +756,11 @@ export default function StudentWizard() {
                 pattern="[6-9][0-9]{9}"
                 placeholder="10-digit mobile (starts with 6–9)"
               />
-              <Field label="Father Occupation" name="fatherOccupation" value={form.fatherOccupation} onChange={handleChange} />
+              <Field label="Father Occupation" name="fatherOccupation" value={form.fatherOccupation} onChange={handleChange} error={errors.fatherOccupation} required />
             </div>
             <p className="wz-section-hdr"><i className="bx bxs-user"></i> Mother Details</p>
             <div className="wz-grid">
-              <Field label="Mother Name" name="motherName" value={form.motherName} onChange={handleChange} />
+              <Field label="Mother Name" name="motherName" value={form.motherName} onChange={handleChange} error={errors.motherName} required />
               <Field
                 label="Mother Mobile"
                 name="motherMobile"
@@ -591,16 +768,20 @@ export default function StudentWizard() {
                 value={form.motherMobile}
                 onChange={handleChange}
                 error={errors.motherMobile}
+                required
                 maxLength={10}
                 inputMode="numeric"
                 pattern="[6-9][0-9]{9}"
-                placeholder="Optional 10-digit mobile"
+                placeholder="10-digit mobile"
               />
-              <Field label="Mother Occupation" name="motherOccupation" value={form.motherOccupation} onChange={handleChange} />
+              <Field label="Mother Occupation" name="motherOccupation" value={form.motherOccupation} onChange={handleChange} error={errors.motherOccupation} required />
             </div>
-            <p className="wz-section-hdr"><i className="bx bxs-user-circle"></i> Guardian Details</p>
+            <p className="wz-section-hdr">
+              <i className="bx bxs-user-circle"></i> Guardian Details
+              <span className="wz-optional-tag">Optional</span>
+            </p>
             <div className="wz-grid">
-              <Field label="Guardian Name" name="guardianName" value={form.guardianName} onChange={handleChange} />
+              <Field label="Guardian Name" name="guardianName" value={form.guardianName} onChange={handleChange} error={errors.guardianName} />
               <Field
                 label="Guardian Mobile"
                 name="guardianMobile"
@@ -611,9 +792,9 @@ export default function StudentWizard() {
                 maxLength={10}
                 inputMode="numeric"
                 pattern="[6-9][0-9]{9}"
-                placeholder="Optional 10-digit mobile"
+                placeholder="10-digit mobile"
               />
-              <Field label="Relation" name="guardianRelation" value={form.guardianRelation} onChange={handleChange} />
+              <Field label="Relation" name="guardianRelation" value={form.guardianRelation} onChange={handleChange} error={errors.guardianRelation} />
             </div>
           </>
         )}
@@ -622,10 +803,10 @@ export default function StudentWizard() {
         {step === 3 && (
           <div className="wz-grid">
             <Field label="Address Line 1" name="address1" value={form.address1} onChange={handleChange} error={errors.address1} required />
-            <Field label="Address Line 2" name="address2" value={form.address2} onChange={handleChange} />
-            <Field label="State" name="stateId" type="select" value={form.stateId} onChange={handleChange} options={dd.stateId} />
-            <Field label="City" name="cityId" type="select" value={form.cityId} onChange={handleChange} options={dd.cityId} />
-            <Field label="Country" name="country" value={form.country} onChange={handleChange} />
+            <Field label="Address Line 2" name="address2" value={form.address2} onChange={handleChange} error={errors.address2} required />
+            <Field label="State" name="stateId" type="select" value={form.stateId} onChange={handleChange} error={errors.stateId} options={dd.stateId} required />
+            <Field label="City" name="cityId" type="select" value={form.cityId} onChange={handleChange} error={errors.cityId} options={dd.cityId} required />
+            <Field label="Country" name="country" value={form.country} onChange={handleChange} error={errors.country} required />
             <Field label="Pincode" name="pincode" value={form.pincode} onChange={handleChange} error={errors.pincode} required />
           </div>
         )}
@@ -637,23 +818,33 @@ export default function StudentWizard() {
               { title: "Basic Information", editStep: 0, fields: [
                 ["First Name", form.firstName],
                 ["Last Name", form.lastName], ["Gender", form.gender],
-                ["Date of Birth", form.dateOfBirth], ["Nationality", dd.nationalityId.find(o => String(o.id) === String(form.nationalityId))?.value || form.nationalityId],
+                ["Date of Birth", form.dateOfBirth],
+                ["Blood Group", dd.bloodGroupId.find(o => String(o.id) === String(form.bloodGroupId))?.value || form.bloodGroupId],
+                ["Nationality", dd.nationalityId.find(o => String(o.id) === String(form.nationalityId))?.value || form.nationalityId],
                 ["Religion", dd.religionId.find(o => String(o.id) === String(form.religionId))?.value || form.religionId],
                 ["Community", dd.communityId.find(o => String(o.id) === String(form.communityId))?.value || form.communityId],
+                ["Student Photo", form.photo instanceof File ? form.photo.name : (hasExistingPhoto(form.photoUrl) ? "Uploaded" : "")],
               ]},
               { title: "Academic Information", editStep: 1, fields: [
                 ["Academic Year", form.academicYear], ["Class", dd.classId.find(o => String(o.id) === String(form.classId))?.value || form.classId],
                 ["Section", dd.sectionId.find(o => String(o.id) === String(form.sectionId))?.value || form.sectionId],
                 ["Roll No", form.rollNo], ["Admission Date", form.admissionDate],
                 ["Previous School", form.previousSchool],
+                ["Reason for Leaving", form.previousReason],
               ]},
               { title: "Parent / Guardian", editStep: 2, fields: [
                 ["Father Name", form.fatherName], ["Father Mobile", form.fatherMobile],
+                ["Father Occupation", form.fatherOccupation],
                 ["Mother Name", form.motherName], ["Mother Mobile", form.motherMobile],
+                ["Mother Occupation", form.motherOccupation],
                 ["Guardian Name", form.guardianName],
+                ["Guardian Mobile", form.guardianMobile],
+                ["Guardian Relation", form.guardianRelation],
               ]},
               { title: "Address", editStep: 3, fields: [
-                ["Address", form.address1], ["City", dd.cityId.find(o => String(o.id) === String(form.cityId))?.value || form.cityId],
+                ["Address Line 1", form.address1],
+                ["Address Line 2", form.address2],
+                ["City", dd.cityId.find(o => String(o.id) === String(form.cityId))?.value || form.cityId],
                 ["State", dd.stateId.find(o => String(o.id) === String(form.stateId))?.value || form.stateId],
                 ["Pincode", form.pincode], ["Country", form.country],
               ]},
@@ -681,7 +872,7 @@ export default function StudentWizard() {
 
       {/* Navigation */}
       <div className="wz-nav">
-        <button className="wz-btn wz-btn-ghost" onClick={() => navigate("/students", { state: "Student List" })}>
+        <button className="wz-btn wz-btn-ghost" onClick={handleCancel}>
           <i className="bx bx-x"></i> Cancel
         </button>
         <div className="wz-nav-right">
@@ -703,6 +894,22 @@ export default function StudentWizard() {
       </div>
 
       <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
+
+      {showDiscardModal && (
+        <div className="wz-confirm-overlay">
+          <div className="wz-confirm-modal">
+            <p className="wz-confirm-msg">You have unsaved changes. Discard and leave?</p>
+            <div className="wz-confirm-actions">
+              <button className="wz-btn wz-btn-ghost" onClick={() => setShowDiscardModal(false)}>
+                Cancel
+              </button>
+              <button className="wz-btn wz-btn-primary" onClick={handleDiscardConfirm}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

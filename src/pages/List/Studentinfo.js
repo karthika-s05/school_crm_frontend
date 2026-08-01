@@ -19,12 +19,89 @@ import "./StudentDummyList.css";
 import "./Studentinfo.css";
 
 const MAX_SIZE = 2 * 1024 * 1024;
-const NO_IMAGE = `${API_BASE_URLS.MASTER_URL}/uploads/noImage/men2.jpg`;
+const ADMIN_BASE = String(API_BASE_URLS.ADMIN_URL || "").replace(/\/$/, "");
+
+/** Placeholder / default avatar — not a real student upload */
+const isPlaceholderImage = (url) => {
+  const value = String(url || "").toLowerCase();
+  return (
+    !value.trim() ||
+    value.includes("noimage") ||
+    value.includes("men2.jpg") ||
+    value.includes("nophoto")
+  );
+};
+
+/**
+ * Rebuild stored upload URLs against the current Admin service.
+ * Rewrites broken LAN / :1010 hosts; keeps other absolute http(s) URLs
+ * so certificates still open from the original upload server.
+ */
+const resolveUploadUrl = (url) => {
+  if (isPlaceholderImage(url)) return "";
+  const raw = String(url).trim().replace(/\\/g, "/");
+  const uploadsIdx = raw.toLowerCase().indexOf("/uploads/");
+  if (uploadsIdx >= 0) {
+    const pathPart = raw.slice(uploadsIdx);
+    const isBrokenHost =
+      /localhost/i.test(raw) ||
+      /127\.0\.0\.1/.test(raw) ||
+      /192\.168\.\d+\.\d+/.test(raw) ||
+      /10\.\d+\.\d+\.\d+/.test(raw) ||
+      /:1010\b/.test(raw);
+    if (ADMIN_BASE && (isBrokenHost || !/^https?:\/\//i.test(raw))) {
+      return `${ADMIN_BASE}${pathPart}`;
+    }
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return ADMIN_BASE ? `${ADMIN_BASE}${pathPart}` : raw;
+  }
+  if (raw.startsWith("uploads/")) {
+    return `${ADMIN_BASE}/${raw}`;
+  }
+  // Relative filename only — assume student photo folder
+  if (!/^https?:\/\//i.test(raw) && raw.includes(".")) {
+    return `${ADMIN_BASE}/uploads/student/${raw.replace(/^\/+/, "")}`;
+  }
+  return raw;
+};
 
 const initials = (name) =>
   (name || "?").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
 const isUploaded = (preview, name) => !!(preview || name);
+
+const fileNameFromUrl = (url, fallback = "document") => {
+  if (!url || typeof url !== "string") return fallback;
+  try {
+    const clean = url.split("?")[0];
+    const name = decodeURIComponent(clean.split("/").pop() || "");
+    return name || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const isImageDoc = (url, file) => {
+  if (file instanceof File) return String(file.type || "").startsWith("image/");
+  const value = String(url || "").toLowerCase();
+  return /\.(jpe?g|png|gif|webp)(\?|$)/i.test(value) || value.startsWith("data:image/");
+};
+
+const isPdfDoc = (url, file) => {
+  if (file instanceof File) return file.type === "application/pdf";
+  const value = String(url || "").toLowerCase();
+  return /\.pdf(\?|$)/i.test(value) || value.includes("application/pdf");
+};
+
+const pickDocUrl = (row, ...keys) => {
+  for (const key of keys) {
+    const value = row?.[key];
+    if (value != null && String(value).trim()) return value;
+  }
+  return "";
+};
+
+const ACCEPT_DOC = ".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*";
 
 export default function Studentinfo() {
   const navigate = useNavigate();
@@ -69,53 +146,76 @@ export default function Studentinfo() {
         errors.birthcertificate = "Please upload birth certificate";
       }
       if (!values.communityNo) errors.communityNo = "Please enter community certificate no";
-      if (!tcCertificate && !values.communityCertificate) {
+      if (!communityCertUrl && !values.communityCertificate) {
         errors.communityCertificate = "Please upload community certificate";
       }
       return errors;
     },
     onSubmit: async (values, { setSubmitting }) => {
       const token = getToken();
-      if (!aadharPreviewURL) {
-        try {
-          await deletetAadhar({ studentId: ids.id }, token);
-        } catch (err) {
-          console.log(err);
-        }
-      }
-      if (formik.values.adharcardPhoto) {
-        createStudentadhar({ id: ids.id, photoUrl: values.adharcardPhoto }, token);
-      }
-      if (formik.values.certificatephoto) {
-        createStudenttc({ id: ids.id, photoUrl: values.certificatephoto }, token);
-      }
-      if (formik.values.communityCertificate) {
-        createStudentcommuity({ id: ids.id, photoUrl: values.communityCertificate }, token);
-      }
-      if (formik.values.birthcertificate) {
-        createStudentbirth({ id: ids.id, photoUrl: values.birthcertificate }, token);
-      }
-      if (formik.values.photo) {
-        createStudentImage({ id: ids.id, photoUrl: values.photo }, token);
-      }
       try {
+        if (!aadharPreviewURL) {
+          try {
+            await deletetAadhar({ studentId: ids.id }, token);
+          } catch (err) {
+            console.log(err);
+          }
+        }
+
+        const uploads = [];
+        const queueUpload = (file, label, apiFn) => {
+          if (!file) return;
+          if (!(file instanceof File) && !(file instanceof Blob)) {
+            throw new Error(`${label}: select the file again before saving.`);
+          }
+          uploads.push(
+            apiFn({ id: ids.id, photoUrl: file }, token).then((r) => ({
+              label,
+              result: r,
+            }))
+          );
+        };
+
+        queueUpload(values.adharcardPhoto, "Aadhar", createStudentadhar);
+        queueUpload(values.certificatephoto, "Transfer certificate", createStudenttc);
+        queueUpload(values.communityCertificate, "Community certificate", createStudentcommuity);
+        queueUpload(values.birthcertificate, "Birth certificate", createStudentbirth);
+        queueUpload(values.photo, "Student photo", createStudentImage);
+
+        if (uploads.length) {
+          const results = await Promise.all(uploads);
+          const failed = results.find(({ result: r }) => {
+            const status = String(r?.status || "").toLowerCase();
+            return !r || status === "error";
+          });
+          if (failed) {
+            toast.error(
+              failed.result?.message ||
+                failed.result?.data ||
+                `${failed.label} upload failed`
+            );
+            return;
+          }
+        }
+
         const response = await createStudentnumber(
           {
             studentId: ids.id,
-            tcNo: tcNo || "",
-            comNo: comNo || "",
-            birthNo: birthNo || "",
+            tcNo: values.oldCertificate || tcNo || "",
+            comNo: values.communityNo || comNo || "",
+            birthNo: values.birthNo || birthNo || "",
           },
           token
         );
         if (response.status === "Error" || response.status === "error") {
-          toast.error(response.data);
-          throw new Error(response.message);
+          toast.error(response.data || response.message || "Failed to save certificate numbers");
+          return;
         }
         toast.success("Student documents saved successfully");
         setTimeout(() => navigate("/admin/students"), 1500);
       } catch (error) {
         console.error("Error:", error);
+        toast.error(error?.response?.data?.message || error?.message || "Failed to save documents");
       } finally {
         setSubmitting(false);
       }
@@ -173,16 +273,56 @@ export default function Studentinfo() {
       event.target.value = null;
       return;
     }
-    setPreview(file);
-    setFileUrl(URL.createObjectURL(file));
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
+    setFileUrl(objectUrl);
     formik.setFieldValue(event.target.name, file);
   };
 
   const handlePreviewClick = (filePreview) => {
-    if (filePreview) {
-      const url = typeof filePreview === "string" ? filePreview : URL.createObjectURL(filePreview);
-      window.open(url, "_blank");
+    if (!filePreview) return;
+    const url =
+      typeof filePreview === "string"
+        ? filePreview
+        : filePreview instanceof File
+          ? URL.createObjectURL(filePreview)
+          : "";
+    if (url) window.open(url, "_blank");
+  };
+
+  const renderDocPreview = ({ url, name, onView, onRemove }) => {
+    if (!url) return null;
+    if (isImageDoc(url)) {
+      return (
+        <div className="si-preview-row">
+          <img src={url} alt={name || "Document"} className="si-preview-thumb" />
+          <div className="si-preview-info">
+            <p className="si-preview-name">{name || "document.jpg"}</p>
+            <p className="si-preview-type">Image file</p>
+          </div>
+          <div className="si-preview-actions">
+            <button type="button" className="si-icon-btn view" onClick={onView}>
+              <i className="bx bx-show"></i>
+            </button>
+            <button type="button" className="si-icon-btn remove" onClick={onRemove}>
+              <i className="bx bx-trash"></i>
+            </button>
+          </div>
+        </div>
+      );
     }
+    return (
+      <div className="si-pdf-preview">
+        <i className={isPdfDoc(url) ? "bx bxs-file-pdf" : "bx bxs-file"}></i>
+        <span>{name || "document.pdf"}</span>
+        <button type="button" className="si-icon-btn view" onClick={onView}>
+          <i className="bx bx-show"></i>
+        </button>
+        <button type="button" className="si-icon-btn remove" onClick={onRemove}>
+          <i className="bx bx-trash"></i>
+        </button>
+      </div>
+    );
   };
 
   const clearImage = (name) => {
@@ -219,31 +359,51 @@ export default function Studentinfo() {
 
         setStudentName(studentData.studentName || "");
         setAdmNo(studentData.admissionNo || ids.id || "");
-        setPhotoPreviewURL(
-          studentData.photoUrl && studentData.photoUrl !== NO_IMAGE ? studentData.photoUrl : ""
+
+        const photoUrl = resolveUploadUrl(
+          pickDocUrl(studentData, "photoUrl", "image", "PhotoUrl")
         );
-        setBirthCertificatePreview(studentData.birthCertificate);
-        setBirthCertificate(studentData.birthCertificate);
-        setAadharPreviewURL(studentData.adharCard || "");
-        setCommunityCertUrl(studentData.communityCertUrl || "");
-        setCommunityCertificatePreview(studentData.communityCertUrl);
-        setCertificatePhotoPreview(studentData.tcCertificate);
-        setTcCertificate(studentData.tcCertificate || "");
+        const birthUrl = resolveUploadUrl(
+          pickDocUrl(studentData, "birthCertificate", "BirthCertificate", "birthcertificate")
+        );
+        const aadharUrl = resolveUploadUrl(
+          pickDocUrl(studentData, "adharCard", "aadharCard", "AdharCard")
+        );
+        const communityUrl = resolveUploadUrl(
+          pickDocUrl(studentData, "communityCertUrl", "communityCertificate", "CommunityCertUrl")
+        );
+        const tcUrl = resolveUploadUrl(
+          pickDocUrl(studentData, "tcCertificate", "TcCertificate", "transferCertificate")
+        );
+
+        setPhotoPreviewURL(photoUrl);
+        setBirthCertificatePreview(birthUrl);
+        setBirthCertificate(birthUrl);
+        setAadharPreviewURL(aadharUrl);
+        setCommunityCertUrl(communityUrl);
+        setCommunityCertificatePreview(communityUrl);
+        setCertificatePhotoPreview(tcUrl);
+        setTcCertificate(tcUrl);
+
         setPhotoName(
-          studentData.photoUrl && studentData.photoUrl !== NO_IMAGE ? studentData.photoName || "photo.jpg" : ""
+          photoUrl
+            ? studentData.photoName || fileNameFromUrl(photoUrl, "photo.jpg")
+            : ""
         );
-        setAadarName(studentData.aadarName || "");
-        setCommuName(studentData.commuName || "");
-        setBirthName(studentData.birthName || "");
-        setTcName(studentData.tcName || "");
-        setComNo(studentData.communityCertNo || "");
-        setTcNo(studentData.OldTcNumber || "");
-        setBirthNo(studentData.birthCertNo || "");
-        formik.setValues({
-          oldCertificate: studentData.OldTcNumber || "",
-          communityNo: studentData.communityCertNo || "",
-          birthNo: studentData.birthCertNo || "",
-        });
+        setAadarName(studentData.aadarName || fileNameFromUrl(aadharUrl, ""));
+        setCommuName(studentData.commuName || fileNameFromUrl(communityUrl, ""));
+        setBirthName(studentData.birthName || fileNameFromUrl(birthUrl, ""));
+        setTcName(studentData.tcName || fileNameFromUrl(tcUrl, ""));
+
+        const nextTcNo = studentData.OldTcNumber || studentData.transferCertificateNo || "";
+        const nextComNo = studentData.communityCertNo || "";
+        const nextBirthNo = studentData.birthCertNo || "";
+        setComNo(nextComNo);
+        setTcNo(nextTcNo);
+        setBirthNo(nextBirthNo);
+        formik.setFieldValue("oldCertificate", nextTcNo);
+        formik.setFieldValue("communityNo", nextComNo);
+        formik.setFieldValue("birthNo", nextBirthNo);
       } catch (error) {
         console.error("Error fetching student data:", error);
         setStudentName("Student");
@@ -289,7 +449,6 @@ export default function Studentinfo() {
           </button>
           <div className="si-avatar">{initials(studentName)}</div>
           <div>
-            <h1 className="si-title">Document Upload</h1>
             <p className="si-subtitle">
               <strong>{studentName}</strong> · {admNo}
             </p>
@@ -402,7 +561,7 @@ export default function Studentinfo() {
               </div>
               <div className="si-doc-meta">
                 <p className="si-doc-name">Transfer Certificate</p>
-                <p className="si-doc-hint">PDF · max 2MB</p>
+                <p className="si-doc-hint">PDF or image · max 2MB</p>
               </div>
               <span className={`si-badge ${isUploaded(tcCertificate, tcName) ? "done" : "optional"}`}>
                 {isUploaded(tcCertificate, tcName) ? "Uploaded" : "Optional"}
@@ -420,24 +579,18 @@ export default function Studentinfo() {
               />
             </div>
             {certificatePhotoPreview || tcCertificate ? (
-              <div className="si-pdf-preview">
-                <i className="bx bxs-file-pdf"></i>
-                <span>{tcName || "transfer-certificate.pdf"}</span>
-                <button type="button" className="si-icon-btn view" onClick={() => handlePreviewClick(tcCertificate || certificatePhotoPreview)}>
-                  <i className="bx bx-show"></i>
-                </button>
-                <button type="button" className="si-icon-btn remove" onClick={() => {
-                  clearPdf("certificatephoto", setCertificatePhotoPreview, setTcCertificate, setTcName);
-                }}>
-                  <i className="bx bx-trash"></i>
-                </button>
-              </div>
+              renderDocPreview({
+                url: tcCertificate || certificatePhotoPreview,
+                name: tcName || "transfer-certificate.pdf",
+                onView: () => handlePreviewClick(tcCertificate || certificatePhotoPreview),
+                onRemove: () => clearPdf("certificatephoto", setCertificatePhotoPreview, setTcCertificate, setTcName),
+              })
             ) : (
               <div className="si-upload-zone">
                 <input
                   type="file"
                   name="certificatephoto"
-                  accept="application/pdf"
+                  accept={ACCEPT_DOC}
                   onChange={(e) => {
                     handleFilePreview(e, setCertificatePhotoPreview, setTcCertificate);
                     if (e.target.files[0]) setTcName(e.target.files[0].name);
@@ -445,7 +598,7 @@ export default function Studentinfo() {
                 />
                 <i className="bx bx-cloud-upload si-upload-icon"></i>
                 <p className="si-upload-text">Upload TC document</p>
-                <p className="si-upload-sub">PDF only · max 2MB</p>
+                <p className="si-upload-sub">PDF or image · max 2MB</p>
               </div>
             )}
           </div>
@@ -458,7 +611,7 @@ export default function Studentinfo() {
               </div>
               <div className="si-doc-meta">
                 <p className="si-doc-name">Birth Certificate <span className="si-req">*</span></p>
-                <p className="si-doc-hint">PDF · max 2MB</p>
+                <p className="si-doc-hint">PDF or image · max 2MB</p>
               </div>
               <span className={`si-badge ${isUploaded(birthCertificate, birthName) && formik.values.birthNo ? "done" : "pending"}`}>
                 {isUploaded(birthCertificate, birthName) && formik.values.birthNo ? "Uploaded" : "Required"}
@@ -478,24 +631,18 @@ export default function Studentinfo() {
               {showError("birthNo") && <p className="si-error-msg">{formik.errors.birthNo}</p>}
             </div>
             {birthCertificatePreview || birthCertificate ? (
-              <div className="si-pdf-preview">
-                <i className="bx bxs-file-pdf"></i>
-                <span>{birthName || "birth-certificate.pdf"}</span>
-                <button type="button" className="si-icon-btn view" onClick={() => handlePreviewClick(birthCertificate || birthCertificatePreview)}>
-                  <i className="bx bx-show"></i>
-                </button>
-                <button type="button" className="si-icon-btn remove" onClick={() => {
-                  clearPdf("birthcertificate", setBirthCertificatePreview, setBirthCertificate, setBirthName);
-                }}>
-                  <i className="bx bx-trash"></i>
-                </button>
-              </div>
+              renderDocPreview({
+                url: birthCertificate || birthCertificatePreview,
+                name: birthName || "birth-certificate.pdf",
+                onView: () => handlePreviewClick(birthCertificate || birthCertificatePreview),
+                onRemove: () => clearPdf("birthcertificate", setBirthCertificatePreview, setBirthCertificate, setBirthName),
+              })
             ) : (
               <div className="si-upload-zone">
                 <input
                   type="file"
                   name="birthcertificate"
-                  accept="application/pdf"
+                  accept={ACCEPT_DOC}
                   onChange={(e) => {
                     handleFilePreview(e, setBirthCertificatePreview, setBirthCertificate);
                     formik.setFieldTouched("birthcertificate", true);
@@ -508,7 +655,7 @@ export default function Studentinfo() {
                 />
                 <i className="bx bx-cloud-upload si-upload-icon"></i>
                 <p className="si-upload-text">Upload birth certificate</p>
-                <p className="si-upload-sub">PDF only · max 2MB</p>
+                <p className="si-upload-sub">PDF or image · max 2MB</p>
               </div>
             )}
             {showError("birthcertificate") && !birthCertificatePreview && (
@@ -524,7 +671,7 @@ export default function Studentinfo() {
               </div>
               <div className="si-doc-meta">
                 <p className="si-doc-name">Community Certificate <span className="si-req">*</span></p>
-                <p className="si-doc-hint">PDF · max 2MB</p>
+                <p className="si-doc-hint">PDF or image · max 2MB</p>
               </div>
               <span className={`si-badge ${isUploaded(communityCertUrl, commuName) && formik.values.communityNo ? "done" : "pending"}`}>
                 {isUploaded(communityCertUrl, commuName) && formik.values.communityNo ? "Uploaded" : "Required"}
@@ -544,24 +691,18 @@ export default function Studentinfo() {
               {showError("communityNo") && <p className="si-error-msg">{formik.errors.communityNo}</p>}
             </div>
             {communityCertificatePreview || communityCertUrl ? (
-              <div className="si-pdf-preview">
-                <i className="bx bxs-file-pdf"></i>
-                <span>{commuName || "community-certificate.pdf"}</span>
-                <button type="button" className="si-icon-btn view" onClick={() => handlePreviewClick(communityCertUrl || communityCertificatePreview)}>
-                  <i className="bx bx-show"></i>
-                </button>
-                <button type="button" className="si-icon-btn remove" onClick={() => {
-                  clearPdf("communityCertificate", setCommunityCertificatePreview, setCommunityCertUrl, setCommuName);
-                }}>
-                  <i className="bx bx-trash"></i>
-                </button>
-              </div>
+              renderDocPreview({
+                url: communityCertUrl || communityCertificatePreview,
+                name: commuName || "community-certificate.pdf",
+                onView: () => handlePreviewClick(communityCertUrl || communityCertificatePreview),
+                onRemove: () => clearPdf("communityCertificate", setCommunityCertificatePreview, setCommunityCertUrl, setCommuName),
+              })
             ) : (
               <div className="si-upload-zone">
                 <input
                   type="file"
                   name="communityCertificate"
-                  accept=".pdf"
+                  accept={ACCEPT_DOC}
                   onChange={(e) => {
                     handleFilePreview(e, setCommunityCertificatePreview, setCommunityCertUrl);
                     formik.setFieldTouched("communityCertificate", true);
@@ -574,7 +715,7 @@ export default function Studentinfo() {
                 />
                 <i className="bx bx-cloud-upload si-upload-icon"></i>
                 <p className="si-upload-text">Upload community certificate</p>
-                <p className="si-upload-sub">PDF only · max 2MB</p>
+                <p className="si-upload-sub">PDF or image · max 2MB</p>
               </div>
             )}
             {showError("communityCertificate") && !communityCertificatePreview && (

@@ -69,7 +69,6 @@ const Login = () => {
                   type="username"
                   name="username"
                   placeholder="Username"
-                  onPaste={(e) => e.preventDefault()}
                   onChange={(e) => setUsername(e.target.value)}
                 />
 
@@ -81,7 +80,6 @@ const Login = () => {
                     type={showPassword ? "text" : "password"}
                     name="password"
                     placeholder="Password"
-                    onPaste={(e) => e.preventDefault()}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                   <button

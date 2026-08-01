@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./attendance.css";
-import { getStafflist, markStaffAttendanceV2 } from "../../services/api";
+import { getStafflist, getStaffAttendanceViewV2, markStaffAttendanceV2 } from "../../services/api";
 import { getToken } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
 import { STAFF_STATUSES, countByStatus, normalizeStatus, todayISO } from "./constants";
@@ -18,7 +18,9 @@ const StaffAttendanceMark = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [staffBase, setStaffBase] = useState([]);
 
+  // Load staff list once on mount
   const loadStaff = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -26,27 +28,60 @@ const StaffAttendanceMark = () => {
     await runApi(() => getStafflist("0", token), {
       onSuccess: (res) => {
         const list = Array.isArray(res.data) ? res.data : [];
-        setRows(
-          list.map((s) => ({
-            id: s.staffId ?? s.id,
-            name: s.staffName || s.name || "-",
-            subLabel: s.designation || s.staffId || "-",
-            status: "",
-            remarks: "",
-          }))
-        );
+        const base = list.map((s) => ({
+          id: s.staffId ?? s.id,
+          name: s.staffName || s.name || "-",
+          subLabel: s.designation || s.staffId || "-",
+        }));
+        setStaffBase(base);
       },
       onError: () => {
-        setRows([]);
+        setStaffBase([]);
         setError("Could not load the staff list.");
       },
     });
     setLoading(false);
   }, [token]);
 
+  // Fetch existing attendance for the selected date and merge with staff list
+  const loadAttendanceForDate = useCallback(async (selectedDate, base) => {
+    if (!token || base.length === 0) return;
+    setLoading(true);
+    setError("");
+    let existingMap = {};
+    await runApi(() => getStaffAttendanceViewV2({ date: selectedDate }, token), {
+      onSuccess: (res) => {
+        const records = Array.isArray(res.data) ? res.data : [];
+        records.forEach((r) => {
+          const key = r.staffId ?? r.id;
+          existingMap[key] = {
+            status: normalizeStatus(r.status),
+            remarks: r.remarks || "",
+          };
+        });
+      },
+      onError: () => {},  // silently ignore - just means no records yet
+    });
+    setRows(
+      base.map((s) => ({
+        ...s,
+        status: existingMap[s.id]?.status || "",
+        remarks: existingMap[s.id]?.remarks || "",
+      }))
+    );
+    setLoading(false);
+  }, [token]);
+
   useEffect(() => {
     loadStaff();
   }, [loadStaff]);
+
+  // Re-fetch attendance whenever date or staffBase changes
+  useEffect(() => {
+    if (staffBase.length > 0) {
+      loadAttendanceForDate(date, staffBase);
+    }
+  }, [date, staffBase, loadAttendanceForDate]);
 
   const handleRowChange = (id, patch) => {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -116,7 +151,7 @@ const StaffAttendanceMark = () => {
         onMarkAll={handleMarkAll}
         loading={loading}
         error={error}
-        onRetry={loadStaff}
+        onRetry={() => loadAttendanceForDate(date, staffBase)}
         emptyText="No staff members found"
         subLabelHeader="Designation"
       />

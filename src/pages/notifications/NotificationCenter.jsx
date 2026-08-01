@@ -147,8 +147,8 @@ export default function NotificationCenter() {
     <section className="notification-center">
       <div className="notification-center__header">
         <div>
-          <span className="notification-center__eyebrow">Notification Center</span>
-          <h1>Notifications</h1>
+          {/* <span className="notification-center__eyebrow">Notification Center</span>
+          <h1>Notifications</h1> */}
           <p>{unreadCount} unread notification{unreadCount === 1 ? "" : "s"}</p>
         </div>
         <div className="notification-center__header-actions">

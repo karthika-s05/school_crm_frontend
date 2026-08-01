@@ -283,8 +283,10 @@ export const getTimeTable = async (body, token) => {
         },
       }
     );
-    console.log(response.data.data);
-    return response.data.data;
+    const payload = response.data?.data ?? response.data;
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
   } catch (error) {
     console.error("Error fetching data:", error);
     throw error;
@@ -1256,90 +1258,65 @@ export const login = async (userName, password) => {
   }
 };
 
-// let value={
-//   "id": 0,
-//   "subjectId":1,
-//   "title": "your_title_valu",
-//   "description": "your_description_value",
-//   "startDate": "2023-12-28",
-//   "endDate": "2023-12-30",
-//   "classId": 1,
-//   "sectionId": 1
-// };
+// ─── Assignment ───────────────────────────────────────────────────────────────
 export const createAssignment = async (body, token) => {
-  try {
-    const response = await axios.post(
-      `${STAFF_URL}/assignment/create_update_assignment`,
-      body,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    throw error;
-  }
+  const response = await axios.post(`${STAFF_URL}/assignment/create_update_assignment`, body, {
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+  });
+  return response.data;
 };
+
 export const getAssignment = async (body, token) => {
-  try {
-    const response = await axios.post(
-      `${STAFF_URL}/assignment/get_assignment_staff_view`,
-      body,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    console.log(response.data);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    throw error;
-  }
+  const response = await axios.post(`${STAFF_URL}/assignment/get_assignment_staff_view`, body, {
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+  });
+  return response.data;
 };
+
 export const deletetAssignment = async (id, token) => {
-  try {
-    const response = await axios.post(
-      `${STAFF_URL}/assignment/delete_assignment/${id}`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    console.log(response.data);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    throw error;
-  }
+  const response = await axios.post(
+    `${STAFF_URL}/assignment/delete_assignment/${id}`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
 };
+
 export const studentReport = async (body, token) => {
-  try {
-    const response = await axios.post(
-      `${STAFF_URL}/assignment/get_assignment_staff_report`,
-      body,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    throw error;
-  }
+  const response = await axios.post(`${STAFF_URL}/assignment/get_assignment_staff_report`, body, {
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+  });
+  return response.data;
 };
+
+// Staff/Admin: publish or toggle assignment visibility
+export const updateAssignmentStatus = async (id, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/assignment/update_assignment_status/${id}`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+// Student: get assignments for student's class/section
+export const getStudentAssignment = async (token) => {
+  const response = await axios.get(`${DAILY_URL}/assignment/get_assignment`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+// Student: update assignment completion progress
+export const updateAssignmentProgress = async (body, token) => {
+  const response = await axios.post(
+    `${DAILY_URL}/assignment/update_assignment_progress`,
+    body,
+    { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+  );
+  return response.data;
+};
+
 //  Homework
 export const createHomework = async (body, token) => {
   try {
@@ -1362,7 +1339,7 @@ export const createHomework = async (body, token) => {
 export const getHomework = async (body, token) => {
   try {
     const response = await axios.post(
-      `${STAFF_URL}/homework/get_homework`,
+      `${DAILY_URL}/homework/get_homework`,
       body,
       {
         headers: {
@@ -2190,123 +2167,89 @@ export const createStudentnumber = async (body, token) => {
   }
 };
 
+/** Build multipart form for student document uploads. Do not set Content-Type manually. */
+const buildStudentUploadForm = (body) => {
+  if (body instanceof FormData) return body;
+  const file = body?.photoUrl;
+  if (!(file instanceof File) && !(file instanceof Blob)) {
+    throw new Error("Please select a valid PDF or image file to upload.");
+  }
+  if (!body?.id) {
+    throw new Error("Student admission number is missing.");
+  }
+  const data = new FormData();
+  data.append("id", String(body.id));
+  data.append("photoUrl", file, file.name || "document.pdf");
+  return data;
+};
+
 export const createStudentImage = async (body, token) => {
   try {
-    let data = body;
-    if (!(body instanceof FormData)) {
-      data = new FormData();
-      data.append("id", body.id);
-      data.append("photoUrl", body.photoUrl);
-    }
+    const data = buildStudentUploadForm(body);
     const response = await axios.post(
       `${ADMIN_URL}/uploadImage/studentImage`,
       data,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching data:", error);
+    console.error("Error uploading student photo:", error);
     throw error;
   }
 };
 export const createStudentcommuity = async (body, token) => {
   try {
-    let data = body;
-    if (!(body instanceof FormData)) {
-      data = new FormData();
-      data.append("id", body.id);
-      data.append("photoUrl", body.photoUrl);
-    }
+    const data = buildStudentUploadForm(body);
     const response = await axios.post(
       `${ADMIN_URL}/uploadImage/studentCommunityCert`,
       data,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching data:", error);
+    console.error("Error uploading community certificate:", error);
     throw error;
   }
 };
 export const createStudentadhar = async (body, token) => {
   try {
-    let data = body;
-    if (!(body instanceof FormData)) {
-      data = new FormData();
-      data.append("id", body.id);
-      data.append("photoUrl", body.photoUrl);
-    }
+    const data = buildStudentUploadForm(body);
     const response = await axios.post(
       `${ADMIN_URL}/uploadImage/studentAdharCard`,
       data,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching data:", error);
+    console.error("Error uploading aadhar:", error);
     throw error;
   }
 };
 export const createStudentbirth = async (body, token) => {
   try {
-    let data = body;
-    if (!(body instanceof FormData)) {
-      data = new FormData();
-      data.append("id", body.id);
-      data.append("photoUrl", body.photoUrl);
-    }
+    const data = buildStudentUploadForm(body);
     const response = await axios.post(
       `${ADMIN_URL}/uploadImage/studentBirthCertificate`,
       data,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching data:", error);
+    console.error("Error uploading birth certificate:", error);
     throw error;
   }
 };
 export const createStudenttc = async (body, token) => {
   try {
-    let data = body;
-    if (!(body instanceof FormData)) {
-      data = new FormData();
-      data.append("id", body.id);
-      data.append("photoUrl", body.photoUrl);
-    }
+    const data = buildStudentUploadForm(body);
     const response = await axios.post(
       `${ADMIN_URL}/uploadImage/studentTcCertificate`,
       data,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching data:", error);
+    console.error("Error uploading TC certificate:", error);
     throw error;
   }
 };
@@ -2512,16 +2455,6 @@ export const updateHomeworkProgress = async (body, token) => {
   return response.data;
 };
 
-// Student: update assignment completion progress
-export const updateAssignmentProgress = async (body, token) => {
-  const response = await axios.post(
-    `${DAILY_URL}/assignment/update_assignment_progress`,
-    body,
-    { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
-  );
-  return response.data;
-};
-
 // Student: delete own leave application
 export const deleteStudentLeave = async (body, token) => {
   const response = await axios.delete(`${DAILY_URL}/leave/delete_student_leave`, {
@@ -2653,26 +2586,6 @@ export const getStaffAttendanceView = async (body, token) => {
   return response.data;
 };
 
-// ─── Assignment Status ────────────────────────────────────────────────────────
-// Staff/Admin: toggle assignment open/closed status
-export const updateAssignmentStatus = async (id, token) => {
-  const response = await axios.post(
-    `${DAILY_URL}/assignment/update_assignment_status/${id}`,
-    {},
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  return response.data;
-};
-
-// Student: get assignments for student's class/section (uses req.user.classId/sectionId)
-export const getStudentAssignment = async (token) => {
-  const response = await axios.get(
-    `${DAILY_URL}/assignment/get_assignment`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  return response.data;
-};
-
 // ─── Auth / Menu ───────────────────────────────────────────────────────────────
 export const forgotPassword = async (userName) => {
   const response = await axios.post(`${LOGIN_URL}/user/forgotPassword`, { userName });
@@ -2797,7 +2710,6 @@ export const updateTransportFeeStatus = async (body, token) => {
   return response.data;
 };
 
-// ─── School Fees Collection (FEES_URL /fees/...) ─────────────────────────────
 const FEES_URL = () => STATIONERY_URL;
 const feesAuth = (token) => ({
   headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -3097,7 +3009,6 @@ export const getMyStaffLeave = async (token) => {
   }
 };
 
-// ─── Attendance v2 ────────────────────────────────────────────────────────────
 // Normalized attendance routes are mounted under DAILY_URL /attendance
 const ATT_V2 = () => `${DAILY_URL}/attendance`;
 
@@ -3138,9 +3049,19 @@ export const saveStudentAttendanceV2 = async (body, token) => {
   return response.data;
 };
 
-/** GET /attendance/v2/student/today-periods - logged-in staff's timetable periods for today */
+/** GET /attendance/student/today-periods - logged-in staff's timetable periods for today */
 export const getStudentTodayPeriodsV2 = async (token) => {
   const response = await axios.get(`${ATT_V2()}/student/today-periods`, authHeaders(token));
+  return response.data;
+};
+
+/** POST /attendance/student/my-classes - class/section pairs where staff is class teacher */
+export const getMyClassTeacherClassesV2 = async (token) => {
+  const response = await axios.post(
+    `${ATT_V2()}/student/my-classes`,
+    {},
+    authHeaders(token)
+  );
   return response.data;
 };
 

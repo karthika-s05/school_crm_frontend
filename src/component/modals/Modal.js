@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./modal.css"; // Import your CSS file for modal styles
+import ModalPortal from "./ModalPortal";
 import InputWithLabel from "../InputText/InputWithLabel";
 import {
   getClass,
@@ -621,65 +622,54 @@ const Modal = ({
     return v === undefined || v === null ? "" : v;
   };
 
-  return (
-    <>
-      {showHTML ? (
-        <div className="container">
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <span className="modal-close" onClick={closeModal}>
-                {/* <i class='bx bx-x'></i> */}
-                <i
-                  class="bx bxs-x-circle"
-                  style={{ fontSize: "25px", color: "gray" }}
-                ></i>
-              </span>
-              <div className="app-container" style={{ marginRight: "-7px" }}>
-                <h1
-                  className="header-model"
-                  style={{ color: "rgb(5, 31, 62)", fontWeight: "400",marginTop:"-10px",marginBottom:"10px" }}
-                >
-                  {editData ? `Edit ${propsData}` : `Create ${propsData}`}
-                </h1>
-                {/* {isSuccessVisible && <h1 className="success-message">{message}</h1>} */}
-                <div className="modal-scroll-content">
-                  {inputData.map((data, index) => (
-                    <React.Fragment key={`${data.name}-${index}`}>
-                      <InputWithLabel
-                        type={data.type}
-                        label={data.label}
-                        name={data.name}
-                        value={fieldValue(data.name)}
-                        onChange={handleInputChange}
-                        data={dropdown}
-                        propsData={propsData}
-                        dateValue={date}
-                        required
-                      />
-                      {validationErrors[data.name] && (
-                        <p className="error-messages" style={{ color: "red" }}>
-                          {validationErrors[data.name]}
-                        </p>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
+  if (!showHTML) return null;
 
-                <div className="btn-style" style={{gap:'10px'}}>
-                  <button type="button" className="custom-button" onClick={handleFormSubmit}>
-                    {editData ? "Update" : "Submit"}
-                  </button>
-                  <button type="button" className="cancel-button" onClick={closeModal}>
-                    Cancel
-                  </button>
-                  &nbsp;&nbsp;
-                </div>
-              </div>
+  return (
+    <ModalPortal>
+      <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <button type="button" className="modal-close" onClick={closeModal} aria-label="Close">
+            <i className="bx bx-x"></i>
+          </button>
+          <div className="modal-content-inner">
+            <h1 className="header-model">
+              {editData ? `Edit ${propsData}` : `Create ${propsData}`}
+            </h1>
+            <div className="modal-scroll-content">
+              {inputData.map((data, index) => (
+                <React.Fragment key={`${data.name}-${index}`}>
+                  <InputWithLabel
+                    type={data.type}
+                    label={data.label}
+                    name={data.name}
+                    value={fieldValue(data.name)}
+                    onChange={handleInputChange}
+                    data={dropdown}
+                    propsData={propsData}
+                    dateValue={date}
+                    required
+                  />
+                  {validationErrors[data.name] && (
+                    <p className="error-messages" style={{ color: "red" }}>
+                      {validationErrors[data.name]}
+                    </p>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+
+            <div className="btn-style" style={{ gap: "10px" }}>
+              <button type="button" className="custom-button" onClick={handleFormSubmit}>
+                {editData ? "Update" : "Submit"}
+              </button>
+              <button type="button" className="cancel-button" onClick={closeModal}>
+                Cancel
+              </button>
             </div>
           </div>
         </div>
-      ) : null}
-    </>
+      </div>
+    </ModalPortal>
   );
 };
 

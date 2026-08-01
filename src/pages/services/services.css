@@ -248,7 +248,8 @@
 .svc-toggle-unpaid:hover { background: #ef4444; color: #fff; }
 
 /*  Modal  */
-.svc-overlay {
+.svc-overlay,
+.svc-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
@@ -257,6 +258,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
+  box-sizing: border-box;
   backdrop-filter: blur(3px);
   animation: svc-fade 0.2s ease;
 }
@@ -268,7 +270,7 @@
   border-radius: 18px;
   width: 600px;
   max-width: 100%;
-  max-height: 100%;
+  max-height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
   overflow: hidden;

@@ -275,23 +275,32 @@ const Master = () => {
         }
         const postNationalityDetails = async () => {
           try {
-            const response = await postNationality(formData, getToken());
-            const responseValue = response.status.toString().toLowerCase();
-            const responseMessage =
-              responseValue === "error" &&
-                response.data === "Name or code already exists."
-                ? response.data
-                : response.message;
+            const payload = {
+              id: formData.id ?? 0,
+              name: String(Nationalityname).trim(),
+              code: String(Nationalitycode).trim(),
+            };
+            const response = await postNationality(payload, getToken());
+            const responseValue = String(response.status || "").toLowerCase();
+            const detail = response.data;
+            const duplicate =
+              typeof detail === "string" &&
+              /already exists/i.test(detail);
+            const responseMessage = responseValue === "error" && duplicate
+              ? detail
+              : response.message || detail || "Request failed";
 
             if (responseValue === "error") {
               toast.error(responseMessage);
             } else if (responseValue === "success") {
-              toast.success(response.message);
+              toast.success(response.message || "Nationality saved");
+              closeModal();
             }
             showMessage(response);
             setLoad(false);
           } catch (err) {
             console.log(err);
+            toast.error("Could not save nationality");
           }
         };
         postNationalityDetails();
@@ -982,22 +991,24 @@ const Master = () => {
       case "Nationality":
         const deleteNationalityDetails = async () => {
           try {
-            let response = await deleteNationality(id, getToken());
-            let value =
-              response.status === "error" ||
-                response.data === "Nationality already assigned!"
-                ? toast.error(response.data)
-                : response.status === "error" &&
-                  response.data !== "Nationality already assigned!"
-                  ? toast.error(response.message)
-                  : response.status === "success"
-                    ? (toast.success(response.massage),
-                      toast.success(response.message))
-                    : null;
+            const response = await deleteNationality(id, getToken());
+            const status = String(response?.status || "").toLowerCase();
+            const detail = response?.data;
+            const detailText =
+              typeof detail === "string"
+                ? detail
+                : response?.message || "Nationality could not be deleted";
+
+            if (status === "error") {
+              toast.error(detailText);
+            } else if (status === "success") {
+              toast.success(response.message || "Nationality deleted");
+            }
             showMessage(response);
             setLoad(false);
           } catch (err) {
             console.log(err);
+            toast.error("Could not delete nationality");
           }
         };
         deleteNationalityDetails();

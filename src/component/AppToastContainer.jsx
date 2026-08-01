@@ -2,7 +2,7 @@ import React from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-/** Single app-wide toast host — bottom-right, above header/nav. */
+/** Single app-wide toast host - bottom-right, above header/nav. */
 export default function AppToastContainer() {
   return (
     <ToastContainer

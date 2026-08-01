@@ -1,28 +1,41 @@
-/* ── Modal Overlay ── */
+/* ── Modal Overlay - always above sidebar (110) / header (100) ── */
 .modal-overlay,
 .modal-overlays {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(15, 23, 42, 0.45);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 10000;
+  padding: 20px;
   backdrop-filter: blur(2px);
+  box-sizing: border-box;
 }
 
 /* ── Modal Box ── */
 .modal-content,
 .modal-contents {
   background: #ffffff;
-  padding: 28px 24px 22px;
+  padding: 24px 24px 20px;
   border-radius: 16px;
   box-shadow: 0 12px 40px rgba(28, 54, 89, 0.18);
   position: relative;
-  width: 380px;
-  max-width: 95vw;
+  width: min(420px, 100%);
+  max-width: 100%;
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   color: #1a1d2e;
   border: 1px solid #e4e7f0;
+}
+
+.modal-content-inner {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
 }
 
 .modal-content-popups {
@@ -37,8 +50,9 @@
 
 /* ── Scrollable content ── */
 .modal-scroll-content {
-  max-height: 60vh;
+  max-height: min(60vh, calc(100vh - 200px));
   overflow-y: auto;
+  padding-right: 4px;
 }
 
 .modal-scroll-content::-webkit-scrollbar { width: 4px; }
@@ -47,54 +61,69 @@
   border-radius: 4px;
 }
 
-/* ── Close ── */
+/* ── Close - top-right, never clipped ── */
 .modal-close {
   position: absolute;
   top: 12px;
-  right: 14px;
+  right: 12px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   font-size: 20px;
-  color: #7b8099;
-  background: none;
+  color: #64748b;
+  background: #f1f5f9;
   border: none;
+  border-radius: 8px;
   line-height: 1;
-  transition: color 0.15s;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
 }
-.modal-close:hover { color: #FF5630; }
+.modal-close:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
 
 /* ── Header ── */
 .header-model {
-  margin-bottom: 16px;
-  text-align: center;
+  margin: 0 36px 16px 0;
+  text-align: left;
   font-size: 16px;
   font-weight: 700;
   color: #1C3659;
+  line-height: 1.35;
 }
 
 /* ── Buttons ── */
-button { border: none; cursor: pointer; }
-
 .custom-button {
   background: #1C3659;
   color: #fff;
+  border: none;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   padding: 9px 20px;
   transition: background 0.18s;
   font-family: 'Poppins', sans-serif;
+  cursor: pointer;
 }
 .custom-button:hover { background: #274a77; }
 
 .cancel-button {
   background: #f0f2f8;
   color: #374151;
+  border: none;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
   padding: 9px 20px;
   transition: background 0.18s;
   font-family: 'Poppins', sans-serif;
+  cursor: pointer;
 }
 .cancel-button:hover { background: #e4e7f0; }
 
@@ -114,9 +143,10 @@ button { border: none; cursor: pointer; }
 /* ── Button row ── */
 .btn-style {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 10px;
   margin-top: 16px;
+  flex-shrink: 0;
 }
 
 /* ── Row layout inside modal ── */
@@ -157,4 +187,18 @@ button { border: none; cursor: pointer; }
   color: #7b8099;
   font-size: 15px;
   font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .modal-overlay,
+  .modal-overlays {
+    padding: 12px;
+    align-items: flex-end;
+  }
+  .modal-content,
+  .modal-contents {
+    max-height: calc(100vh - 24px);
+    width: 100%;
+    border-radius: 16px 16px 12px 12px;
+  }
 }

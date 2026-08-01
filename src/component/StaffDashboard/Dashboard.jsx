@@ -39,7 +39,7 @@ const StaffDashboard = () => {
   const navigate = useNavigate();
   const token = getToken();
   const staffName = getUserData("staffName") || getUserData("employeeName") || "Staff";
-  const staffCode = getUserData("userName") || getUserData("employeeCode") || "—";
+  const staffCode = getUserData("userName") || getUserData("employeeCode") || "-";
   const designation = getUserData("designation") || "Teacher";
   const department = getUserData("departmentName") || "Department";
 
@@ -228,7 +228,7 @@ const StaffDashboard = () => {
           <h2>
             {greeting()}, {staffName}!
           </h2>
-          <p>Manage your classes, attendance, homework and assignments — all in one place.</p>
+          <p>Manage your classes, attendance, homework and assignments - all in one place.</p>
           <div className="sfd-welcome-tags">
             <span className="sfd-welcome-tag">
               <i className="bx bx-id-card"></i> {staffCode}
@@ -288,7 +288,7 @@ const StaffDashboard = () => {
                 <i className="bx bx-calendar-check" style={{ color: P, marginRight: 6 }}></i>
                 Student Attendance
               </h3>
-              <p className="sfd-chart-sub">Your classes — present vs absent</p>
+              <p className="sfd-chart-sub">Your classes - present vs absent</p>
             </div>
             <div className="sfd-tabs">
               {[

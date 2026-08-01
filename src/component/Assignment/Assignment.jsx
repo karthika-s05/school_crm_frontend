@@ -3,11 +3,12 @@ import "../modules.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
-  getAssignment, createAssignment, deletetAssignment,
+  getAssignment, createAssignment, deletetAssignment, updateAssignmentStatus,
   getClass, getSection, getSubject,
 } from "../../services/api";
 import { getToken } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
+import ModalPortal from "../modals/ModalPortal";
 
 const COLORS = ["#2D3A8C","#E8541A","#16a34a","#7c3aed","#d97706","#0891b2"];
 const initials = (s) => (s || "?").slice(0, 2).toUpperCase();
@@ -28,6 +29,7 @@ export default function Assignment() {
   const [showModal, setShowModal] = useState(false);
   const [form,      setForm]      = useState(EMPTY_FORM);
   const [saving,    setSaving]    = useState(false);
+  const [publishing, setPublishing] = useState(null);
   const [viewItem,  setViewItem]  = useState(null);
 
   useEffect(() => {
@@ -48,13 +50,25 @@ export default function Assignment() {
     if (token) load();
   }, [token]);
 
-  const fetchAssignments = useCallback(async () => {
-    if (!filter.classId || !filter.sectionId) return;
+  const fetchAssignments = useCallback(async (classIdOverride, sectionIdOverride) => {
+    const classId = classIdOverride ?? filter.classId;
+    const sectionId = sectionIdOverride ?? filter.sectionId;
+    if (!classId || !sectionId) return;
     setLoading(true);
-    await runApi(
-      () => getAssignment({classId: Number(filter.classId), sectionId: Number(filter.sectionId), pageNo: 1 }, token),
-      { onSuccess: (res) => setRows(res.data || []), onError: () => setRows([]) }
-    );
+    try {
+      const res = await getAssignment(
+        { classId: Number(classId), sectionId: Number(sectionId), pageNo: 1 },
+        token
+      );
+      const list = Array.isArray(res?.data) ? res.data
+        : Array.isArray(res?.data?.data) ? res.data.data
+        : Array.isArray(res) ? res
+        : [];
+      setRows(list);
+    } catch (err) {
+      setRows([]);
+      toast.error(err?.response?.data?.message || "Failed to load assignments");
+    }
     setLoading(false);
   }, [filter, token]);
 
@@ -84,10 +98,38 @@ export default function Assignment() {
       return;
     }
     setSaving(true);
-    await runApi(
-      () => createAssignment({ id: form.id, classId: Number(form.classId || filter.classId), sectionId: Number(form.sectionId || filter.sectionId), subjectId: Number(form.subjectId) || 0, title: form.title, description: form.description, startDate: form.startDate, endDate: form.endDate }, token),
-      { successMsg: form.id ? "Assignment updated!" : "Assignment created!", onSuccess: () => { setShowModal(false); fetchAssignments(); } }
-    );
+    const savedClassId = Number(form.classId || filter.classId);
+    const savedSectionId = Number(form.sectionId || filter.sectionId);
+    try {
+      const res = await createAssignment(
+        {
+          id: form.id,
+          classId: savedClassId,
+          sectionId: savedSectionId,
+          subjectId: Number(form.subjectId) || 0,
+          title: form.title,
+          description: form.description,
+          startDate: form.startDate,
+          endDate: form.endDate,
+        },
+        token
+      );
+      const status = String(res?.status || "").toLowerCase();
+      if (status === "success" || status === "ok" || status === "created" || res?.data) {
+        toast.success(form.id ? "Assignment updated!" : "Assignment created!");
+        setShowModal(false);
+        setFilter((p) => ({
+          ...p,
+          classId: String(savedClassId),
+          sectionId: String(savedSectionId),
+        }));
+        await fetchAssignments(savedClassId, savedSectionId);
+      } else {
+        toast.error(res?.message || "Failed to save assignment");
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to save assignment");
+    }
     setSaving(false);
   };
 
@@ -96,21 +138,43 @@ export default function Assignment() {
     await runApi(() => deletetAssignment(id, token), { successMsg: "Deleted!", onSuccess: fetchAssignments });
   };
 
+  const handlePublish = async (id) => {
+    setPublishing(id);
+    await runApi(() => updateAssignmentStatus(id, token), {
+      successMsg: "Assignment published!",
+      onSuccess: () => fetchAssignments(),
+    });
+    setPublishing(null);
+  };
+
   const subjectName = (id) => subjects.find(s => s.id === Number(id))?.name || id || "-";
 
   const getStatus = (r) => {
+    const publishFlag = String(r.status || "").toLowerCase();
+    if (publishFlag === "false" || publishFlag === "0") return "Draft";
+    const label = r.status;
+    if (["Active", "Closed", "Upcoming", "Draft"].includes(label)) return label;
     const now = new Date();
     const end = r.endDate ? new Date(r.endDate) : null;
     const start = r.startDate ? new Date(r.startDate) : null;
-    if (r.status) return r.status;
     if (!end) return "Active";
     if (end < now) return "Closed";
     if (start && start > now) return "Upcoming";
     return "Active";
   };
 
+  const isPublished = (r) => {
+    const flag = String(r.status || "").toLowerCase();
+    return flag === "true" || flag === "1" || getStatus(r) !== "Draft";
+  };
+
   const statusBadge = (s) => {
-    const map = { Active: "mod-badge-green", Closed: "mod-badge-red", Upcoming: "mod-badge-blue" };
+    const map = {
+      Active: "mod-badge-green",
+      Closed: "mod-badge-red",
+      Upcoming: "mod-badge-blue",
+      Draft: "mod-badge-gray",
+    };
     return map[s] || "mod-badge-gray";
   };
 
@@ -199,6 +263,18 @@ export default function Assignment() {
                       <div style={{ display: "flex", gap: 6 }}>
                         <button className="mod-action-btn" title="View" onClick={() => setViewItem(r)}><i className="bx bx-show"></i></button>
                         <button className="mod-action-btn edit" title="Edit" onClick={() => openEdit(r)}><i className="bx bx-edit"></i></button>
+                        {!isPublished(r) && (
+                          <button
+                            className="mod-action-btn"
+                            title="Publish"
+                            disabled={publishing === r.id}
+                            onClick={() => handlePublish(r.id)}
+                          >
+                            {publishing === r.id
+                              ? <i className="bx bx-loader-alt bx-spin"></i>
+                              : <i className="bx bx-upload"></i>}
+                          </button>
+                        )}
                         <button className="mod-action-btn danger" title="Delete" onClick={() => handleDelete(r.id)}><i className="bx bx-trash"></i></button>
                       </div>
                     </td>
@@ -226,6 +302,7 @@ export default function Assignment() {
 
       {/* Add/Edit Modal */}
       {showModal && (
+        <ModalPortal>
         <div className="mod-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="mod-modal" onClick={e => e.stopPropagation()}>
             <div className="mod-modal-header">
@@ -285,10 +362,12 @@ export default function Assignment() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* View Modal */}
       {viewItem && (
+        <ModalPortal>
         <div className="mod-modal-overlay" onClick={() => setViewItem(null)}>
           <div className="mod-modal" onClick={e => e.stopPropagation()}>
             <div className="mod-modal-header">
@@ -317,6 +396,7 @@ export default function Assignment() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />

@@ -4,6 +4,7 @@ import "./StudentDummyList.css";
 import TableActionMenu from "../../component/Table/TableActionMenu";
 import { getStudentlist } from "../../services/api";
 import { getToken } from "../../services/auth";
+import ModalPortal from "../../component/modals/ModalPortal";
 
 const ITEMS_PER_PAGE = 8;
 const AV_COLORS = ["#2D3A8C","#E8541A","#22c55e","#8b5cf6","#f59e0b","#06b6d4"];
@@ -52,13 +53,23 @@ export default function StudentDummyList() {
   const location = useLocation();
   const fetchIdRef = useRef(0);
 
-  const [students,     setStudents]     = useState([]);
-  const [classes,      setClasses]      = useState(["All"]);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState(null);
-  const [search,       setSearch]       = useState("");
-  const [page,         setPage]         = useState(1);
-  const [filterClass,  setFilterClass]  = useState("All");
+  const [students,       setStudents]       = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState(null);
+  const [search,         setSearch]         = useState("");
+  const [page,           setPage]           = useState(1);
+  const [filterClass,   setFilterClass]   = useState("");
+  const [filterSection, setFilterSection] = useState("");
+  const [draftClass,    setDraftClass]    = useState("");
+  const [draftSection,  setDraftSection]  = useState("");
+  const [allClasses,    setAllClasses]    = useState([]);
+  const [allSections,   setAllSections]   = useState([]);
+  const [showFilter,    setShowFilter]    = useState(false);
+
+  const openFilter  = () => { setDraftClass(filterClass); setDraftSection(filterSection); setShowFilter(true); };
+  const closeFilter = () => setShowFilter(false);
+  const applyFilter = () => { setFilterClass(draftClass); setFilterSection(draftSection); setPage(1); setShowFilter(false); };
+  const clearFilter = () => { setDraftClass(""); setDraftSection(""); };
 
   const fetchStudents = useCallback(async () => {
     const fetchId = ++fetchIdRef.current;
@@ -82,14 +93,12 @@ export default function StudentDummyList() {
 
       setStudents(mapped);
       setSearch("");
-      setFilterClass("All");
+      setFilterClass("");
+      setFilterSection("");
       setPage(1);
 
-      const uniqueClasses = [
-        "All",
-        ...[...new Set(mapped.map((s) => s.cls).filter((c) => c && c !== "-"))].sort(),
-      ];
-      setClasses(uniqueClasses.length > 1 ? uniqueClasses : ["All"]);
+      setAllClasses([...new Set(mapped.map((s) => s.cls).filter((c) => c && c !== "-"))].sort());
+      setAllSections([...new Set(mapped.map((s) => s.section).filter((s) => s && s !== "-"))].sort());
       setError(
         mapped.length === 0 && !isSuccessResponse(res)
           ? res?.message || "Could not load students."
@@ -117,9 +126,13 @@ export default function StudentDummyList() {
       String(s.name).toLowerCase().includes(q) ||
       String(s.admNo).toLowerCase().includes(q) ||
       String(s.email).toLowerCase().includes(q);
-    const matchClass = filterClass === "All" || String(s.cls) === String(filterClass);
-    return matchSearch && matchClass;
+    const matchClass   = !filterClass   || s.cls === filterClass;
+    const matchSection = !filterSection || s.section === filterSection;
+    return matchSearch && matchClass && matchSection;
   });
+
+  const activeFilterCount = (filterClass ? 1 : 0) + (filterSection ? 1 : 0);
+  const draftFilterCount  = (draftClass ? 1 : 0) + (draftSection ? 1 : 0);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
 
@@ -148,10 +161,19 @@ export default function StudentDummyList() {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
+          {search && (
+            <i className="bx bx-x sdl-search-clear" onClick={() => { setSearch(""); setPage(1); }} />
+          )}
         </div>
-        <button className="sdl-add-btn" onClick={() => navigate("/admin/student/new")}>
-          <i className="bx bx-plus"></i> Add Student
-        </button>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button className="sdl-filter-toggle-btn" onClick={openFilter}>
+            <i className="bx bx-filter-alt"></i> Filter
+            {activeFilterCount > 0 && <span className="sdl-filter-badge">{activeFilterCount}</span>}
+          </button>
+          <button className="sdl-add-btn" onClick={() => navigate("/admin/student/new")}>
+            <i className="bx bx-plus"></i> Add Student
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -168,25 +190,12 @@ export default function StudentDummyList() {
         </div>
       )}
 
-      <div className="sdl-filters">
-        <div className="sdl-class-tabs">
-          {classes.map((c) => (
-            <button
-              key={c}
-              className={`sdl-tab${filterClass === c ? " active" : ""}`}
-              onClick={() => { setFilterClass(c); setPage(1); }}
-            >
-              {c === "All" ? "All Classes" : `Class ${c}`}
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       <div className="sdl-stats">
         {[
           { label: "Total Students", value: students.length, icon: "bx bxs-user", color: "#2D3A8C", bg: "#eef0fb" },
           { label: "Active", value: activeCount, icon: "bx bxs-check-circle", color: "#22c55e", bg: "#f0fdf4" },
-          { label: "On This Page", value: paginated.length, icon: "bx bx-list-ul", color: "#7c3aed", bg: "#f5f3ff" },
         ].map((s, i) => (
           <div className="sdl-stat-card" key={i}>
             <div className="sdl-stat-icon" style={{ background: s.bg, color: s.color }}>
@@ -265,6 +274,69 @@ export default function StudentDummyList() {
           </table>
         )}
       </div>
+
+      {showFilter && (
+        <ModalPortal>
+        <div className="sdl-filter-overlay" onClick={closeFilter}>
+          <aside className="sdl-filter-drawer" onClick={e => e.stopPropagation()}>
+            <div className="sdl-filter-drawer-header">
+              <span><i className="bx bx-filter-alt"></i> Filters</span>
+              <button className="sdl-filter-drawer-close" onClick={closeFilter} aria-label="Close"><i className="bx bx-x"></i></button>
+            </div>
+
+            <div className="sdl-filter-drawer-body">
+              {(draftClass || draftSection) && (
+                <div className="sdl-filter-clear-row">
+                  <button className="sdl-filter-clear-btn" onClick={clearFilter}>
+                    Clear all
+                  </button>
+                </div>
+              )}
+              <div className="sdl-filter-section">
+                <div className="sdl-filter-section-title">Class</div>
+                {allClasses.length === 0 ? (
+                  <p className="sdl-filter-empty">No classes</p>
+                ) : (
+                  <select
+                    className="sdl-filter-select"
+                    value={draftClass}
+                    onChange={(e) => setDraftClass(e.target.value)}
+                  >
+                    <option value="">All Classes</option>
+                    {allClasses.map((c) => (
+                      <option key={c} value={c}>Class {c}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div className="sdl-filter-section">
+                <div className="sdl-filter-section-title">Section</div>
+                {allSections.length === 0 ? (
+                  <p className="sdl-filter-empty">No sections</p>
+                ) : (
+                  <select
+                    className="sdl-filter-select"
+                    value={draftSection}
+                    onChange={(e) => setDraftSection(e.target.value)}
+                  >
+                    <option value="">All Sections</option>
+                    {allSections.map((sec) => (
+                      <option key={sec} value={sec}>Section {sec}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+
+            <div className="sdl-filter-drawer-footer">
+              <button className="sdl-filter-cancel-btn" onClick={closeFilter}>Cancel</button>
+              <button className="sdl-filter-apply-btn" onClick={applyFilter}>Apply</button>
+            </div>
+          </aside>
+        </div>
+        </ModalPortal>
+      )}
 
       {!loading && totalPages > 1 && (
         <div className="sdl-pagination">

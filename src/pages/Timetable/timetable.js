@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import "./timetable.css";
 import {
   getPeriodSlot,
@@ -94,10 +94,27 @@ const matchesScheduleTime = (rawTime, scheduleTime) => {
   return actual === expected || (expected >= 13 * 60 && actual + 12 * 60 === expected);
 };
 
-const getGridCell = (source, day, slotId) => {
+const slotTimeKey = (start) => `t${toMinutes(start)}`;
+
+const rowTimeKeys = (start) => {
+  if (!start) return [];
+  const mins = toMinutes(start);
+  const keys = [`t${mins}`];
+  // Some records store afternoon periods without PM (e.g. "01:15 AM")
+  if (mins < 9 * 60) keys.push(`t${mins + 12 * 60}`);
+  return keys;
+};
+
+const getGridCell = (source, day, slotId, slotStartTime) => {
   if (!source?.[day]) return undefined;
   const key = String(slotId);
-  return source[day][key] ?? source[day][Number(slotId)] ?? undefined;
+  const byId = source[day][key] ?? source[day][Number(slotId)];
+  if (byId) return byId;
+  if (slotStartTime) {
+    const timeKey = slotTimeKey(slotStartTime);
+    return source[day][timeKey];
+  }
+  return undefined;
 };
 
 const buildEmptyGrid = () => {
@@ -172,9 +189,18 @@ export const mapSlots = (list) => {
   });
 };
 
-/** Merge class timetable records into an empty day×slot grid by (periodSlotId + dayId). */
-export const mergeTimetableIntoGrid = (timetableRows, dayNameById) => {
+/** Merge class timetable records into an empty day×slot grid by period slot + day. */
+export const mergeTimetableIntoGrid = (timetableRows, dayNameById, slots = []) => {
   const next = buildEmptyGrid();
+  const gridKeyByPeriodSlotId = {};
+  asArray(slots).forEach((slot) => {
+    const periodSlotId =
+      slot?.source?.id ?? slot?.source?.slotId ?? slot?.source?.periodSlotId;
+    if (periodSlotId != null && periodSlotId !== "") {
+      gridKeyByPeriodSlotId[String(periodSlotId)] = String(slot.id);
+    }
+  });
+
   asArray(timetableRows).forEach((row) => {
     const slotId = row?.periodSlotId ?? row?.slotId ?? row?.period_slot_id ?? row?.periodSlotID;
     if (slotId === undefined || slotId === null || slotId === "") return;
@@ -193,13 +219,29 @@ export const mergeTimetableIntoGrid = (timetableRows, dayNameById) => {
     // Skip empty shell rows (period exists but no timetable assignment)
     if (!rowId && (!subjectId || subjectId === "0") && !staffId) return;
 
-    next[day][String(slotId)] = {
+    let gridKey = gridKeyByPeriodSlotId[String(slotId)] || String(slotId);
+    const rowStart = row?.startTime ?? row?.["start Time"];
+    if (rowStart && !asArray(slots).some((slot) => String(slot.id) === gridKey)) {
+      const matchingSlot = asArray(slots).find(
+        (slot) =>
+          !slot.isBreak &&
+          matchesScheduleTime(rowStart, slot.startTime)
+      );
+      if (matchingSlot) gridKey = String(matchingSlot.id);
+    }
+
+    const cell = {
       id: rowId,
       subjectId: subjectId && subjectId !== "0" ? subjectId : "",
       staffId,
       staffName: row?.staffName ?? row?.teacherName ?? "",
       subjectName: row?.subject ?? row?.subjectName ?? "",
     };
+
+    next[day][gridKey] = cell;
+    rowTimeKeys(rowStart).forEach((key) => {
+      next[day][key] = cell;
+    });
   });
   return next;
 };
@@ -209,7 +251,8 @@ const buildDayMaps = (dayRows) => {
   const dayIdByName = { ...FALLBACK_DAY_IDS };
   asArray(dayRows).forEach((d, i) => {
     const id = d?.id ?? d?.dayId ?? i + 1;
-    const name = d?.day ?? d?.dayName ?? d?.name ?? DAYS[i];
+    const rawName = d?.day ?? d?.dayName ?? d?.name ?? DAYS[i];
+    const name = resolveDayName(rawName) || rawName;
     if (!name) return;
     dayNameById[Number(id)] = name;
     dayNameById[String(id)] = name;
@@ -237,23 +280,6 @@ const getWeekRange = (anchor = new Date()) => {
   saturday.setDate(monday.getDate() + 5);
   const toIso = (x) => x.toISOString().slice(0, 10);
   return { weekStart: toIso(monday), weekEnd: toIso(saturday), monday };
-};
-
-/**
- * Period slot IDs are per-class in the DB, so a staff member teaching
- * multiple classes has rows whose periodSlotId never matches the single
- * slot ID chosen for the grid row. Time-based keys make those rows land
- * in the correct period row regardless of which class's slot it is.
- */
-const slotTimeKey = (start) => `t${toMinutes(start)}`;
-
-const rowTimeKeys = (start) => {
-  if (!start) return [];
-  const mins = toMinutes(start);
-  const keys = [`t${mins}`];
-  // Some records store afternoon periods without PM (e.g. "01:15 AM")
-  if (mins < 9 * 60) keys.push(`t${mins + 12 * 60}`);
-  return keys;
 };
 
 const dayFromDate = (value) => {
@@ -658,13 +684,6 @@ function StudentTimetable() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   ADMIN TIMETABLE
-   Architecture:
-     Period Slot Master is per-class (sp_GetPeriodSlot requires classId).
-     Select Class → fetch that class's period slots → build grid rows.
-     Select Section / Load Timetable → fill cells only (periodSlotId + dayId).
-═══════════════════════════════════════════════════════════ */
 function AdminTimetable() {
   const token = getToken();
 
@@ -689,6 +708,10 @@ function AdminTimetable() {
 
   /* Grid structure depends ONLY on Period Slot Master for the selected class */
   const slots = useMemo(() => mapSlots(rawSlots), [rawSlots]);
+  const configuredTeachingSlots = useMemo(
+    () => slots.filter((slot) => !slot.isBreak && slot.configured).length,
+    [slots]
+  );
 
   const sections = useMemo(() => {
     if (!selClassId) return [];
@@ -763,9 +786,9 @@ function AdminTimetable() {
     setOrigGrid(buildEmptyGrid());
   };
 
-  const handleLoad = async () => {
+  const loadTimetable = useCallback(async ({ showToast = true } = {}) => {
     if (!selClassId || !selSectionId) {
-      toast.error("Please select Class and Section.");
+      if (showToast) toast.error("Please select Class and Section.");
       return;
     }
     setLoadingTt(true);
@@ -774,10 +797,11 @@ function AdminTimetable() {
         { dayId: 0, classId: Number(selClassId), sectionId: Number(selSectionId) },
         token
       );
-      const merged = mergeTimetableIntoGrid(res, dayNameById);
+      const rows = asArray(res);
+      const merged = mergeTimetableIntoGrid(rows, dayNameById, slots);
       const subjectIds = [
         ...new Set(
-          asArray(res)
+          rows
             .map((row) => normalizeFieldValue(row?.subjectId ?? row?.subject_id))
             .filter(Boolean)
         ),
@@ -798,18 +822,31 @@ function AdminTimetable() {
       }));
       setGrid(merged);
       setOrigGrid(JSON.parse(JSON.stringify(merged)));
-      const filled = asArray(res).length;
-      toast.success(
-        filled
-          ? `Timetable loaded (${filled} assignment${filled === 1 ? "" : "s"}).`
-          : "No timetable records yet - grid is ready for entry."
-      );
+      if (showToast) {
+        const filled = rows.length;
+        toast.success(
+          filled
+            ? `Timetable loaded (${filled} assignment${filled === 1 ? "" : "s"}).`
+            : configuredTeachingSlots
+              ? "No timetable saved yet for this section. Assign subjects and teachers in the grid, then Save."
+              : "No timetable saved. Configure Period Slots for this class in Master first, then assign here."
+        );
+      }
     } catch (err) {
-      toast.error(err?.response?.data?.message || err?.message || "Failed to load timetable.");
+      if (showToast) {
+        toast.error(err?.response?.data?.message || err?.message || "Failed to load timetable.");
+      }
     } finally {
       setLoadingTt(false);
     }
-  };
+  }, [selClassId, selSectionId, token, dayNameById, slots, configuredTeachingSlots]);
+
+  useEffect(() => {
+    if (!selClassId || !selSectionId || slotsLoading) return;
+    loadTimetable({ showToast: false });
+  }, [selClassId, selSectionId, slotsLoading, loadTimetable]);
+
+  const handleLoad = () => loadTimetable({ showToast: true });
 
   const updateGridCell = (day, slotId, changes) => {
     setGrid((prev) => {
@@ -895,10 +932,16 @@ function AdminTimetable() {
         const dayId = dayIdByName[day] || FALLBACK_DAY_IDS[day];
         slots.forEach((slot) => {
           if (slot.isBreak || !slot.configured) return;
-          const cell = getGridCell(grid, day, slot.id);
+          const cell = getGridCell(grid, day, slot.id, slot.startTime);
           if (!cell?.subjectId) return;
           if (!cell.staffId) {
             throw new Error(`Select staff for ${day}, Period ${slot.label}.`);
+          }
+          const periodSlotId = Number(slot.source?.id ?? slot.source?.periodSlotId ?? 0);
+          if (!periodSlotId) {
+            throw new Error(
+              `Period ${slot.label} is not configured in Master → Period Slot for this class.`
+            );
           }
           payloads.push(
             buildTimetableSavePayload({
@@ -906,7 +949,7 @@ function AdminTimetable() {
               classId: selClassId,
               sectionId: selSectionId,
               dayId,
-              periodSlotId: slot.id,
+              periodSlotId,
               subjectId: cell.subjectId,
               staffId: cell.staffId,
             })
@@ -985,6 +1028,27 @@ function AdminTimetable() {
         </button>
       </div>
 
+      {selClassId && !slotsLoading && configuredTeachingSlots === 0 && (
+        <div className="tt-warning-banner">
+          <i className="bx bx-error-circle"></i>
+          <span>
+            <strong>No period slots configured for this class.</strong>{" "}
+            Go to <strong>Master → Period Slot</strong>, add period timings for this class,
+            then return here to assign subjects and teachers.
+          </span>
+        </div>
+      )}
+
+      {selClassId && !slotsLoading && configuredTeachingSlots > 0 && configuredTeachingSlots < 8 && (
+        <div className="tt-warning-banner mild">
+          <i className="bx bx-info-circle"></i>
+          <span>
+            Only {configuredTeachingSlots} of 8 teaching periods are configured for this class.
+            Add the remaining period slots in <strong>Master → Period Slot</strong>.
+          </span>
+        </div>
+      )}
+
       {slotsLoading ? (
         <div className="tt-empty">
           <div className="tt-spinner"></div>
@@ -1046,14 +1110,23 @@ function AdminTimetable() {
                       </div>
                     </td>
                     {DAYS.map((day) => {
-                      const cell = getGridCell(grid, day, slot.id) ?? { id: 0, subjectId: "", staffId: "" };
+                      const cell = getGridCell(grid, day, slot.id, slot.startTime) ?? { id: 0, subjectId: "", staffId: "" };
+                      if (!slot.configured) {
+                        return (
+                          <td key={`${day}-${slot.id}`} className="tt-td-cell tt-td-unconfigured">
+                            <div className="tt-cell-hint">
+                              <i className="bx bx-time-five"></i>
+                              <span>Period slot not set up</span>
+                            </div>
+                          </td>
+                        );
+                      }
                       return (
                         <td key={`${day}-${slot.id}`} className="tt-td-cell">
                           <div className="tt-cell-inner">
                             <select
                               className="tt-cell-select subject"
                               value={cell.subjectId}
-                              disabled={!slot.configured}
                               onChange={(e) => handleSubjectChange(day, slot.id, e.target.value)}
                             >
                               <option value="">Assign Subject</option>
@@ -1068,34 +1141,34 @@ function AdminTimetable() {
                                   </option>
                                 ))}
                             </select>
-                            {cell.subjectId && (
-                              <select
-                                className="tt-cell-select staff"
-                                value={cell.staffId || ""}
-                                disabled={cell.staffLoading}
-                                onChange={(e) =>
-                                  handleStaffChange(
-                                    day,
-                                    slot.id,
-                                    cell.subjectId,
-                                    e.target.value
-                                  )
-                                }
-                              >
-                                <option value="">
-                                  {cell.staffLoading
+                            <select
+                              className="tt-cell-select staff"
+                              value={cell.staffId || ""}
+                              disabled={!cell.subjectId || cell.staffLoading}
+                              onChange={(e) =>
+                                handleStaffChange(
+                                  day,
+                                  slot.id,
+                                  cell.subjectId,
+                                  e.target.value
+                                )
+                              }
+                            >
+                              <option value="">
+                                {!cell.subjectId
+                                  ? "Select subject first"
+                                  : cell.staffLoading
                                     ? "Loading Staff…"
                                     : asArray(subjectStaffMap[cell.subjectId]).length
                                       ? "Assign Staff"
                                       : "No Matching Staff"}
+                              </option>
+                              {asArray(subjectStaffMap[cell.subjectId]).map((staff) => (
+                                <option key={staff.staffId} value={staff.staffId}>
+                                  {staff.staffName || staff.staffId}
                                 </option>
-                                {asArray(subjectStaffMap[cell.subjectId]).map((staff) => (
-                                  <option key={staff.staffId} value={staff.staffId}>
-                                    {staff.staffName || staff.staffId}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
+                              ))}
+                            </select>
                           </div>
                         </td>
                       );
@@ -1112,11 +1185,12 @@ function AdminTimetable() {
         <div className="tt-note">
           <i className="bx bx-info-circle"></i>
           <span>
-            <strong>Note:</strong>{" "}
+            <strong>How it works:</strong>{" "}
             {selClassId
-              ? `Grid has ${slots.length} period slot${slots.length === 1 ? "" : "s"} from Period Slot Master for this class.`
-              : "Select a Class to build the grid from Period Slot Master."}
-            {" "}Then select Section and Load Timetable to fill cells.
+              ? configuredTeachingSlots
+                ? `This class has ${configuredTeachingSlots} period slot${configuredTeachingSlots === 1 ? "" : "s"} configured. Load Timetable shows saved assignments; if none exist, pick Subject and Staff in each cell, then Save.`
+                : "This class has no period slots yet — configure them in Master → Period Slot before assigning a timetable."
+              : "Select a Class to build the grid from Period Slot Master, then Section to load or create the timetable."}
           </span>
         </div>
         <div className="tt-bottom-actions">

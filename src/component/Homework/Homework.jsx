@@ -13,6 +13,7 @@ import {
 } from "../../services/api";
 import { getToken } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
+import ModalPortal from "../modals/ModalPortal";
 
 const COLORS = ["#2D3A8C", "#E8541A", "#16a34a", "#7c3aed", "#d97706", "#0891b2"];
 const toInitials = (s) => (s || "?").slice(0, 2).toUpperCase();
@@ -482,6 +483,7 @@ export default function Homework() {
 
       {/*  Add / Edit Modal - POST /create_update_homework  */}
       {showModal && (
+        <ModalPortal>
         <div className="mod-modal-overlay" onClick={() => !saving && setShowModal(false)}>
           <div className="mod-modal" onClick={(e) => e.stopPropagation()}>
             <div className="mod-modal-header">
@@ -593,10 +595,12 @@ export default function Homework() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/*  View Detail Modal  */}
       {viewItem && (
+        <ModalPortal>
         <div className="mod-modal-overlay" onClick={() => setViewItem(null)}>
           <div className="mod-modal" onClick={(e) => e.stopPropagation()}>
             <div className="mod-modal-header">
@@ -637,6 +641,7 @@ export default function Homework() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />

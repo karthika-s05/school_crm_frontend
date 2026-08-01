@@ -17,6 +17,7 @@ import {
 } from "../../services/api";
 import { runApi } from "../../utils/apiHelper";
 import { validateMobile, sanitizeMobileInput } from "../../utils/validators";
+import ModalPortal from "../../component/modals/ModalPortal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -50,6 +51,7 @@ const findRouteId = (routeName, fleet) => {
 
 function ConfirmModal({ msg, onOk, onCancel }) {
   return (
+    <ModalPortal>
     <div className="svc-overlay" onClick={onCancel}>
       <div className="svc-modal svc-modal-sm" onClick={(e) => e.stopPropagation()}>
         <div className="svc-delete-body">
@@ -66,6 +68,7 @@ function ConfirmModal({ msg, onOk, onCancel }) {
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }
 
@@ -287,8 +290,8 @@ export default function Transport() {
     <div className="transport-page">
       <div className="transport-hero">
         <div className="transport-hero-text">
-          <h2>Transport Management</h2>
-          <p>Manage fleet, student assignments, and transport fee collection</p>
+          {/* <h2>Transport Management</h2>
+          <p>Manage fleet, student assignments, and transport fee collection</p> */}
         </div>
         <div className="transport-hero-badge">
           <i className="bx bxs-bus"></i>
@@ -371,6 +374,9 @@ export default function Transport() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
+                {search && (
+                  <i className="bx bx-x sdl-search-clear" onClick={() => setSearch("")} />
+                )}
               </div>
               <div className="transport-toolbar-actions">
                 <button type="button" className="sdl-add-btn" onClick={openAdd}>
@@ -465,11 +471,11 @@ export default function Transport() {
                 <input
                   placeholder="Search student name or admission no…"
                   value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setPage(1);
-                  }}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 />
+                {search && (
+                  <i className="bx bx-x sdl-search-clear" onClick={() => { setSearch(""); setPage(1); }} />
+                )}
               </div>
               <div className="transport-toolbar-actions">
                 <select
@@ -621,6 +627,9 @@ export default function Transport() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
+                {search && (
+                  <i className="bx bx-x sdl-search-clear" onClick={() => setSearch("")} />
+                )}
               </div>
               <div className="transport-toolbar-actions">
                 <select
@@ -755,11 +764,12 @@ export default function Transport() {
 
       {/* ════════ Add / Edit Modal ════════ */}
       {(modal === "add" || modal === "edit") && (
+        <ModalPortal>
         <div className="svc-overlay" onClick={() => !saving && setModal(null)}>
           <div className="svc-modal" onClick={(e) => e.stopPropagation()}>
             <div className="svc-modal-hdr">
               <span>{modal === "add" ? "Add New Bus" : "Edit Bus"}</span>
-              <button className="svc-modal-close" onClick={() => !saving && setModal(null)}>
+              <button type="button" className="svc-modal-close" onClick={() => !saving && setModal(null)} aria-label="Close">
                 <i className="bx bx-x"></i>
               </button>
             </div>
@@ -834,14 +844,16 @@ export default function Transport() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {modal === "view" && (
+        <ModalPortal>
         <div className="svc-overlay" onClick={() => setModal(null)}>
           <div className="svc-modal" onClick={(e) => e.stopPropagation()}>
             <div className="svc-modal-hdr">
               <span>Bus Details</span>
-              <button className="svc-modal-close" onClick={() => setModal(null)}>
+              <button type="button" className="svc-modal-close" onClick={() => setModal(null)} aria-label="Close">
                 <i className="bx bx-x"></i>
               </button>
             </div>
@@ -884,6 +896,7 @@ export default function Transport() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* ════════ Delete Confirm ════════ */}

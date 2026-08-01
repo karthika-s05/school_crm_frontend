@@ -7,9 +7,10 @@ import {
   getSection,
   getStudentAttendanceContextV2,
   getStudentTodayPeriodsV2,
+  getMyClassTeacherClassesV2,
   saveStudentAttendanceV2,
 } from "../../services/api";
-import { getToken } from "../../services/auth";
+import { getToken, getUserData } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
 import {
   STUDENT_STATUSES,
@@ -61,10 +62,13 @@ const normalizePeriods = (data) => {
  */
 const StudentAttendanceEntry = () => {
   const token = getToken();
+  const role = String(getUserData("role") || "").trim().toLowerCase();
+  const isStaff = role === "staff";
   const [mode, setMode] = useState("daily");
 
   const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
+  const [assignments, setAssignments] = useState([]); // staff class-teacher maps
   const [classId, setClassId] = useState("");
   const [sectionId, setSectionId] = useState("");
   const [date, setDate] = useState(todayISO());
@@ -78,12 +82,41 @@ const StudentAttendanceEntry = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [canEdit, setCanEdit] = useState(true);
+  const [lockReason, setLockReason] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!token) return;
     const loadMeta = async () => {
       try {
+        if (isStaff) {
+          const res = await getMyClassTeacherClassesV2(token);
+          const list = Array.isArray(res?.data) ? res.data : [];
+          setAssignments(list);
+          const classOpts = [];
+          const seenClass = new Set();
+          list.forEach((row) => {
+            const id = String(row.classId);
+            if (!seenClass.has(id)) {
+              seenClass.add(id);
+              classOpts.push({
+                id,
+                name: row.className || `Class ${row.classId}`,
+              });
+            }
+          });
+          setClasses(classOpts);
+          if (classOpts.length === 1) {
+            setClassId(classOpts[0].id);
+          }
+          if (!list.length) {
+            toast.info(
+              "No class teacher mapping found. Ask admin to map you under Class Teacher."
+            );
+          }
+          return;
+        }
+
         const [cls, sec] = await Promise.all([getClass(0, token), getSection(0, token)]);
         setClasses(toOptions(cls, ["name", "className"]));
         setSections(toOptions(sec, ["name", "sectionName"]));
@@ -92,7 +125,37 @@ const StudentAttendanceEntry = () => {
       }
     };
     loadMeta();
-  }, [token]);
+  }, [token, isStaff]);
+
+  // Staff: sections depend on selected class from their assignments
+  useEffect(() => {
+    if (!isStaff) return;
+    if (!classId) {
+      setSections([]);
+      setSectionId("");
+      return;
+    }
+    const sectionOpts = [];
+    const seen = new Set();
+    assignments
+      .filter((row) => String(row.classId) === String(classId))
+      .forEach((row) => {
+        const id = String(row.sectionId);
+        if (!seen.has(id)) {
+          seen.add(id);
+          sectionOpts.push({
+            id,
+            name: row.sectionName || `Section ${row.sectionId}`,
+          });
+        }
+      });
+    setSections(sectionOpts);
+    setSectionId((prev) => {
+      if (sectionOpts.length === 1) return sectionOpts[0].id;
+      if (sectionOpts.some((s) => s.id === prev)) return prev;
+      return "";
+    });
+  }, [isStaff, classId, assignments]);
 
   const loadContext = useCallback(
     async (ctx) => {
@@ -103,12 +166,22 @@ const StudentAttendanceEntry = () => {
         {
           onSuccess: (res) => {
             setRows(normalizeRoster(res.data));
-            // Allow saving when the user may mark this context, or may edit
-            // the already-marked session (canEdit is top-level in the response).
-            setCanEdit(res.data?.canMark === true || res.canEdit === true);
+            // canMark lives inside data; canEdit is top-level from sendOk.
+            const allowed =
+              res.data?.canMark === true || res.canEdit === true;
+            setCanEdit(allowed);
+            setLockReason(
+              allowed
+                ? ""
+                : res.data?.alreadyMarked
+                  ? "Attendance for this selection is already marked and you cannot modify it."
+                  : "Only the assigned class teacher (or admin) can mark daily attendance for this class/section."
+            );
           },
           onError: () => {
             setRows([]);
+            setCanEdit(false);
+            setLockReason("");
             setError("Could not load the student roster.");
           },
         }
@@ -331,7 +404,8 @@ const StudentAttendanceEntry = () => {
           {!canEdit && rows.length > 0 && (
             <div className="av2-state" style={{ padding: "8px 0", flexDirection: "row" }}>
               <i className="bx bx-lock-alt" style={{ fontSize: 18 }}></i>
-              Attendance for this selection is locked and cannot be modified.
+              {lockReason ||
+                "Attendance for this selection is locked and cannot be modified."}
             </div>
           )}
 

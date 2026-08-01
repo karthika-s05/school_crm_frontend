@@ -171,25 +171,81 @@
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
-  display: grid;
-  place-items: center;
-  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .evt-modal {
   width: min(720px, 100%);
-  max-height: 90vh;
-  overflow: auto;
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border-radius: 18px;
-  padding: 18px;
+  padding: 0;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+}
+
+.evt-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #f0f2f8;
+  flex-shrink: 0;
+}
+
+.evt-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.evt-modal-header button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.evt-modal-header button:hover {
+  background: #fee2e2;
+  color: #ef4444;
 }
 
 .evt-modal-body {
   display: grid;
   gap: 12px;
-  padding: 12px 0;
+  padding: 16px 18px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+}
+
+.evt-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid #f0f2f8;
+  flex-shrink: 0;
 }
 
 .evt-modal-body label {

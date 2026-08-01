@@ -209,7 +209,7 @@ const AdminDashboard = () => {
             if (!cancelled) setEventSummary(res?.data || null);
           },
         }),
-        // Existing registration API — active students (isActive = '1')
+        // Existing registration API - active students (isActive = '1')
         runApi(
           () => getStudentlist({ userName: 0, classId: 0, sectionId: 0 }, token),
           {
@@ -219,14 +219,14 @@ const AdminDashboard = () => {
             },
           }
         ),
-        // Existing staff list API — total teachers / staff
+        // Existing staff list API - total teachers / staff
         runApi(() => getStafflist("0", token), {
           onSuccess: (res) => {
             const rows = asRowList(res);
             mergeSummary({ totalStaff: rows.length });
           },
         }),
-        // Existing attendance report — school-wide today
+        // Existing attendance report - school-wide today
         runApi(
           () =>
             getAttendanceReportV2(
@@ -372,7 +372,7 @@ const AdminDashboard = () => {
         sub: "Active staff",
       },
       attendance: {
-        value: rate != null ? `${rate}%` : "—",
+        value: rate != null ? `${rate}%` : "-",
         sub:
           present != null && total != null
             ? `${fmtCount(present)} / ${fmtCount(total)} present`
@@ -422,7 +422,7 @@ const AdminDashboard = () => {
 
   const welcomeStudents = fmtCount(summary?.totalStudents ?? 0);
   const welcomeTeachers = fmtCount(summary?.totalStaff ?? 0);
-  const welcomeAtt = att.rate != null ? `${att.rate}%` : "—";
+  const welcomeAtt = att.rate != null ? `${att.rate}%` : "-";
   const today = new Date();
   const dateStr = today.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
   const dayStr = today.toLocaleDateString("en-IN", { weekday: "long" });
@@ -572,7 +572,7 @@ const AdminDashboard = () => {
               { label: "Present", val: fmtCount(att.present ?? 0), color: "#2D3A8C" },
               { label: "Absent", val: fmtCount(att.absent ?? 0), color: "#ef4444" },
               { label: "Leave", val: fmtCount(att.leave ?? 0), color: "#d97706" },
-              { label: "Rate", val: att.rate != null ? `${att.rate}%` : "—", color: "#16a34a" },
+              { label: "Rate", val: att.rate != null ? `${att.rate}%` : "-", color: "#16a34a" },
             ].map((s, i) => (
               <div className="kst-att-stat" key={i}>
                 <span className="kst-att-dot" style={{ background: s.color }}></span>

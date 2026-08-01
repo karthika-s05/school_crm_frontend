@@ -115,8 +115,8 @@ const StudentMyAttendance = () => {
     <div className="av2-wrap">
       <div className="av2-header">
         <div>
-          <h2 className="av2-title">My Attendance</h2>
-          <p className="av2-sub">Your personal attendance overview - read only</p>
+          {/* <h2 className="av2-title">My Attendance</h2> */}
+          {/* <p className="av2-sub">Your personal attendance overview - read only</p> */}
         </div>
         {todayStatus ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

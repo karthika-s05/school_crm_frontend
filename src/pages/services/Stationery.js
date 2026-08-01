@@ -311,6 +311,9 @@ export default function Stationery() {
             <div className="sdl-search">
               <i className="bx bx-search"></i>
               <input placeholder="Search product or supplier…" value={search} onChange={e=>{ setSearch(e.target.value); setPage(1); }}/>
+              {search && (
+                <i className="bx bx-x sdl-search-clear" onClick={() => { setSearch(""); setPage(1); }} />
+              )}
             </div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               <select className="svc-select" value={catFilter} onChange={e=>{ setCat(e.target.value); setPage(1); }}>
@@ -400,6 +403,9 @@ export default function Stationery() {
             <div className="sdl-search">
               <i className="bx bx-search"></i>
               <input placeholder="Search student or admission no…" value={search} onChange={e=>setSearch(e.target.value)}/>
+              {search && (
+                <i className="bx bx-x sdl-search-clear" onClick={() => setSearch("")} />
+              )}
             </div>
             <select className="svc-select" value={orderFilter} onChange={e=>setOf(e.target.value)}>
               <option value="All">All Orders</option>

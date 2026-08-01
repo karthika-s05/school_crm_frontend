@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../List/StudentDummyList.css";
 import { getStafflist } from "../../services/api";
 import { getToken } from "../../services/auth";
+import ModalPortal from "../../component/modals/ModalPortal";
 
 const ITEMS_PER_PAGE = 8;
 const AV_COLORS = ["#2D3A8C","#E8541A","#22c55e","#8b5cf6","#f59e0b","#06b6d4"];
@@ -48,13 +49,23 @@ const DETAIL_FIELDS = [
 export default function StaffList() {
   const navigate = useNavigate();
 
-  const [staff,        setStaff]        = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState(null);
-  const [search,       setSearch]       = useState("");
-  const [page,         setPage]         = useState(1);
-  const [roleFilter,   setRoleFilter]   = useState("All");
-  const [selectedStaff,setSelectedStaff]= useState(null);
+  const [staff,          setStaff]          = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState(null);
+  const [search,         setSearch]         = useState("");
+  const [page,           setPage]           = useState(1);
+  const [filterRole,    setFilterRole]    = useState("");
+  const [filterDept,    setFilterDept]    = useState("");
+  const [draftRole,     setDraftRole]     = useState("");
+  const [draftDept,     setDraftDept]     = useState("");
+  const [allDepts,      setAllDepts]      = useState([]);
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [showFilter,    setShowFilter]    = useState(false);
+
+  const openFilter  = () => { setDraftRole(filterRole); setDraftDept(filterDept); setShowFilter(true); };
+  const closeFilter = () => setShowFilter(false);
+  const applyFilter = () => { setFilterRole(draftRole); setFilterDept(draftDept); setPage(1); setShowFilter(false); };
+  const clearFilter = () => { setDraftRole(""); setDraftDept(""); };
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -65,7 +76,9 @@ export default function StaffList() {
         const res   = await getStafflist("0", token);
 
         if (res?.status?.toLowerCase() === "success" && Array.isArray(res.data)) {
-          setStaff(res.data.map(mapStaff));
+          const mapped = res.data.map(mapStaff);
+          setStaff(mapped);
+          setAllDepts([...new Set(mapped.map(s => s.dept).filter(d => d && d !== "-"))].sort());
         } else if (res?.status?.toLowerCase() === "error") {
           setError(typeof res.data === "string" ? res.data : "Failed to load staff list");
         }
@@ -92,9 +105,13 @@ export default function StaffList() {
                s.staffId.toLowerCase().includes(search.toLowerCase()) ||
                s.email.toLowerCase().includes(search.toLowerCase()) ||
                s.dept.toLowerCase().includes(search.toLowerCase());
-    const mr = roleFilter === "All" || s.role === roleFilter;
-    return ms && mr;
+    const mr = !filterRole || s.role === filterRole;
+    const md = !filterDept || s.dept === filterDept;
+    return ms && mr && md;
   });
+
+  const activeFilterCount = (filterRole ? 1 : 0) + (filterDept ? 1 : 0);
+  const draftFilterCount  = (draftRole ? 1 : 0) + (draftDept ? 1 : 0);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated  = filtered.slice((page-1)*ITEMS_PER_PAGE, page*ITEMS_PER_PAGE);
@@ -119,10 +136,19 @@ export default function StaffList() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
+          {search && (
+            <i className="bx bx-x sdl-search-clear" onClick={() => { setSearch(""); setPage(1); }} />
+          )}
         </div>
-        <button className="sdl-add-btn" onClick={() => navigate("/admin/staff/new")}>
-          <i className="bx bx-plus"></i> Add Staff
-        </button>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button className="sdl-filter-toggle-btn" onClick={openFilter}>
+            <i className="bx bx-filter-alt"></i> Filter
+            {activeFilterCount > 0 && <span className="sdl-filter-badge">{activeFilterCount}</span>}
+          </button>
+          <button className="sdl-add-btn" onClick={() => navigate("/admin/staff/new")}>
+            <i className="bx bx-plus"></i> Add Staff
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -133,16 +159,7 @@ export default function StaffList() {
         </div>
       )}
 
-      <div className="sdl-filters">
-        <div className="sdl-class-tabs">
-          {ROLES.map(r => (
-            <button key={r} className={`sdl-tab${roleFilter===r?" active":""}`}
-              onClick={() => { setRoleFilter(r); setPage(1); }}>
-              {r === "All" ? "All Roles" : r}
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       <div className="sdl-stats">
         {[
@@ -230,6 +247,65 @@ export default function StaffList() {
         )}
       </div>
 
+      {showFilter && (
+        <ModalPortal>
+        <div className="sdl-filter-overlay" onClick={closeFilter}>
+          <aside className="sdl-filter-drawer" onClick={e => e.stopPropagation()}>
+            <div className="sdl-filter-drawer-header">
+              <span><i className="bx bx-filter-alt"></i> Filters</span>
+              <button className="sdl-filter-drawer-close" onClick={closeFilter} aria-label="Close"><i className="bx bx-x"></i></button>
+            </div>
+
+            <div className="sdl-filter-drawer-body">
+              {(draftRole || draftDept) && (
+                <div className="sdl-filter-clear-row">
+                  <button className="sdl-filter-clear-btn" onClick={clearFilter}>
+                    Clear all
+                  </button>
+                </div>
+              )}
+              <div className="sdl-filter-section">
+                <div className="sdl-filter-section-title">Role</div>
+                <select
+                  className="sdl-filter-select"
+                  value={draftRole}
+                  onChange={(e) => setDraftRole(e.target.value)}
+                >
+                  <option value="">All Roles</option>
+                  {ROLES.filter((r) => r !== "All").map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="sdl-filter-section">
+                <div className="sdl-filter-section-title">Department</div>
+                {allDepts.length === 0 ? (
+                  <p className="sdl-filter-empty">No departments</p>
+                ) : (
+                  <select
+                    className="sdl-filter-select"
+                    value={draftDept}
+                    onChange={(e) => setDraftDept(e.target.value)}
+                  >
+                    <option value="">All Departments</option>
+                    {allDepts.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+
+            <div className="sdl-filter-drawer-footer">
+              <button className="sdl-filter-cancel-btn" onClick={closeFilter}>Cancel</button>
+              <button className="sdl-filter-apply-btn" onClick={applyFilter}>Apply</button>
+            </div>
+          </aside>
+        </div>
+        </ModalPortal>
+      )}
+
       {!loading && totalPages > 1 && (
         <div className="sdl-pagination">
           <span className="sdl-page-info">
@@ -250,6 +326,7 @@ export default function StaffList() {
       )}
 
       {selectedStaff && (
+        <ModalPortal>
         <div className="sdl-drawer-overlay" onClick={() => setSelectedStaff(null)}>
           <div className="sdl-drawer" onClick={e => e.stopPropagation()}>
             <div className="sdl-drawer-header">
@@ -295,7 +372,7 @@ export default function StaffList() {
                 onClick={() => {
                   const staffId = selectedStaff.staffId;
                   setSelectedStaff(null);
-                  navigate(`/stafflist/${staffId}`);
+                  navigate(`/admin/staff/${staffId}`);
                 }}
               >
                 <i className="bx bx-edit"></i> Edit Staff
@@ -303,6 +380,7 @@ export default function StaffList() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

@@ -78,14 +78,14 @@ const Table = (props) => {
   const handleClick = () => {
     const urls = {
       "Exam Report List": "/exam",
-      "Student List": "/studentlist/new",
-      "Staff List": "/stafflist/new",
+      "Student List": "/admin/student/new",
+      "Staff List": "/admin/staff/new",
     };
     navigate(urls[props.propsData] || "/");
   };
 
   const handleEditClick = (id) => {
-    const url = props.propsData === "Student List" ? "/studentlist" : "/stafflist";
+    const url = props.propsData === "Student List" ? "/admin/student" : "/admin/staff";
     navigate(`${url}/${id}`);
   };
 
@@ -95,9 +95,9 @@ const Table = (props) => {
     const profileKey = profileKeyMap[props.propsData];
     const id = item[profileKey];
     if (props.propsData === "Student List") {
-      navigate(`/studentinfo/${id}`);
+      navigate(`/admin/studentinfo/${id}`);
     } else if (props.propsData === "Staff List") {
-      navigate(`/profile/${id}`, { state: "Staff List" });
+      navigate(`/admin/profile/${id}`, { state: "Staff List" });
     }
   };
 
@@ -162,6 +162,12 @@ const Table = (props) => {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
           />
+          {search && (
+            <i
+              className="bx bx-x sdl-search-clear"
+              onClick={() => { setSearch(""); setCurrentPage(1); }}
+            />
+          )}
         </div>
         </div>
         {showAddButton ? (

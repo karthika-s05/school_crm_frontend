@@ -283,15 +283,20 @@ const StudentPortal = () => {
               <div className="sp-table-wrap">
                 <table className="sp-table">
                   <thead>
-                    <tr><th>#</th><th>Subject</th><th>Date</th><th>Description</th></tr>
+                    <tr><th>#</th><th>Subject</th><th>Date</th><th>Description</th><th>My Progress</th></tr>
                   </thead>
                   <tbody>
                     {homework.map((hw, i) => (
-                      <tr key={i}>
+                      <tr key={hw.id || i}>
                         <td>{i + 1}</td>
-                        <td><span className="sp-subject-pill">{hw.subject}</span></td>
+                        <td><span className="sp-subject-pill">{hw.subject || hw.subjectName}</span></td>
                         <td>{hw.date}</td>
                         <td>{hw.description}</td>
+                        <td>
+                          <span className="sp-subject-pill">
+                            {hw.progressStatus || "Pending"}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -310,22 +315,29 @@ const StudentPortal = () => {
               <div className="sp-table-wrap">
                 <table className="sp-table">
                   <thead>
-                    <tr><th>#</th><th>Title</th><th>Subject</th><th>Start Date</th><th>End Date</th><th>Status</th></tr>
+                    <tr><th>#</th><th>Title</th><th>Subject</th><th>Start Date</th><th>End Date</th><th>Availability</th><th>My Progress</th></tr>
                   </thead>
                   <tbody>
                     {assignments.map((a, i) => {
-                      const isOpen = a.status === 1 || a.status === "open" || a.isOpen;
+                      const open = String(a.status || "").toLowerCase() === "true"
+                        || a.status === 1
+                        || a.status === "open"
+                        || a.isOpen;
+                      const progress = a.progressStatus || "Not Started";
                       return (
-                        <tr key={i}>
+                        <tr key={a.id || i}>
                           <td>{i + 1}</td>
                           <td style={{ fontWeight: 600 }}>{a.title}</td>
                           <td><span className="sp-subject-pill">{a.subjectName || a.subject}</span></td>
                           <td>{a.startDate}</td>
                           <td>{a.endDate}</td>
                           <td>
-                            <span className={`sp-result-pill ${isOpen ? "pass" : "fail"}`}>
-                              {isOpen ? "Open" : "Closed"}
+                            <span className={`sp-result-pill ${open ? "pass" : "fail"}`}>
+                              {open ? "Open" : "Closed"}
                             </span>
+                          </td>
+                          <td>
+                            <span className="sp-subject-pill">{progress}</span>
                           </td>
                         </tr>
                       );
