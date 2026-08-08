@@ -5,10 +5,12 @@ import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom"
 import { FiBell, FiSearch, FiChevronLeft, FiChevronRight, FiX, FiCheck } from "react-icons/fi";
 import { getUserData, removeToken, getToken } from "../../services/auth";
 import {
+  getMyClassTeacherClassesV2,
   markNotificationAsRead,
   updateNotificationTime,
 } from "../../services/api";
 import useNavNotifications from "../../hooks/useNavNotifications";
+import { formatApiDateTime, formatRelativeTime } from "../../utils/date";
 import { emitNotificationsChanged } from "../../utils/notificationBus";
 import StaffDashboard from "../StaffDashboard/Dashboard";
 import Assignment from "../Assignment/Assignment";
@@ -20,7 +22,6 @@ import LeaveManagement from "../../pages/services/LeaveManagement";
 import NotificationCenter from "../../pages/notifications/NotificationCenter";
 import Event from "../../pages/Event/Event";
 import Timetable from "../../pages/Timetable/timetable";
-import ExamType from "../../pages/exam/ExamType";
 import ExamPortion from "../../pages/exam/ExamPortion";
 import Exam from "../../pages/exam/exam";
 import Examresult from "../../pages/exam/examResults";
@@ -67,9 +68,9 @@ const STAFF_MENU_GROUPS = [
   {
     title: "Examination", icon: null,
     items: [
-      { label: "Exam Type", path: "/staff/examtype", state: undefined },
-      { label: "Exam Portion", path: "/staff/examportion", state: undefined },
-      { label: "Exam Result", path: "/staff/examresult", state: undefined },
+      { label: "Exam Timetable", path: "/staff/examportion", state: undefined },
+      { label: "Enter Marks", path: "/staff/subjectmark", state: undefined },
+      { label: "Exam Results", path: "/staff/examresult", state: undefined },
     ],
   },
   {
@@ -180,6 +181,7 @@ const StaffNav = () => {
 
   const staffName = getUserData("staffName") || getUserData("employeeName") || "Staff";
   const designation = getUserData("designation") || "Teacher";
+  const staffId = getUserData("userName") || "";
 
   const [collapsed, setCollapsed] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
@@ -187,12 +189,37 @@ const StaffNav = () => {
   const [showCal, setShowCal] = useState(false);
   const [calDate, setCalDate] = useState(new Date());
   const [showNotif, setShowNotif] = useState(false);
+  const [classTeacherClasses, setClassTeacherClasses] = useState([]);
   const { notifications, unreadCount, setNotifications } = useNavNotifications();
 
   const calRef = useRef(null);
   const notifRef = useRef(null);
   const profileRef = useRef(null);
   const today = new Date();
+
+  const classTeacherLabel = classTeacherClasses
+    .map((row) =>
+      [row.className, row.sectionName].filter(Boolean).join(" · ")
+    )
+    .filter(Boolean)
+    .join(", ");
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return undefined;
+    let active = true;
+    getMyClassTeacherClassesV2(token)
+      .then((res) => {
+        if (!active) return;
+        setClassTeacherClasses(Array.isArray(res?.data) ? res.data : []);
+      })
+      .catch(() => {
+        if (active) setClassTeacherClasses([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const handler = (e) => {
@@ -411,7 +438,26 @@ const StaffNav = () => {
                   <div className="crm-profile-menu-user">
                     <h4>{staffName}</h4>
                     <p>{designation}</p>
+                    {classTeacherLabel ? (
+                      <p className="crm-profile-class-teacher">
+                        Class Teacher · {classTeacherLabel}
+                      </p>
+                    ) : null}
                   </div>
+                  {staffId ? (
+                    <button
+                      type="button"
+                      className="crm-profile-menu-link"
+                      onClick={() => {
+                        setShowProfile(false);
+                        navigate(`/staff/profile/${staffId}`, {
+                          state: "Staff List",
+                        });
+                      }}
+                    >
+                      My Profile
+                    </button>
+                  ) : null}
                   <button type="button" onClick={logout}><IconLogout /> Logout</button>
                 </div>
               )}
@@ -449,7 +495,12 @@ const StaffNav = () => {
                           {!n.read && <span className="crm-nd-unread-dot"></span>}
                         </div>
                         <p className="crm-nd-item-desc">{n.desc}</p>
-                        <span className="crm-nd-item-time">{n.time}</span>
+                        <span
+                          className="crm-nd-item-time"
+                          title={formatApiDateTime(n.time)}
+                        >
+                          {formatRelativeTime(n.time)}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -480,7 +531,6 @@ const StaffNav = () => {
             <Route path="/staff/homework" element={<Homework />} />
             <Route path="/staff/assignment" element={<Assignment />} />
             <Route path="/staff/timetable" element={<Timetable />} />
-            <Route path="/staff/examtype" element={<ExamType />} />
             <Route path="/staff/examportion" element={<ExamPortion />} />
             <Route path="/staff/subjectmark" element={<Exam />} />
             <Route path="/staff/examresult" element={<Examresult />} />

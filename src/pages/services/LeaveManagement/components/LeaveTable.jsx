@@ -1,13 +1,13 @@
 import React from "react";
-import StatusActions from "./StatusActions";
-import { fmt, STATUS_COLOR, STATUS_ICON, getRowName } from "../utils/leaveHelpers";
+import { fmt, STATUS_COLOR, STATUS_ICON, getRowName, STUDENT_LEAVE_TYPES } from "../utils/leaveHelpers";
+
+const STUDENT_LEAVE_LABEL = Object.fromEntries(
+  STUDENT_LEAVE_TYPES.map((lt) => [lt.id, lt.label])
+);
 
 export default function LeaveTable({
   rows,
   loading,
-  showActions = false,
-  type,
-  onUpdate,
   emptyMessage = "No leave records found.",
 }) {
   if (loading) {
@@ -32,7 +32,6 @@ export default function LeaveTable({
       <table className="mod-table">
         <thead>
           <tr>
-            <th>#</th>
             <th>Name</th>
             <th>From</th>
             <th>To</th>
@@ -41,7 +40,6 @@ export default function LeaveTable({
             <th>Type</th>
             <th>Status</th>
             <th>Remarks</th>
-            {showActions && <th>Action</th>}
           </tr>
         </thead>
         <tbody>
@@ -53,11 +51,10 @@ export default function LeaveTable({
 
             return (
               <tr key={row.id || i}>
-                <td>{i + 1}</td>
                 <td>
                   <div className="mod-avatar-cell">
                     <div className="mod-avatar" style={{ background: "#2D3A8C" }}>
-                      {getRowName(row)[0].toUpperCase()}
+                      {(getRowName(row)[0] || "?").toUpperCase()}
                     </div>
                     <div>
                       <div className="mod-cell-name">{getRowName(row)}</div>
@@ -78,7 +75,7 @@ export default function LeaveTable({
                 <td className="lv-reason-cell" title={row.reason || ""}>
                   {row.reason || "-"}
                 </td>
-                <td>{row.leaveType || row.leaveTypeName || "-"}</td>
+                <td>{STUDENT_LEAVE_LABEL[row.leaveType] || row.leaveType || row.leaveTypeName || "-"}</td>
                 <td>
                   <span className={`mod-badge ${badgeClass}`}>
                     <i className={`bx ${iconClass}`}></i>
@@ -88,11 +85,6 @@ export default function LeaveTable({
                 <td className="lv-reason-cell" title={row.remarks || ""}>
                   {row.remarks || "-"}
                 </td>
-                {showActions && (
-                  <td>
-                    <StatusActions row={row} onUpdate={onUpdate} type={type} />
-                  </td>
-                )}
               </tr>
             );
           })}

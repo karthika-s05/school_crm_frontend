@@ -487,27 +487,24 @@ export default function FeesCollection() {
               <table className="sdl-table">
                 <thead>
                   <tr>
-                    <th>#</th>
                     <th>Fee</th>
                     <th>Class</th>
                     <th>Section</th>
                     <th>Term</th>
                     <th>Year</th>
                     <th>Amount</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {structures.length === 0 ? (
                     <tr>
-                      <td colSpan={8} style={{ textAlign: "center", color: "#94a3b8" }}>
+                      <td colSpan={6} style={{ textAlign: "center", color: "#94a3b8" }}>
                         No fee structures yet. Add one above.
                       </td>
                     </tr>
                   ) : (
                     structures.map((row, i) => (
                       <tr key={row.id}>
-                        <td className="sdl-num">{i + 1}</td>
                         <td className="sdl-name">{row.feeName}</td>
                         <td>{row.className || classNameOf(row.classId)}</td>
                         <td>{row.sectionName || (row.sectionId ? row.sectionId : "All")}</td>
@@ -515,23 +512,6 @@ export default function FeesCollection() {
                         <td>{row.academicYear || "-"}</td>
                         <td>
                           <strong>{fmtMoney(row.amount)}</strong>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="svc-btn-ghost"
-                            onClick={() => handleEditStructure(row)}
-                          >
-                            Edit
-                          </button>{" "}
-                          <button
-                            type="button"
-                            className="svc-btn-ghost"
-                            style={{ color: "#ef4444" }}
-                            onClick={() => handleDeleteStructure(row.id)}
-                          >
-                            Delete
-                          </button>
                         </td>
                       </tr>
                     ))
@@ -648,27 +628,24 @@ export default function FeesCollection() {
               <table className="sdl-table">
                 <thead>
                   <tr>
-                    <th>#</th>
                     <th>Student</th>
                     <th>Fee</th>
                     <th>Class</th>
                     <th>Due</th>
                     <th>Paid</th>
                     <th>Status</th>
-                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ledger.length === 0 ? (
                     <tr>
-                      <td colSpan={8} style={{ textAlign: "center", color: "#94a3b8" }}>
+                      <td colSpan={6} style={{ textAlign: "center", color: "#94a3b8" }}>
                         No ledger rows. Select a structure and click Generate dues.
                       </td>
                     </tr>
                   ) : (
                     ledger.map((row, i) => (
                       <tr key={row.id}>
-                        <td className="sdl-num">{i + 1}</td>
                         <td>
                           <div className="sdl-student-cell">
                             <div
@@ -698,15 +675,6 @@ export default function FeesCollection() {
                           <span className={`sdl-status ${String(row.feeStatus || "").toLowerCase()}`}>
                             {row.feeStatus}
                           </span>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="svc-toggle-btn svc-toggle-paid"
-                            onClick={() => openCollect(row)}
-                          >
-                            Collect
-                          </button>
                         </td>
                       </tr>
                     ))
@@ -778,13 +746,11 @@ export default function FeesCollection() {
               <table className="sdl-table">
                 <thead>
                   <tr>
-                    <th>#</th>
                     <th>Student</th>
                     <th>Class</th>
                     <th>Bus</th>
                     <th>Annual Fee</th>
                     <th>Status</th>
-                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -796,7 +762,6 @@ export default function FeesCollection() {
                     )
                     .map((s, i) => (
                       <tr key={s.id}>
-                        <td className="sdl-num">{i + 1}</td>
                         <td>
                           <div className="sdl-student-cell">
                             <div
@@ -821,22 +786,11 @@ export default function FeesCollection() {
                             {s.feeStatus}
                           </span>
                         </td>
-                        <td>
-                          <button
-                            type="button"
-                            className={`svc-toggle-btn${
-                              s.feeStatus === "Paid" ? " svc-toggle-unpaid" : " svc-toggle-paid"
-                            }`}
-                            onClick={() => toggleTransportFee(s)}
-                          >
-                            {s.feeStatus === "Paid" ? "Mark Unpaid" : "Mark Paid"}
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   {transportStudents.length === 0 && (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: "center", color: "#94a3b8" }}>
+                      <td colSpan={5} style={{ textAlign: "center", color: "#94a3b8" }}>
                         No transport allocations. Assign students under Transport.
                       </td>
                     </tr>

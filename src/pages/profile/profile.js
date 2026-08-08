@@ -2,8 +2,21 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import "./profile.css";
-import { getToken } from "../../services/auth";
-import { getStafflist, getStudentlist } from "../../services/api";
+import { getToken, getUserData } from "../../services/auth";
+import {
+  getClassTeacherMap,
+  getMyClassTeacherClassesV2,
+  getStafflist,
+  getStudentlist,
+} from "../../services/api";
+
+const formatClassTeacherLabel = (rows = []) =>
+  rows
+    .map((row) =>
+      [row.className, row.sectionName].filter(Boolean).join(" · ")
+    )
+    .filter(Boolean)
+    .join(", ");
 
 const Profile = () => {
   const [data, setData] = useState();
@@ -14,6 +27,7 @@ const Profile = () => {
   let { id } = useParams();
   const [studentData, setStudentData] = useState([]);
   const [staffData, setStaffData] = useState([]);
+  const [classTeacherLabel, setClassTeacherLabel] = useState("");
   let props =
     propsData === "Student List" ? "Student details" : "Staff details";
 
@@ -108,10 +122,49 @@ const Profile = () => {
       case "Staff List":
         const fetchDatas = async () => {
           try {
-            const response = await getStafflist(id, getToken());
-            setStaffData(response.data);
+            const token = getToken();
+            const response = await getStafflist(id, token);
+            const staffRows = Array.isArray(response?.data)
+              ? response.data
+              : [];
+            setStaffData(staffRows);
+
+            const staffKey = String(
+              staffRows[0]?.staffId || id || ""
+            ).trim();
+            if (!staffKey) {
+              setClassTeacherLabel("");
+              return;
+            }
+
+            try {
+              const role = String(getUserData("role") || "").toLowerCase();
+              let matched = [];
+
+              if (role === "staff") {
+                const mine = await getMyClassTeacherClassesV2(token);
+                matched = Array.isArray(mine?.data) ? mine.data : [];
+              } else {
+                const mapRows = await getClassTeacherMap(
+                  { id: 0, classId: 0, sectionId: 0 },
+                  token
+                );
+                const list = Array.isArray(mapRows)
+                  ? mapRows
+                  : Array.isArray(mapRows?.[0])
+                    ? mapRows[0]
+                    : [];
+                matched = list.filter(
+                  (row) => String(row.staffId || "").trim() === staffKey
+                );
+              }
+
+              setClassTeacherLabel(formatClassTeacherLabel(matched));
+            } catch {
+              setClassTeacherLabel("");
+            }
           } catch (error) {
-            console.error("Error fetching student data:", error);
+            console.error("Error fetching staff data:", error);
           }
         };
         fetchDatas();
@@ -120,7 +173,7 @@ const Profile = () => {
         console.warn("No matching data scenario for propsData:", propsData);
         break;
     }
-  }, []);
+  }, [id, propsData]);
 
   return (
     <div>
@@ -131,11 +184,29 @@ const Profile = () => {
           >
             <li>
               <Link
-                to={props === "Student details" ? "/admin/students" : "/list"}
-                state={props === "Student details" ? undefined : "Staff List"}
+                to={
+                  props === "Student details"
+                    ? "/admin/students"
+                    : location.pathname.startsWith("/staff/")
+                      ? "/staff/dashboard"
+                      : "/list"
+                }
+                state={
+                  props === "Student details"
+                    ? undefined
+                    : location.pathname.startsWith("/staff/")
+                      ? undefined
+                      : "Staff List"
+                }
                 style={{ color: "#051F3E" }}
               >
-                <h4 style={{ margin: 0 }}>{props === "Student details" ? "Student" : "Staff"}</h4>
+                <h4 style={{ margin: 0 }}>
+                  {props === "Student details"
+                    ? "Student"
+                    : location.pathname.startsWith("/staff/")
+                      ? "Home"
+                      : "Staff"}
+                </h4>
               </Link>
             </li>
             <li>
@@ -238,6 +309,17 @@ const Profile = () => {
                               </td>
                               <td className="Names">{staff.position}</td>
                             </tr>
+                            {classTeacherLabel ? (
+                              <tr>
+                                <td style={{ border: "0", background: "white" }}>
+                                  Class Teacher
+                                </td>
+                                <td style={{ border: "0", background: "white" }}>
+                                  :{" "}
+                                </td>
+                                <td className="Names">{classTeacherLabel}</td>
+                              </tr>
+                            ) : null}
                             <tr>
                               <td style={{ border: "0", background: "white" }}>
                                 Gender

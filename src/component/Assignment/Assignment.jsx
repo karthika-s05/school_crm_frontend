@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "../modules.css";
+import "../../pages/List/StudentDummyList.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -9,6 +10,12 @@ import {
 import { getToken } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
 import ModalPortal from "../modals/ModalPortal";
+import {
+  TableDeleteConfirm,
+  TableSelectCheckbox,
+  TableSelectionToolbar,
+} from "../Table/TableSelection";
+import useTableSelection from "../../hooks/useTableSelection";
 
 const COLORS = ["#2D3A8C","#E8541A","#16a34a","#7c3aed","#d97706","#0891b2"];
 const initials = (s) => (s || "?").slice(0, 2).toUpperCase();
@@ -28,6 +35,7 @@ export default function Assignment() {
 
   const [showModal, setShowModal] = useState(false);
   const [form,      setForm]      = useState(EMPTY_FORM);
+  const [deletingId, setDeletingId] = useState(null);
   const [saving,    setSaving]    = useState(false);
   const [publishing, setPublishing] = useState(null);
   const [viewItem,  setViewItem]  = useState(null);
@@ -77,8 +85,21 @@ export default function Assignment() {
   const filtered = rows.filter(r =>
     [r.title, r.subject, r.className, r.description].join(" ").toLowerCase().includes(search.toLowerCase())
   );
-  const totalPages = Math.ceil(filtered.length / PAGE);
-  const paged = filtered.slice((page - 1) * PAGE, page * PAGE);
+  const totalPages = Math.ceil(filtered.length / PAGE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE, safePage * PAGE);
+
+  const selection = useTableSelection({
+    rows: paged,
+    getRowId: "id",
+    resetKey: `${rows.length}|${search}|${filter.classId}|${filter.sectionId}`,
+  });
 
   const openAdd  = () => { setForm(EMPTY_FORM); setShowModal(true); };
   const openEdit = (r) => {
@@ -133,9 +154,41 @@ export default function Assignment() {
     setSaving(false);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this assignment?")) return;
-    await runApi(() => deletetAssignment(id, token), { successMsg: "Deleted!", onSuccess: fetchAssignments });
+  const confirmDelete = async () => {
+    const ids =
+      deletingId && deletingId !== "bulk"
+        ? [deletingId]
+        : [...selection.selectedRows];
+    if (!ids.length) return;
+    let okCount = 0;
+    for (const id of ids) {
+      // eslint-disable-next-line no-await-in-loop
+      const ok = await runApi(() => deletetAssignment(id, token), {});
+      if (ok) okCount += 1;
+    }
+    if (okCount) {
+      toast.success(
+        okCount > 1
+          ? `${okCount} assignments deleted successfully`
+          : "Deleted!"
+      );
+      selection.clearSelection();
+      setDeletingId(null);
+      fetchAssignments();
+    }
+  };
+
+  const handleToolbarEdit = () => {
+    if (selection.selectedCount === 0) {
+      toast.info("Please select a record to edit.");
+      return;
+    }
+    if (selection.selectedCount > 1) {
+      toast.info("Please select only one record to edit.");
+      return;
+    }
+    const item = rows.find((r) => String(r.id) === String(selection.singleSelectedId));
+    if (item) openEdit(item);
   };
 
   const handlePublish = async (id) => {
@@ -218,7 +271,17 @@ export default function Assignment() {
             <i className="bx bx-search"></i>
             <input placeholder="Search assignments..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
           </div>
-          <span className="mod-pill blue">{filtered.length} records</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <TableSelectionToolbar
+              selectedCount={selection.selectedCount}
+              canEdit={selection.canEdit}
+              canDelete={selection.canDelete}
+              onEdit={handleToolbarEdit}
+              onDelete={() => setDeletingId("bulk")}
+              onMessage={(msg) => toast.info(msg)}
+            />
+            <span className="mod-pill blue">{filtered.length} records</span>
+          </div>
         </div>
 
         {loading ? (
@@ -234,15 +297,31 @@ export default function Assignment() {
           <table className="mod-table">
             <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
               <tr>
-                <th>#</th><th>Title</th><th>Subject</th><th>Class</th><th>Start Date</th><th>End Date</th><th>Status</th><th>Actions</th>
+                <th className="sdl-th-check">
+                  <TableSelectCheckbox
+                    checked={selection.allPageSelected}
+                    indeterminate={selection.somePageSelected}
+                    onChange={selection.toggleSelectAll}
+                    ariaLabel="Select all assignments on this page"
+                    disabled={!paged.length}
+                  />
+                </th>
+                <th>Title</th><th>Subject</th><th>Class</th><th>Start Date</th><th>End Date</th><th>Status</th>
               </tr>
             </thead>
             <tbody>
               {paged.map((r, i) => {
                 const status = getStatus(r);
+                const selected = selection.isSelected(r.id);
                 return (
-                  <tr key={r.id || i}>
-                    <td>{(page - 1) * PAGE + i + 1}</td>
+                  <tr key={r.id || i} className={selected ? "sdl-row-selected" : undefined}>
+                    <td className="sdl-td-check">
+                      <TableSelectCheckbox
+                        checked={selected}
+                        onChange={() => selection.toggleRow(r.id)}
+                        ariaLabel={`Select ${r.title}`}
+                      />
+                    </td>
                     <td>
                       <div className="mod-avatar-cell">
                         <div className="mod-avatar" style={{ background: COLORS[i % COLORS.length] }}>
@@ -259,25 +338,6 @@ export default function Assignment() {
                     <td>{r.startDate || "-"}</td>
                     <td>{r.endDate || "-"}</td>
                     <td><span className={`mod-badge ${statusBadge(status)}`}>{status}</span></td>
-                    <td>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button className="mod-action-btn" title="View" onClick={() => setViewItem(r)}><i className="bx bx-show"></i></button>
-                        <button className="mod-action-btn edit" title="Edit" onClick={() => openEdit(r)}><i className="bx bx-edit"></i></button>
-                        {!isPublished(r) && (
-                          <button
-                            className="mod-action-btn"
-                            title="Publish"
-                            disabled={publishing === r.id}
-                            onClick={() => handlePublish(r.id)}
-                          >
-                            {publishing === r.id
-                              ? <i className="bx bx-loader-alt bx-spin"></i>
-                              : <i className="bx bx-upload"></i>}
-                          </button>
-                        )}
-                        <button className="mod-action-btn danger" title="Delete" onClick={() => handleDelete(r.id)}><i className="bx bx-trash"></i></button>
-                      </div>
-                    </td>
                   </tr>
                 );
               })}
@@ -288,7 +348,7 @@ export default function Assignment() {
 
         {totalPages > 1 && (
           <div className="mod-pagination">
-            <span className="mod-page-info">Showing {(page - 1) * PAGE + 1}–{Math.min(page * PAGE, filtered.length)} of {filtered.length}</span>
+            <span className="mod-page-info">Showing {(safePage - 1) * PAGE + 1}–{Math.min(safePage * PAGE, filtered.length)} of {filtered.length}</span>
             <div className="mod-page-btns">
               <button className="mod-page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}><i className="bx bx-chevron-left"></i></button>
               {Array.from({ length: totalPages }, (_, i) => (
@@ -398,6 +458,13 @@ export default function Assignment() {
         </div>
         </ModalPortal>
       )}
+
+      <TableDeleteConfirm
+        open={Boolean(deletingId)}
+        count={deletingId === "bulk" ? selection.selectedCount : 1}
+        onCancel={() => setDeletingId(null)}
+        onConfirm={confirmDelete}
+      />
 
       <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
     </div>

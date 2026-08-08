@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
-import { getStaffDashboardSummary, getEventSummary } from "../../services/api";
+import { getStaffDashboardSummary, getEventSummary, getMyClassTeacherClassesV2 } from "../../services/api";
 import { getToken, getUserData } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
 import { StudentMascot } from "../../assets/illustrations/SchoolIllustrations";
@@ -35,6 +35,14 @@ const quickActions = [
 const PRIORITY_COLOR = { high: "#ef4444", medium: "#d97706", low: "#16a34a" };
 const PRIORITY_BG = { high: "#fee2e2", medium: "#fef3c7", low: "#dcfce7" };
 
+const formatClassTeacherLabel = (rows = []) =>
+  rows
+    .map((row) =>
+      [row.className, row.sectionName].filter(Boolean).join(" · ")
+    )
+    .filter(Boolean)
+    .join(", ");
+
 const StaffDashboard = () => {
   const navigate = useNavigate();
   const token = getToken();
@@ -44,6 +52,7 @@ const StaffDashboard = () => {
   const department = getUserData("departmentName") || "Department";
 
   const [loading, setLoading] = useState(true);
+  const [classTeacherLabel, setClassTeacherLabel] = useState("");
   const [attView, setAttView] = useState("week");
   const [dashboard, setDashboard] = useState({
     assignedClasses: 0,
@@ -129,6 +138,17 @@ const StaffDashboard = () => {
               ...(d.upcomingSchoolEvents || []).slice(0, 3),
               ...(d.parentMeetingsCreated || []).slice(0, 3),
             ]);
+          },
+        }),
+        runApi(() => getMyClassTeacherClassesV2(token), {
+          onSuccess: (res) => {
+            if (cancelled) return;
+            setClassTeacherLabel(
+              formatClassTeacherLabel(Array.isArray(res?.data) ? res.data : [])
+            );
+          },
+          onError: () => {
+            if (!cancelled) setClassTeacherLabel("");
           },
         }),
       ]);
@@ -239,6 +259,11 @@ const StaffDashboard = () => {
             <span className="sfd-welcome-tag">
               <i className="bx bx-buildings"></i> {department}
             </span>
+            {classTeacherLabel ? (
+              <span className="sfd-welcome-tag sfd-welcome-tag-class">
+                <i className="bx bx-group"></i> Class Teacher · {classTeacherLabel}
+              </span>
+            ) : null}
           </div>
         </div>
         <StudentMascot className="sfd-welcome-art" width={120} />

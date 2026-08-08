@@ -143,8 +143,15 @@ export default function HomeworkReport() {
     );
   }, [rows, tableSearch]);
 
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const subjectCount = useMemo(() => {
     const set = new Set(
@@ -270,7 +277,6 @@ export default function HomeworkReport() {
             <table className="hwr-table">
               <thead>
                 <tr>
-                  <th style={{ width: 42 }}>#</th>
                   {columns.map((col) => (
                     <th key={col}>{prettifyHeader(col)}</th>
                   ))}
@@ -279,7 +285,6 @@ export default function HomeworkReport() {
               <tbody>
                 {paged.map((row, i) => (
                   <tr key={row.id || i}>
-                    <td className="muted">{(page - 1) * PAGE_SIZE + i + 1}</td>
                     {columns.map((col) => (
                       <td key={col}>
                         {row[col] === null || row[col] === undefined || row[col] === ""
@@ -304,7 +309,7 @@ export default function HomeworkReport() {
               Prev
             </button>
             <span>
-              Page {page} of {totalPages}
+              Page {safePage} of {totalPages}
             </span>
             <button
               type="button"

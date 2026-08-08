@@ -113,9 +113,6 @@ export default function LeaveApproval({
           <LeaveTable
             rows={filtered}
             loading={loading}
-            showActions={true}
-            type={type}
-            onUpdate={onUpdate}
             emptyMessage={`No ${type} leave requests found.`}
           />
         </div>

@@ -219,7 +219,6 @@ const Attendence = () => {
           <table className="att-table">
             <thead>
               <tr>
-                <th>#</th>
                 <th>Student</th>
                 <th>Adm. No</th>
                 <th style={{ textAlign: "center" }}>Present</th>
@@ -230,7 +229,7 @@ const Attendence = () => {
             <tbody>
               {students.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: "center", padding: 24 }}>
+                  <td colSpan={5} style={{ textAlign: "center", padding: 24 }}>
                     No students found for this class/section
                   </td>
                 </tr>
@@ -244,7 +243,6 @@ const Attendence = () => {
                         status === "P" ? "row-present" : status === "A" ? "row-absent" : ""
                       }
                     >
-                      <td className="att-num">{i + 1}</td>
                       <td>
                         <div className="att-student-cell">
                           <div

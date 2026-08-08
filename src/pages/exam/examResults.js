@@ -5,7 +5,11 @@ import "react-toastify/dist/ReactToastify.css";
 import "../List/StudentDummyList.css";
 import "../services/services.css";
 import "./exam.css";
-import TableActionMenu from "../../component/Table/TableActionMenu";
+import {
+  TableSelectCheckbox,
+  TableSelectionToolbar,
+} from "../../component/Table/TableSelection";
+import useTableSelection from "../../hooks/useTableSelection";
 import {
   getExamResultlist,
   getExam,
@@ -16,6 +20,7 @@ import {
 } from "../../services/api";
 import { getToken, getUserData } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
+import { toast } from "react-toastify";
 
 const PER_PAGE = 10;
 const AV_COLORS = ["#2D3A8C", "#E8541A", "#22c55e", "#8b5cf6", "#f59e0b", "#06b6d4"];
@@ -41,6 +46,7 @@ const mapResultItem = (item) => ({
   result:
     item.result ||
     (Number(item.obtainedMark) >= Number(item.passMark ?? 40) ? "Pass" : "Fail"),
+  isPublished: Boolean(item.isPublished),
 });
 
 export default function Examresult() {
@@ -112,9 +118,17 @@ export default function Examresult() {
         setClasses(classList);
         setSections(sectionList);
         setExams(examList);
-        if (classList.length && !clsFilter) setClsFilter(String(classList[0].id));
-        if (sectionList.length && !sectionFilter) setSectionFilter(String(sectionList[0].id));
-        if (examList.length && !examFilter) setExamFilter(String(examList[0].id));
+
+        // Default to the newest exam and its own class/section so the first
+        // load lands on a combination that actually has marks.
+        const latestExam = examList[0];
+        if (latestExam) {
+          setExamFilter((prev) => prev || String(latestExam.id));
+          setClsFilter((prev) => prev || String(latestExam.classId || ""));
+          setSectionFilter((prev) => prev || String(latestExam.sectionId || ""));
+        }
+        setClsFilter((prev) => prev || (classList.length ? String(classList[0].id) : ""));
+        setSectionFilter((prev) => prev || (sectionList.length ? String(sectionList[0].id) : ""));
       } catch {
         setClasses([]);
         setSections([]);
@@ -128,6 +142,34 @@ export default function Examresult() {
     if (clsFilter && sectionFilter && examFilter) loadResults();
   }, [clsFilter, sectionFilter, examFilter, loadResults]);
 
+  const filteredSections = useMemo(() => {
+    if (!clsFilter) return sections;
+    return sections.filter((s) => {
+      const cid = s.classId ?? s.class_id;
+      return cid == null || String(cid) === String(clsFilter);
+    });
+  }, [sections, clsFilter]);
+
+  /** Exams are created per class/section, so only offer the matching ones. */
+  const filteredExams = useMemo(() => {
+    if (!clsFilter || !sectionFilter) return exams;
+    return exams.filter(
+      (ex) =>
+        String(ex.classId) === String(clsFilter) &&
+        String(ex.sectionId) === String(sectionFilter)
+    );
+  }, [exams, clsFilter, sectionFilter]);
+
+  useEffect(() => {
+    if (!exams.length) return;
+    setExamFilter((prev) => {
+      if (prev && filteredExams.some((ex) => String(ex.id) === String(prev))) {
+        return prev;
+      }
+      return filteredExams.length ? String(filteredExams[0].id) : "";
+    });
+  }, [filteredExams, exams.length]);
+
   const filtered = data.filter((item) => {
     const ms =
       item.student?.toLowerCase().includes(search.toLowerCase()) ||
@@ -137,8 +179,22 @@ export default function Examresult() {
     return ms && mr;
   });
 
-  const totalPgs = Math.ceil(filtered.length / PER_PAGE);
-  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPgs = Math.ceil(filtered.length / PER_PAGE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPgs) setPage(totalPgs);
+  }, [page, totalPgs]);
+
+  const safePage = Math.min(page, totalPgs);
+  const paged = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
+
+  const selection = useTableSelection({
+    rows: paged,
+    getRowId: "id",
+    resetKey: `${data.length}|${search}|${resultFilter}|${clsFilter}|${sectionFilter}|${examFilter}`,
+  });
+
   const canPublish = portalBase !== "/student";
   const allPublished = data.length > 0 && data.every((item) => item.isPublished);
 
@@ -153,6 +209,18 @@ export default function Examresult() {
     setSearch("");
     setResultFilter("All");
     setPage(1);
+  };
+
+  const handleToolbarEdit = () => {
+    if (selection.selectedCount === 0) {
+      toast.info("Please select a record to edit.");
+      return;
+    }
+    if (selection.selectedCount > 1) {
+      toast.info("Please select only one record to edit.");
+      return;
+    }
+    navigate(subjectMarkPath);
   };
 
   const handlePublishToggle = async () => {
@@ -214,6 +282,15 @@ export default function Examresult() {
           />
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <TableSelectionToolbar
+            selectedCount={selection.selectedCount}
+            canEdit={selection.canEdit}
+            canDelete={false}
+            hideDelete
+            onEdit={handleToolbarEdit}
+            onDelete={() => toast.info("Delete is not available for exam results.")}
+            onMessage={(msg) => toast.info(msg)}
+          />
           <select
             className="svc-select"
             value={clsFilter}
@@ -236,7 +313,7 @@ export default function Examresult() {
             }}
           >
             <option value="">Select Section</option>
-            {sections.map((s) => (
+            {filteredSections.map((s) => (
               <option key={s.id} value={s.id}>Section {s.name}</option>
             ))}
           </select>
@@ -249,7 +326,7 @@ export default function Examresult() {
             }}
           >
             <option value="">Select Exam</option>
-            {exams.map((e) => (
+            {filteredExams.map((e) => (
               <option key={e.id} value={e.id}>{e.exam}</option>
             ))}
           </select>
@@ -304,7 +381,15 @@ export default function Examresult() {
           <table className="sdl-table">
             <thead>
               <tr>
-                <th>#</th>
+                <th className="sdl-th-check">
+                  <TableSelectCheckbox
+                    checked={selection.allPageSelected}
+                    indeterminate={selection.somePageSelected}
+                    onChange={selection.toggleSelectAll}
+                    ariaLabel="Select all results on this page"
+                    disabled={!paged.length}
+                  />
+                </th>
                 <th>Student</th>
                 <th>Exam</th>
                 <th>Class</th>
@@ -313,21 +398,28 @@ export default function Examresult() {
                 <th>Total</th>
                 <th>Remark</th>
                 <th>Result</th>
-                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {paged.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="sdl-empty">
+                  <td colSpan={9} className="sdl-empty">
                     <i className="bx bx-search-alt"></i>
                     <span>No exam results found</span>
                   </td>
                 </tr>
               ) : (
-                paged.map((item, i) => (
-                  <tr key={item.id ?? i}>
-                    <td className="sdl-num">{(page - 1) * PER_PAGE + i + 1}</td>
+                paged.map((item, i) => {
+                  const selected = selection.isSelected(item.id);
+                  return (
+                  <tr key={item.id ?? i} className={selected ? "sdl-row-selected" : undefined}>
+                    <td className="sdl-td-check">
+                      <TableSelectCheckbox
+                        checked={selected}
+                        onChange={() => selection.toggleRow(item.id)}
+                        ariaLabel={`Select ${item.student}`}
+                      />
+                    </td>
                     <td>
                       <div className="sdl-student-cell">
                         <div className="sdl-avatar" style={{ background: AV_COLORS[(item.id || i) % AV_COLORS.length] }}>
@@ -352,11 +444,9 @@ export default function Examresult() {
                     <td>
                       <span className={`sdl-status ${(item.result || "").toLowerCase()}`}>{item.result}</span>
                     </td>
-                    <td>
-                      <TableActionMenu onEdit={() => navigate(subjectMarkPath)} onDelete={() => {}} />
-                    </td>
                   </tr>
-                ))
+                );
+                })
               )}
             </tbody>
           </table>
@@ -366,7 +456,7 @@ export default function Examresult() {
       {totalPgs > 1 && (
         <div className="sdl-pagination">
           <span className="sdl-page-info">
-            Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
+            Showing {(safePage - 1) * PER_PAGE + 1}–{Math.min(safePage * PER_PAGE, filtered.length)} of {filtered.length}
           </span>
           <div className="sdl-page-btns">
             <button className="sdl-page-btn" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>

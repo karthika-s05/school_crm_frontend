@@ -36,6 +36,26 @@ const STATUS_ICON = {
 
 const normStatus = (status) => (status || "Pending").toLowerCase();
 
+/** Prefer a real person name; never treat admission/staff/roll ids as the name. */
+const getRowName = (row = {}) => {
+  const idLike = new Set(
+    [row.userName, row.admissionNo, row.staffId, row.rollNo, row.userId]
+      .map((value) => String(value || "").trim())
+      .filter(Boolean)
+  );
+  const candidates = [
+    row.studentName,
+    row.staffName,
+    row.name,
+    row.employeeName,
+    row.fullName,
+  ]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  const realName = candidates.find((name) => !idLike.has(name));
+  return realName || candidates[0] || "-";
+};
+
 /* ─ Date helpers ─ */
 const calcDays = (start, end, leaveTime) => {
   if (!start || !end) return 0;
@@ -154,44 +174,8 @@ function ApplyLeaveForm({ isStaff, leaveTypes, onSubmit, onCancel, submitting })
   );
 }
 
-/* ─ Approve / Reject inline buttons ─ */
-function StatusActions({ row, onUpdate, type }) {
-  const [busy, setBusy] = useState(false);
-  const status = normStatus(row.status);
-  if (status === "accepted" || status === "rejected") return null;
-
-  const handle = async (status) => {
-    const remarks = window.prompt(`Enter remarks for ${status.toLowerCase()} leave (optional):`, "") ?? "";
-    if (remarks === null) return;
-    setBusy(true);
-    await onUpdate(row.id, status, remarks, type);
-    setBusy(false);
-  };
-
-  return (
-    <div className="lv-action-row">
-      <button
-        className="lv-action-btn approve"
-        disabled={busy}
-        title="Approve"
-        onClick={() => handle("Accepted")}
-      >
-        <i className="bx bx-check"></i> Accept
-      </button>
-      <button
-        className="lv-action-btn reject"
-        disabled={busy}
-        title="Reject"
-        onClick={() => handle("Rejected")}
-      >
-        <i className="bx bx-x"></i> Reject
-      </button>
-    </div>
-  );
-}
-
 /* ─ Leave Table  */
-function LeaveTable({ rows, loading, showActions, onUpdate, type, emptyMsg }) {
+function LeaveTable({ rows, loading, emptyMsg, onUpdate, approvalType }) {
   if (loading) return <div className="mod-loading"><div className="mod-spinner"></div> Loading…</div>;
   if (!rows.length) return <div className="mod-empty"><i className="bx bx-calendar-x"></i><p>{emptyMsg}</p></div>;
 
@@ -200,7 +184,6 @@ function LeaveTable({ rows, loading, showActions, onUpdate, type, emptyMsg }) {
       <table className="mod-table">
         <thead>
           <tr>
-            <th>#</th>
             <th>Name</th>
             <th>From</th>
             <th>To</th>
@@ -209,20 +192,19 @@ function LeaveTable({ rows, loading, showActions, onUpdate, type, emptyMsg }) {
             <th>Type</th>
             <th>Status</th>
             <th>Remarks</th>
-            {showActions && <th>Action</th>}
+            {onUpdate && <th>Approval</th>}
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
             <tr key={row.id || i}>
-              <td>{i + 1}</td>
               <td>
                 <div className="mod-avatar-cell">
                   <div className="mod-avatar" style={{ background: "#2D3A8C" }}>
-                    {(row.studentName || row.staffName || row.userName || "?")[0].toUpperCase()}
+                    {(getRowName(row)[0] || "?").toUpperCase()}
                   </div>
                   <div>
-                    <div className="mod-cell-name">{row.studentName || row.staffName || row.userName || "-"}</div>
+                    <div className="mod-cell-name">{getRowName(row)}</div>
                     {row.className && <div className="mod-cell-sub">{row.className}{row.sectionName ? ` – ${row.sectionName}` : ""}</div>}
                   </div>
                 </div>
@@ -239,9 +221,28 @@ function LeaveTable({ rows, loading, showActions, onUpdate, type, emptyMsg }) {
                 </span>
               </td>
               <td className="lv-reason-cell" title={row.remarks || ""}>{row.remarks || "-"}</td>
-              {showActions && (
+              {onUpdate && (
                 <td>
-                  <StatusActions row={row} onUpdate={onUpdate} type={type} />
+                  {normStatus(row.status) === "pending" ? (
+                    <div className="lv-action-row">
+                      <button
+                        type="button"
+                        className="lv-action-btn approve"
+                        onClick={() => onUpdate(row.id, "Accepted", "", approvalType)}
+                      >
+                        <i className="bx bx-check"></i> Approve
+                      </button>
+                      <button
+                        type="button"
+                        className="lv-action-btn reject"
+                        onClick={() => onUpdate(row.id, "Rejected", "", approvalType)}
+                      >
+                        <i className="bx bx-x"></i> Reject
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="lv-action-complete">Completed</span>
+                  )}
                 </td>
               )}
             </tr>
@@ -292,20 +293,22 @@ export default function LeaveManagement() {
       }),
     ];
 
-    if (!isStudent) {
+    if (role === "Staff") {
       calls.push(
         runApi(() => getStudentLeave(token, 0, 0), {
           onSuccess: (res) => setStudentLeaves(res.data || []),
         })
       );
-
+      calls.push(
+        runApi(() => getMyStaffLeave(token), {
+          onSuccess: (res) => setMyLeaves(res.data || []),
+        })
+      );
+    } else if (isAdmin) {
       calls.push(
         runApi(() => getStaffLeave(token), {
           onSuccess: (res) => setStaffLeaves(res.data || []),
-        })
-      );
-
-      calls.push(
+        }),
         runApi(() => getMyStaffLeave(token), {
           onSuccess: (res) => setMyLeaves(res.data || []),
         })
@@ -337,7 +340,7 @@ export default function LeaveManagement() {
 
     await Promise.all(calls);
     setLoading(false);
-  }, [token, isStudent]);
+  }, [token, isStudent, isAdmin, role]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -391,7 +394,6 @@ export default function LeaveManagement() {
     : isAdmin
       ? [
         { id: "staffLeaves", label: "Staff Leaves", icon: "bx-briefcase" },
-        { id: "studentLeaves", label: "Student Leaves", icon: "bx-user" },
         { id: "myLeave", label: "Apply My Leave", icon: "bx-calendar-plus" },
       ]
       : [
@@ -460,7 +462,7 @@ return (
     {/*  Apply Leave Form  */}
     {showForm && (
       <ApplyLeaveForm
-        isStaff={!isStudent}
+        isStaff={isStudent}
         leaveTypes={leaveTypes}
         onSubmit={handleSubmit}
         onCancel={() => setShowForm(false)}
@@ -487,7 +489,6 @@ return (
           <LeaveTable
             rows={myLeaves}
             loading={loading}
-            showActions={false}
             emptyMsg="No leave history found."
           />
         </div>
@@ -505,10 +506,9 @@ return (
           <LeaveTable
             rows={staffLeaves}
             loading={loading}
-            showActions={true}
-            onUpdate={handleStatusUpdate}
-            type="staff"
             emptyMsg="No staff leave requests found."
+            onUpdate={isAdmin ? handleStatusUpdate : undefined}
+            approvalType="staff"
           />
         </div>
       </div>
@@ -525,10 +525,9 @@ return (
           <LeaveTable
             rows={studentLeaves}
             loading={loading}
-            showActions={true}
-            onUpdate={handleStatusUpdate}
-            type="student"
             emptyMsg="No student leave requests found."
+            onUpdate={!isAdmin && !isStudent ? handleStatusUpdate : undefined}
+            approvalType="student"
           />
         </div>
       </div>

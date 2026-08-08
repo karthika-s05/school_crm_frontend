@@ -215,7 +215,15 @@ const AttendanceReportDashboard = () => {
   const filtered = rows.filter((r) =>
     Object.values(r).join(" ").toLowerCase().includes(search.toLowerCase())
   );
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <div className="av2-wrap av2-report">
@@ -336,7 +344,6 @@ const AttendanceReportDashboard = () => {
             <table className="av2-table">
               <thead>
                 <tr>
-                  <th style={{ width: 40 }}>#</th>
                   {columns.map((col) => (
                     <th key={col}>{prettifyHeader(col)}</th>
                   ))}
@@ -345,7 +352,6 @@ const AttendanceReportDashboard = () => {
               <tbody>
                 {paged.map((row, i) => (
                   <tr key={row.id || i}>
-                    <td className="av2-muted">{(page - 1) * PAGE_SIZE + i + 1}</td>
                     {columns.map((col) => {
                       const val = row[col];
                       if (col.toLowerCase() === "status") {

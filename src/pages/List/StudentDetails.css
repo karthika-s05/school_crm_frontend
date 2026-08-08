@@ -1,0 +1,353 @@
+.stv-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Top bar */
+.stv-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stv-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1.5px solid #e4e7f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.stv-back:hover { border-color: #2D3A8C; color: #2D3A8C; }
+.stv-back i { font-size: 18px; }
+
+.stv-topbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.stv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.12s;
+}
+
+.stv-btn i { font-size: 17px; }
+.stv-btn:hover { transform: translateY(-1px); }
+
+.stv-btn-primary {
+  background: #2D3A8C;
+  color: #fff;
+}
+.stv-btn-primary:hover { background: #1e2a6e; }
+
+.stv-btn-ghost {
+  background: #fff;
+  color: #2D3A8C;
+  border: 1.5px solid #c7ceed;
+}
+.stv-btn-ghost:hover { background: #eef0fb; }
+
+/* Hero */
+.stv-hero {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  padding: 22px 24px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #2D3A8C 0%, #4453b8 100%);
+  box-shadow: 0 8px 24px rgba(45, 58, 140, 0.22);
+  color: #fff;
+}
+
+.stv-hero-photo {
+  width: 92px;
+  height: 92px;
+  border-radius: 18px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.16);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+
+.stv-hero-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.stv-hero-main {
+  flex: 1;
+  min-width: 220px;
+}
+
+.stv-hero-name {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.stv-hero-sub {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.stv-hero-sub strong { color: #fff; }
+
+.stv-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stv-chip i { font-size: 15px; }
+
+.stv-hero-quick {
+  display: grid;
+  gap: 10px;
+  min-width: 190px;
+}
+
+.stv-quick {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stv-quick-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.stv-quick-value {
+  font-size: 13px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+/* Cards */
+.stv-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.stv-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 20px 20px;
+  box-shadow: 0 2px 8px rgba(45, 58, 140, 0.07);
+}
+
+.stv-card-docs { grid-column: 1 / -1; }
+
+.stv-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #f0f2f8;
+}
+
+.stv-card-head i {
+  font-size: 18px;
+  color: #2D3A8C;
+}
+
+.stv-card-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1d2e;
+}
+
+.stv-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.stv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.stv-field-wide { grid-column: 1 / -1; }
+
+.stv-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #7b8099;
+}
+
+.stv-field-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1d2e;
+  word-break: break-word;
+}
+
+.stv-field-empty {
+  color: #b6bccd;
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* Documents */
+.stv-doc-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.stv-doc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid #eef0f6;
+  border-radius: 12px;
+  background: #fafbff;
+}
+
+.stv-doc-ready {
+  border-color: #d7f0e0;
+  background: #f6fdf8;
+}
+
+.stv-doc-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  background: #eef0fb;
+  color: #2D3A8C;
+  flex-shrink: 0;
+}
+
+.stv-doc-ready .stv-doc-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.stv-doc-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.stv-doc-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1d2e;
+}
+
+.stv-doc-sub {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #7b8099;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stv-doc-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #2D3A8C;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.stv-doc-view:hover { background: #1e2a6e; color: #fff; }
+
+.stv-doc-missing {
+  font-size: 11px;
+  font-weight: 600;
+  color: #b6bccd;
+  white-space: nowrap;
+}
+
+/* States */
+.stv-loading,
+.stv-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 70px 20px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(45, 58, 140, 0.07);
+  color: #7b8099;
+  font-size: 14px;
+}
+
+.stv-loading i { font-size: 34px; color: #2D3A8C; }
+.stv-empty i { font-size: 42px; color: #d1d5e8; }
+.stv-empty p { margin: 0; }
+
+@media (max-width: 1024px) {
+  .stv-body { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 620px) {
+  .stv-grid { grid-template-columns: 1fr; }
+  .stv-hero { align-items: flex-start; }
+  .stv-hero-quick { min-width: 100%; }
+}

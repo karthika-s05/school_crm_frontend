@@ -14,6 +14,13 @@ import {
 } from "../../services/api";
 import { getToken, getUserData } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
+import {
+  formatApiDate,
+  formatApiDateTime,
+  formatRelativeTime,
+  parseApiDate,
+  startOfDay,
+} from "../../utils/date";
 import { fetchNotifications } from "../../utils/notificationBus";
 import { StudentMascot } from "../../assets/illustrations/SchoolIllustrations";
 
@@ -202,6 +209,7 @@ const quickActions = (admissionNo) => [
   { title: "Attendance", icon: "bx bx-calendar-check", color: "#22C55E", bg: "#DCFCE7", path: "/student/attendance" },
   { title: "Exam Schedule", icon: "bx bx-edit", color: "#F97316", bg: "#FFEDD5", path: "/student/exam-schedule" },
   { title: "Results", icon: "bx bx-award", color: "#7C3AED", bg: "#F5F3FF", path: "/student/examresult" },
+  { title: "Report Card", icon: "bx bx-file", color: "#0EA5E9", bg: "#E0F2FE", path: "/student/report-card" },
   { title: "Timetable", icon: "bx bx-time", color: "#06B6D4", bg: "#CFFAFE", path: "/student/timetable" },
   { title: "Events", icon: "bx bx-calendar-event", color: "#EC4899", bg: "#FCE7F3", path: "/student/events" },
   { title: "Dashboard", icon: "bx bx-home", color: "#059669", bg: "#D1FAE5", path: "/student/dashboard" },
@@ -211,13 +219,7 @@ const quickActions = (admissionNo) => [
 const flattenResults = (value) =>
   Array.isArray(value) ? value.flatMap((group) => (Array.isArray(group) ? group : [])) : [];
 
-const formatDate = (value) => {
-  if (!value) return "TBD";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-};
+const formatDate = (value) => formatApiDate(value);
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -296,14 +298,17 @@ const StudentDashboard = () => {
                       return false;
                     }
                     if (!item.examDate) return true;
-                    const date = new Date(item.examDate);
-                    if (Number.isNaN(date.getTime())) return true;
-                    date.setHours(0, 0, 0, 0);
+                    const date = startOfDay(item.examDate);
+                    if (!date) return true;
                     const todayDate = new Date();
                     todayDate.setHours(0, 0, 0, 0);
                     return date >= todayDate;
                   })
-                  .sort((a, b) => new Date(a.examDate || 0) - new Date(b.examDate || 0));
+                  .sort(
+                    (a, b) =>
+                      (parseApiDate(a.examDate) || 0) -
+                      (parseApiDate(b.examDate) || 0)
+                  );
                 setUpcomingExams(filtered);
               },
             }
@@ -760,7 +765,12 @@ const StudentDashboard = () => {
                   <div className="std-notice-body">
                     <span className="std-notice-title">{item.title || "Notification"}</span>
                     <span className="std-notice-desc">{item.message || item.description || "-"}</span>
-                    <span className="std-notice-time">{item.createdAt || item.time || "-"}</span>
+                    <span
+                      className="std-notice-time"
+                      title={formatApiDateTime(item.createdAt || item.time)}
+                    >
+                      {formatRelativeTime(item.createdAt || item.time, "-")}
+                    </span>
                   </div>
                 </div>
               ))}

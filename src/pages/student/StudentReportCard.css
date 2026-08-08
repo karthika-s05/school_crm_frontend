@@ -1,0 +1,377 @@
+.src-page {
+  max-width: 900px;
+  padding-top: 0;
+}
+
+.src-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.src-toolbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.src-select,
+.src-print-btn {
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 13px;
+  padding: 0 14px;
+}
+
+.src-print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #2d3a8c;
+  border-color: #2d3a8c;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.src-print-btn:hover {
+  background: #243178;
+}
+
+/* ── The sheet: styled as a printed A4 report card ── */
+.src-sheet {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #c8d0e0;
+  padding: 30px 32px 26px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  color: #1a1d2e;
+  font-family: "Georgia", "Times New Roman", serif;
+}
+
+/* Needs to outrank the `.src-sheet > *` stacking rule below. */
+.src-sheet .src-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-24deg);
+  font-size: 190px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #2d3a8c;
+  opacity: 0.04;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.src-sheet > * {
+  position: relative;
+}
+
+.src-letterhead {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 14px;
+  border-bottom: 3px double #2d3a8c;
+}
+
+.src-crest {
+  width: 62px;
+  height: 62px;
+  flex: 0 0 62px;
+  border: 2px solid #2d3a8c;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #2d3a8c;
+}
+
+.src-letterhead-text {
+  flex: 1;
+  text-align: center;
+}
+
+.src-school-name {
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2d3a8c;
+}
+
+.src-doc-title {
+  margin: 6px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.src-issue {
+  flex: 0 0 96px;
+  text-align: right;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.src-issue span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.src-issue strong {
+  font-size: 12px;
+  color: #334155;
+}
+
+/* ── Tables ── */
+.src-particulars,
+.src-marks,
+.src-mini,
+.src-scale {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 12.5px;
+}
+
+.src-particulars {
+  margin-top: 18px;
+}
+
+.src-particulars th,
+.src-particulars td,
+.src-marks th,
+.src-marks td,
+.src-mini th,
+.src-mini td,
+.src-scale th,
+.src-scale td {
+  border: 1px solid #9aa4bd;
+  padding: 7px 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.src-particulars th,
+.src-mini th {
+  width: 130px;
+  background: #eef1f8;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.src-result-cell {
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.src-result-cell.pass,
+.src-mini td.pass {
+  color: #15803d;
+}
+
+.src-result-cell.fail,
+.src-mini td.fail {
+  color: #b91c1c;
+}
+
+.src-block-title {
+  margin: 20px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2d3a8c;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.src-marks thead th {
+  background: #2d3a8c;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+
+.src-marks tbody tr:nth-child(even) {
+  background: #f7f9fd;
+}
+
+.src-marks tfoot td {
+  background: #eef1f8;
+}
+
+.src-col-no { width: 46px; }
+.src-col-subject { width: 22%; }
+.src-col-remark { width: 24%; }
+
+.src-center { text-align: center; }
+.src-bold { font-weight: 700; }
+.src-subject { font-weight: 600; }
+.src-marks td.pass { color: #15803d; }
+.src-marks td.fail { color: #b91c1c; font-weight: 600; }
+
+.src-no-marks {
+  margin: 22px 0;
+  padding: 18px;
+  border: 1px dashed #c8d0e0;
+  text-align: center;
+}
+
+.src-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.src-remark-box {
+  min-height: 54px;
+  border: 1px solid #9aa4bd;
+  padding: 10px 12px;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #334155;
+  background: #fbfcff;
+}
+
+.src-scale th {
+  background: #eef1f8;
+  text-align: center;
+  font-weight: 700;
+  color: #2d3a8c;
+}
+
+.src-scale td {
+  text-align: center;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.src-signatures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 46px;
+  text-align: center;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 12px;
+  color: #334155;
+}
+
+.src-sign-line {
+  display: block;
+  border-top: 1px solid #64748b;
+  margin: 0 12px 6px;
+}
+
+.src-footnote {
+  margin: 22px 0 0;
+  text-align: center;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 10.5px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.src-muted {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.src-extra {
+  margin-top: 26px;
+}
+
+/* Screen-only: an A4 print viewport is ~700px wide and must keep the grid layout. */
+@media screen and (max-width: 760px) {
+  .src-sheet {
+    padding: 20px 16px;
+  }
+  .src-letterhead {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+  .src-issue {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+  .src-school-name {
+    font-size: 20px;
+  }
+  .src-two-col,
+  .src-signatures {
+    grid-template-columns: 1fr;
+  }
+  .src-marks {
+    font-size: 11.5px;
+  }
+  .src-particulars th,
+  .src-particulars td {
+    display: block;
+    width: auto;
+    border-bottom: none;
+  }
+  .src-particulars tr:last-child td:last-child {
+    border-bottom: 1px solid #9aa4bd;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  .no-print,
+  .crm-sidebar,
+  .crm-topbar,
+  .crm-header,
+  .tt-bottom-bar {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .src-page,
+  .sm-page {
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .src-sheet {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .src-exam-block,
+  .src-two-col,
+  .src-signatures {
+    break-inside: avoid;
+  }
+}

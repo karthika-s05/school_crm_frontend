@@ -1392,6 +1392,41 @@ export const getbyidHomework = async (body, token) => {
   }
 };
 //  Exam
+export const getExamTypeMaster = async (token) => {
+  const response = await axios.get(
+    `${EXAM_URL}/examType/get_examTypeMaster`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const saveExamTypeMaster = async (body, token) => {
+  const response = await axios.post(
+    `${EXAM_URL}/examType/create_update_examTypeMaster`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const deleteExamTypeMaster = async (id, token) => {
+  const response = await axios.post(
+    `${EXAM_URL}/examType/delete_examTypeMaster/${id}`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
+export const createExamSchedule = async (body, token) => {
+  const response = await axios.post(
+    `${EXAM_URL}/examType/create_examSchedule`,
+    body,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
 export const createExam = async (body, token) => {
   try {
     const response = await axios.post(
@@ -1684,6 +1719,15 @@ export const deletetExamportion = async (id, token) => {
     console.error("Error fetching data:", error);
     throw error;
   }
+};
+
+export const setExamSchedulePublished = async (ids, isPublished, token) => {
+  const response = await axios.post(
+    `${EXAM_URL}/examPortion/set_published`,
+    { ids, isPublished },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
 };
 //  Events
 export const createEvent = async (body, token) => {

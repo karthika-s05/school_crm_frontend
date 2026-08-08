@@ -44,8 +44,6 @@ export default function MyLeave({ leaves, loading, type }) {
         <LeaveTable
           rows={filtered}
           loading={loading}
-          showActions={false}
-          type={type}
           emptyMessage="No leave requests found. Click 'Apply Leave' to submit one."
         />
       </div>

@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "../List/StudentDummyList.css";
 import "./services.css";
-import TableActionMenu from "../../component/Table/TableActionMenu";
+import {
+  TableDeleteConfirm,
+  TableSelectCheckbox,
+  TableSelectionToolbar,
+} from "../../component/Table/TableSelection";
+import useTableSelection from "../../hooks/useTableSelection";
 import {
   getClass,
   getSection,
@@ -175,7 +180,20 @@ export default function Stationery() {
     return ms && mc && mst;
   });
   const totalPgs = Math.ceil(filtProducts.length/PER_PAGE) || 1;
-  const paged    = filtProducts.slice((page-1)*PER_PAGE, page*PER_PAGE);
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPgs) setPage(totalPgs);
+  }, [page, totalPgs]);
+
+  const safePage = Math.min(page, totalPgs);
+  const paged    = filtProducts.slice((safePage-1)*PER_PAGE, safePage*PER_PAGE);
+
+  const selection = useTableSelection({
+    rows: paged,
+    getRowId: "id",
+    resetKey: `${products.length}|${search}|${catFilter}|${statusFilter}|${classId}|${sectionId}`,
+  });
 
   const filtOrders = orders.filter(o =>
     (o.student.toLowerCase().includes(search.toLowerCase()) || o.admNo.toLowerCase().includes(search.toLowerCase())) &&
@@ -205,16 +223,43 @@ export default function Stationery() {
     });
   };
 
-  const deleteProduct = (id) => {
+  const confirmDelete = async () => {
+    const ids =
+      deletingId && deletingId !== "bulk"
+        ? [deletingId]
+        : [...selection.selectedRows];
+    if (!ids.length) return;
     const token = getToken();
     if (!token) return;
-    runApi(() => deleteStationery(id, token), {
-      successMsg: "Product deleted",
-      onSuccess: () => {
-        setDeletingId(null);
-        reload();
-      },
-    });
+    let okCount = 0;
+    for (const id of ids) {
+      // eslint-disable-next-line no-await-in-loop
+      const ok = await runApi(() => deleteStationery(id, token), {});
+      if (ok) okCount += 1;
+    }
+    if (okCount) {
+      toast.success(
+        okCount > 1
+          ? `${okCount} products deleted successfully`
+          : "Product deleted"
+      );
+      selection.clearSelection();
+      setDeletingId(null);
+      reload();
+    }
+  };
+
+  const handleToolbarEdit = () => {
+    if (selection.selectedCount === 0) {
+      toast.info("Please select a record to edit.");
+      return;
+    }
+    if (selection.selectedCount > 1) {
+      toast.info("Please select only one record to edit.");
+      return;
+    }
+    const item = products.find((p) => String(p.id) === String(selection.singleSelectedId));
+    if (item) openEdit(item);
   };
 
   const toggleOrder = () => {
@@ -315,7 +360,15 @@ export default function Stationery() {
                 <i className="bx bx-x sdl-search-clear" onClick={() => { setSearch(""); setPage(1); }} />
               )}
             </div>
-            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
+              <TableSelectionToolbar
+                selectedCount={selection.selectedCount}
+                canEdit={selection.canEdit}
+                canDelete={selection.canDelete}
+                onEdit={handleToolbarEdit}
+                onDelete={() => setDeletingId("bulk")}
+                onMessage={(msg) => toast.info(msg)}
+              />
               <select className="svc-select" value={catFilter} onChange={e=>{ setCat(e.target.value); setPage(1); }}>
                 {CATEGORIES.map(c=><option key={c}>{c}</option>)}
               </select>
@@ -332,17 +385,34 @@ export default function Stationery() {
           <div className="sdl-table-card">
             <table className="sdl-table">
               <thead><tr>
-                <th>#</th><th>Product Name</th><th>Category</th><th>Unit Price</th>
-                <th>Stock</th><th>Reorder Level</th><th>Supplier</th><th>Status</th><th className="sdl-th-action">Action</th>
+                <th className="sdl-th-check">
+                  <TableSelectCheckbox
+                    checked={selection.allPageSelected}
+                    indeterminate={selection.somePageSelected}
+                    onChange={selection.toggleSelectAll}
+                    ariaLabel="Select all products on this page"
+                    disabled={!paged.length}
+                  />
+                </th>
+                <th>Product Name</th><th>Category</th><th>Unit Price</th>
+                <th>Stock</th><th>Reorder Level</th><th>Supplier</th><th>Status</th>
               </tr></thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={9} className="sdl-empty"><i className="bx bx-loader-alt bx-spin"></i><span>Loading…</span></td></tr>
+                  <tr><td colSpan={8} className="sdl-empty"><i className="bx bx-loader-alt bx-spin"></i><span>Loading…</span></td></tr>
                 ) : paged.length===0 ? (
-                  <tr><td colSpan={9} className="sdl-empty"><i className="bx bx-search-alt"></i><span>No products found</span></td></tr>
-                ) : paged.map((p,i)=>(
-                  <tr key={p.id}>
-                    <td className="sdl-num">{(page-1)*PER_PAGE+i+1}</td>
+                  <tr><td colSpan={8} className="sdl-empty"><i className="bx bx-search-alt"></i><span>No products found</span></td></tr>
+                ) : paged.map((p,i)=>{
+                  const selected = selection.isSelected(p.id);
+                  return (
+                  <tr key={p.id} className={selected ? "sdl-row-selected" : undefined}>
+                    <td className="sdl-td-check">
+                      <TableSelectCheckbox
+                        checked={selected}
+                        onChange={() => selection.toggleRow(p.id)}
+                        ariaLabel={`Select ${p.name}`}
+                      />
+                    </td>
                     <td>
                       <div style={{ display:"flex",alignItems:"center",gap:10 }}>
                         <div className="svc-prod-icon" style={{ background:AV_COLORS[p.id%AV_COLORS.length]+"22",color:AV_COLORS[p.id%AV_COLORS.length] }}>
@@ -368,22 +438,15 @@ export default function Stationery() {
                         {p.status}
                       </span>
                     </td>
-                    <td className="sdl-td-action">
-                      <TableActionMenu
-                        onView={() => openView(p)}
-                        onEdit={() => openEdit(p)}
-                        onDelete={() => setDeletingId(p.id)}
-                      />
-                    </td>
                   </tr>
-                ))}
+                );})}
               </tbody>
             </table>
           </div>
 
           {totalPgs>1 && (
             <div className="sdl-pagination">
-              <span className="sdl-page-info">Showing {(page-1)*PER_PAGE+1}–{Math.min(page*PER_PAGE,filtProducts.length)} of {filtProducts.length}</span>
+              <span className="sdl-page-info">Showing {(safePage-1)*PER_PAGE+1}–{Math.min(safePage*PER_PAGE,filtProducts.length)} of {filtProducts.length}</span>
               <div className="sdl-page-btns">
                 <button className="sdl-page-btn" disabled={page===1} onClick={()=>setPage(p=>p-1)}><i className="bx bx-chevron-left"></i></button>
                 {Array.from({length:totalPgs},(_,i)=>i+1).map(p=>(
@@ -417,20 +480,19 @@ export default function Stationery() {
           <div className="sdl-table-card">
             <table className="sdl-table">
               <thead><tr>
-                <th>#</th><th>Student</th><th>Class</th><th>Items</th><th>Date</th><th>Total</th><th>Status</th><th>Action</th>
+                <th>Student</th><th>Class</th><th>Items</th><th>Date</th><th>Total</th><th>Status</th>
               </tr></thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={8} className="sdl-empty"><i className="bx bx-loader-alt bx-spin"></i><span>Loading…</span></td></tr>
+                  <tr><td colSpan={6} className="sdl-empty"><i className="bx bx-loader-alt bx-spin"></i><span>Loading…</span></td></tr>
                 ) : filtOrders.length===0 ? (
-                  <tr><td colSpan={8} className="sdl-empty"><i className="bx bx-search-alt"></i><span>No orders found</span></td></tr>
+                  <tr><td colSpan={6} className="sdl-empty"><i className="bx bx-search-alt"></i><span>No orders found</span></td></tr>
                 ) : filtOrders.map((o,i)=>{
                   const itemSummary = o.items.map(it =>
                     it.productName ? `${it.productName} ×${it.qty}` : "Unknown"
                   ).join(", ");
                   return (
                     <tr key={o.id}>
-                      <td className="sdl-num">{i+1}</td>
                       <td>
                         <div className="sdl-student-cell">
                           <div className="sdl-avatar" style={{ background:AV_COLORS[o.id%AV_COLORS.length] }}>{initials(o.student)}</div>
@@ -448,11 +510,6 @@ export default function Stationery() {
                       <td><strong>₹{o.total}</strong></td>
                       <td>
                         <span className={`sdl-status ${o.status.toLowerCase()}`}>{o.status}</span>
-                      </td>
-                      <td>
-                        <button className={`svc-toggle-btn${o.status==="Issued"?" svc-toggle-unpaid":" svc-toggle-paid"}`} onClick={toggleOrder}>
-                          {o.status==="Issued"?"Revert":"Mark Issued"}
-                        </button>
                       </td>
                     </tr>
                   );
@@ -567,21 +624,14 @@ export default function Stationery() {
         </div>
       )}
 
-      {/* ════════ Delete Confirm ════════ */}
-      {deletingId && (
-        <div className="svc-overlay" onClick={()=>setDeletingId(null)}>
-          <div className="svc-modal svc-modal-sm" onClick={e=>e.stopPropagation()}>
-            <div className="svc-delete-body">
-              <i className="bx bxs-error-circle svc-delete-icon"></i>
-              <p>Are you sure you want to delete this product from inventory?</p>
-            </div>
-            <div className="svc-modal-footer">
-              <button className="svc-btn-cancel" onClick={()=>setDeletingId(null)}>Cancel</button>
-              <button className="svc-btn-danger" onClick={()=>deleteProduct(deletingId)}><i className="bx bx-trash"></i> Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Bulk / single delete confirmation */}
+      <TableDeleteConfirm
+        open={Boolean(deletingId)}
+        count={deletingId === "bulk" ? selection.selectedCount : 1}
+        onCancel={() => setDeletingId(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
+

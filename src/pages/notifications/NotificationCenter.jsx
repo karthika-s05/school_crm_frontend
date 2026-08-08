@@ -17,6 +17,7 @@ import {
   fetchNotifications,
   NOTIFICATION_POLL_MS,
 } from "../../utils/notificationBus";
+import { formatApiDateTime, formatRelativeTime } from "../../utils/date";
 import "./NotificationCenter.css";
 
 const TYPES = [
@@ -34,19 +35,6 @@ const TYPES = [
   "Announcement",
   "Timetable",
 ];
-
-const formatDate = (value) => {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
 
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState([]);
@@ -207,7 +195,12 @@ export default function NotificationCenter() {
                 <div className="notification-card__content">
                   <div className="notification-card__meta">
                     <span>{item.notificationType || "General"}</span>
-                    <time>{formatDate(item.createdAt)}</time>
+                    <time
+                      dateTime={item.createdAt || ""}
+                      title={formatApiDateTime(item.createdAt)}
+                    >
+                      {formatRelativeTime(item.createdAt)}
+                    </time>
                   </div>
                   <h2>{item.title || "Notification"}</h2>
                   <p>{item.message}</p>

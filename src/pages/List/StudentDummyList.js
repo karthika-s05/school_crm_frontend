@@ -1,7 +1,13 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "./StudentDummyList.css";
-import TableActionMenu from "../../component/Table/TableActionMenu";
+import {
+  TableSelectCheckbox,
+  TableSelectionToolbar,
+} from "../../component/Table/TableSelection";
+import useTableSelection from "../../hooks/useTableSelection";
 import { getStudentlist } from "../../services/api";
 import { getToken } from "../../services/auth";
 import ModalPortal from "../../component/modals/ModalPortal";
@@ -136,10 +142,9 @@ export default function StudentDummyList() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
 
+  // Fall back if the current page no longer holds records.
   useEffect(() => {
-    if (page > totalPages) {
-      setPage(1);
-    }
+    if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
   const safePage = Math.min(page, totalPages);
@@ -148,10 +153,48 @@ export default function StudentDummyList() {
     safePage * ITEMS_PER_PAGE
   );
 
+  const selection = useTableSelection({
+    rows: paginated,
+    getRowId: (row) => row.admNo,
+    resetKey: `${students.length}|${search}|${filterClass}|${filterSection}`,
+  });
+
   const activeCount = students.filter((s) => s.status === "Active").length;
+
+  const openStudentDetails = (admNo) => {
+    if (!admNo || admNo === "-") {
+      toast.info("This student has no admission number to look up.");
+      return;
+    }
+    navigate(`/admin/students/${encodeURIComponent(admNo)}/view`);
+  };
+
+  const handleToolbarView = () => {
+    openStudentDetails(selection.singleSelectedId);
+  };
+
+  const handleToolbarEdit = () => {
+    const admNo = selection.singleSelectedId;
+    if (!admNo) return;
+    navigate(`/admin/student/${admNo}`);
+  };
+
+  const handleToolbarRelieve = () => {
+    if (selection.selectedCount === 0) {
+      toast.info("Please select a record to edit.");
+      return;
+    }
+    if (selection.selectedCount > 1) {
+      toast.info("Please select only one student to relieve.");
+      return;
+    }
+    const admNo = selection.singleSelectedId;
+    navigate(`/releiving/${admNo}`, { state: "Student Relieving" });
+  };
 
   return (
     <div className="sdl-wrap">
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
       <div className="sdl-header">
         <div className="sdl-search">
           <i className="bx bx-search"></i>
@@ -165,7 +208,17 @@ export default function StudentDummyList() {
             <i className="bx bx-x sdl-search-clear" onClick={() => { setSearch(""); setPage(1); }} />
           )}
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <TableSelectionToolbar
+            selectedCount={selection.selectedCount}
+            canEdit={selection.canEdit}
+            canDelete={selection.canEdit}
+            onView={handleToolbarView}
+            onEdit={handleToolbarEdit}
+            onDelete={handleToolbarRelieve}
+            onMessage={(msg) => toast.info(msg)}
+            deleteLabel="Relieve"
+          />
           <button className="sdl-filter-toggle-btn" onClick={openFilter}>
             <i className="bx bx-filter-alt"></i> Filter
             {activeFilterCount > 0 && <span className="sdl-filter-badge">{activeFilterCount}</span>}
@@ -219,19 +272,26 @@ export default function StudentDummyList() {
           <table className="sdl-table">
             <thead>
               <tr>
-                <th>#</th>
+                <th className="sdl-th-check">
+                  <TableSelectCheckbox
+                    checked={selection.allPageSelected}
+                    indeterminate={selection.somePageSelected}
+                    onChange={selection.toggleSelectAll}
+                    ariaLabel="Select all students on this page"
+                    disabled={!paginated.length}
+                  />
+                </th>
                 <th>Student</th>
                 <th>Adm. No</th>
                 <th>Class</th>
                 <th>Section</th>
                 <th>Status</th>
-                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="sdl-empty">
+                  <td colSpan={6} className="sdl-empty">
                     <i className="bx bx-search-alt"></i>
                     <span>
                       {students.length > 0
@@ -240,14 +300,33 @@ export default function StudentDummyList() {
                     </span>
                   </td>
                 </tr>
-              ) : paginated.map((s, i) => (
-                <tr key={s.admNo !== "-" ? s.admNo : `student-${s.id}-${i}`}>
-                  <td className="sdl-num">{(safePage - 1) * ITEMS_PER_PAGE + i + 1}</td>
+              ) : paginated.map((s, i) => {
+                const rowId = s.admNo;
+                const selected = selection.isSelected(rowId);
+                return (
+                <tr
+                  key={s.admNo !== "-" ? s.admNo : `student-${s.id}-${i}`}
+                  className={selected ? "sdl-row-selected" : undefined}
+                >
+                  <td className="sdl-td-check">
+                    <TableSelectCheckbox
+                      checked={selected}
+                      onChange={() => selection.toggleRow(rowId)}
+                      ariaLabel={`Select ${s.name}`}
+                    />
+                  </td>
                   <td>
                     <div className="sdl-student-cell">
                       <img className="sdl-avatar" alt={s.name} src={s.image} />
                       <div>
-                        <div className="sdl-name">{s.name}</div>
+                        <button
+                          type="button"
+                          className="sdl-name sdl-name-link"
+                          onClick={() => openStudentDetails(s.admNo)}
+                          title="View full details"
+                        >
+                          {s.name}
+                        </button>
                         <div className="sdl-email">{s.email}</div>
                       </div>
                     </div>
@@ -258,18 +337,9 @@ export default function StudentDummyList() {
                   <td>
                     <span className={`sdl-status ${(s.status || "active").toLowerCase()}`}>{s.status}</span>
                   </td>
-                  <td>
-                    <TableActionMenu
-                      onView={() => navigate(`/admin/studentinfo/${s.admNo}`)}
-                      onEdit={() => navigate(`/admin/student/${s.admNo}`)}
-                      onDelete={() =>
-                        navigate(`/releiving/${s.admNo}`, { state: "Student Relieving" })
-                      }
-                      deleteLabel="Relieve"
-                    />
-                  </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         )}

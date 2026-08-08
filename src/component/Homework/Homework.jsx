@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "../modules.css";
+import "../../pages/List/StudentDummyList.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -14,6 +15,12 @@ import {
 import { getToken } from "../../services/auth";
 import { runApi } from "../../utils/apiHelper";
 import ModalPortal from "../modals/ModalPortal";
+import {
+  TableDeleteConfirm,
+  TableSelectCheckbox,
+  TableSelectionToolbar,
+} from "../Table/TableSelection";
+import useTableSelection from "../../hooks/useTableSelection";
 
 const COLORS = ["#2D3A8C", "#E8541A", "#16a34a", "#7c3aed", "#d97706", "#0891b2"];
 const toInitials = (s) => (s || "?").slice(0, 2).toUpperCase();
@@ -59,7 +66,8 @@ export default function Homework() {
   const [saving,     setSaving]     = useState(false);
   const [loadingForm,setLoadingForm]= useState(false);
   const [viewItem,   setViewItem]   = useState(null);
-  const [deleting,   setDeleting]   = useState(null); // id being deleted
+  const [deleting,   setDeleting]   = useState(null); // id being deleted (loading)
+  const [deletingId, setDeletingId] = useState(null); // confirm target or "bulk"
 
   //  Load master dropdowns ─
   useEffect(() => {
@@ -125,8 +133,21 @@ export default function Homework() {
       .toLowerCase()
       .includes(search.toLowerCase())
   );
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paged      = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const safePage = Math.min(page, totalPages);
+  const paged      = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const selection = useTableSelection({
+    rows: paged,
+    getRowId: "id",
+    resetKey: `${rows.length}|${search}|${filter.classId}|${filter.sectionId}|${filter.subjectId}`,
+  });
 
   const subjectLabel = (id) =>
     subjects.find((s) => s.id === Number(id))?.name || String(id || "-");
@@ -222,18 +243,44 @@ export default function Homework() {
     setSaving(false);
   };
 
-  //  POST /delete_homework/:id ─
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this homework?")) return;
-    setDeleting(id);
-    await runApi(
-      () => deleteHomework(id, token),
-      {
-        successMsg: "Homework deleted successfully!",
-        onSuccess:  fetchHomework,
-      }
-    );
+  //  Confirm delete (single or bulk)
+  const confirmDelete = async () => {
+    const ids =
+      deletingId && deletingId !== "bulk"
+        ? [deletingId]
+        : [...selection.selectedRows];
+    if (!ids.length) return;
+    setDeleting("bulk");
+    let okCount = 0;
+    for (const id of ids) {
+      // eslint-disable-next-line no-await-in-loop
+      const ok = await runApi(() => deleteHomework(id, token), {});
+      if (ok) okCount += 1;
+    }
+    if (okCount) {
+      toast.success(
+        okCount > 1
+          ? `${okCount} homework records deleted successfully`
+          : "Homework deleted successfully!"
+      );
+      selection.clearSelection();
+      setDeletingId(null);
+      fetchHomework();
+    }
     setDeleting(null);
+  };
+
+  const handleToolbarEdit = () => {
+    if (selection.selectedCount === 0) {
+      toast.info("Please select a record to edit.");
+      return;
+    }
+    if (selection.selectedCount > 1) {
+      toast.info("Please select only one record to edit.");
+      return;
+    }
+    const item = rows.find((r) => String(r.id) === String(selection.singleSelectedId));
+    if (item) openEdit(item);
   };
 
   //  View detail (uses row data; no extra API call needed) ─
@@ -335,7 +382,18 @@ export default function Homework() {
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
-          <span className="mod-pill blue">{filtered.length} record{filtered.length !== 1 ? "s" : ""}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <TableSelectionToolbar
+              selectedCount={selection.selectedCount}
+              canEdit={selection.canEdit}
+              canDelete={selection.canDelete}
+              onEdit={handleToolbarEdit}
+              onDelete={() => setDeletingId("bulk")}
+              onMessage={(msg) => toast.info(msg)}
+              disabled={Boolean(deleting)}
+            />
+            <span className="mod-pill blue">{filtered.length} record{filtered.length !== 1 ? "s" : ""}</span>
+          </div>
         </div>
 
         {loading ? (
@@ -351,13 +409,20 @@ export default function Homework() {
           <table className="mod-table">
             <thead>
               <tr>
-                <th style={{ width: 44 }}>#</th>
+                <th className="sdl-th-check">
+                  <TableSelectCheckbox
+                    checked={selection.allPageSelected}
+                    indeterminate={selection.somePageSelected}
+                    onChange={selection.toggleSelectAll}
+                    ariaLabel="Select all homework on this page"
+                    disabled={!paged.length}
+                  />
+                </th>
                 <th>Subject</th>
                 <th>Description</th>
                 <th>Class / Section</th>
                 <th>Due Date</th>
                 <th>Status</th>
-                <th style={{ width: 110 }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -365,9 +430,16 @@ export default function Homework() {
                 const status  = getStatus(r.date);
                 const subjLabel = r.subject || r.subjectName || subjectLabel(r.subjectId);
                 const colorIdx  = i % COLORS.length;
+                const selected = selection.isSelected(r.id);
                 return (
-                  <tr key={r.id ?? i}>
-                    <td>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                  <tr key={r.id ?? i} className={selected ? "sdl-row-selected" : undefined}>
+                    <td className="sdl-td-check">
+                      <TableSelectCheckbox
+                        checked={selected}
+                        onChange={() => selection.toggleRow(r.id)}
+                        ariaLabel={`Select homework ${subjLabel}`}
+                      />
+                    </td>
 
                     {/* Subject cell with avatar */}
                     <td>
@@ -408,37 +480,6 @@ export default function Homework() {
                     <td>
                       <span className={`mod-badge ${status.cls}`}>{status.label}</span>
                     </td>
-
-                    {/* Actions */}
-                    <td>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button
-                          className="mod-action-btn"
-                          title="View details"
-                          onClick={() => openView(r)}
-                        >
-                          <i className="bx bx-show"></i>
-                        </button>
-                        <button
-                          className="mod-action-btn edit"
-                          title="Edit"
-                          onClick={() => openEdit(r)}
-                        >
-                          <i className="bx bx-edit"></i>
-                        </button>
-                        <button
-                          className="mod-action-btn danger"
-                          title="Delete"
-                          disabled={deleting === r.id}
-                          onClick={() => handleDelete(r.id)}
-                        >
-                          {deleting === r.id
-                            ? <i className="bx bx-loader-alt bx-spin"></i>
-                            : <i className="bx bx-trash"></i>
-                          }
-                        </button>
-                      </div>
-                    </td>
                   </tr>
                 );
               })}
@@ -450,7 +491,7 @@ export default function Homework() {
         {totalPages > 1 && (
           <div className="mod-pagination">
             <span className="mod-page-info">
-              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+              Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
             </span>
             <div className="mod-page-btns">
               <button
@@ -643,6 +684,14 @@ export default function Homework() {
         </div>
         </ModalPortal>
       )}
+
+      <TableDeleteConfirm
+        open={Boolean(deletingId)}
+        count={deletingId === "bulk" ? selection.selectedCount : 1}
+        loading={Boolean(deleting)}
+        onCancel={() => !deleting && setDeletingId(null)}
+        onConfirm={confirmDelete}
+      />
 
       <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
     </div>

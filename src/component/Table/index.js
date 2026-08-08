@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import "../../pages/List/StudentDummyList.css";
 import "./table.css";
 import { getClass, getExam, getSection, getStudentlist } from "../../services/api";
 import { getToken } from "../../services/auth";
-import TableActionMenu from "./TableActionMenu";
+import {
+  TableDeleteConfirm,
+  TableSelectCheckbox,
+  TableSelectionToolbar,
+} from "./TableSelection";
+import useTableSelection from "../../hooks/useTableSelection";
 
 const avatarColors = ["#2D3A8C", "#E8541A", "#22c55e", "#8b5cf6", "#f59e0b", "#06b6d4"];
 
@@ -14,16 +20,15 @@ const getInitials = (str) =>
 const Table = (props) => {
   const data = Array.isArray(props.data) ? props.data : [];
   const [currentPage, setCurrentPage] = useState(1);
-  const [deleteKey, setDeleteKey] = useState(null);
   const [search, setSearch] = useState("");
   const [dropDown, setDropDown] = useState({});
   const [selectedClassId, setSelectedClassId] = useState(0);
   const { pathname } = useLocation();
   const isClassIdDropdownVisible = pathname === "/list" || pathname === "/staff";
   const [pageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
-  const [deleteConfirmation, setDeleteConfirmation] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const getDropdownData = async (funcName, id, name) => {
@@ -56,23 +61,13 @@ const Table = (props) => {
     }
   }, [isClassIdDropdownVisible, pathname, props.propsData]);
 
-  useEffect(() => {
-    setTotalPages(Math.ceil(data.length / pageSize));
-  }, [data, pageSize]);
-
-  useEffect(() => {
-    setDeleteConfirmation(false);
-  }, [props.data]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (name === "classId") setSelectedClassId(value);
-  };
-
   const handlePageClick = (pageNumber) => {
-    if (pageNumber === "prev" && currentPage > 1) setCurrentPage(currentPage - 1);
-    else if (pageNumber === "next" && currentPage < totalPages) setCurrentPage(currentPage + 1);
-    else if (typeof pageNumber === "number") setCurrentPage(pageNumber);
+    setCurrentPage((prev) => {
+      if (pageNumber === "prev") return Math.max(1, prev - 1);
+      if (pageNumber === "next") return prev + 1;
+      if (typeof pageNumber === "number") return pageNumber;
+      return prev;
+    });
   };
 
   const handleClick = () => {
@@ -101,7 +96,6 @@ const Table = (props) => {
     }
   };
 
-  // Build filtered + paginated rows
   const newArray = data.map((obj) => ({ ...obj }));
 
   const filteredData = newArray.filter((item) => {
@@ -112,9 +106,17 @@ const Table = (props) => {
     return matchSearch && matchClass;
   });
 
-  const startIndex = (currentPage - 1) * pageSize;
+  const computedTotalPages = Math.ceil(filteredData.length / pageSize) || 1;
+
+  // Deleting the last row of a page leaves the view on a page that no longer
+  // exists, so fall back to the last page that still holds records.
+  useEffect(() => {
+    if (currentPage > computedTotalPages) setCurrentPage(computedTotalPages);
+  }, [currentPage, computedTotalPages]);
+
+  const safePage = Math.min(currentPage, computedTotalPages);
+  const startIndex = (safePage - 1) * pageSize;
   const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
-  const computedTotalPages = Math.ceil(filteredData.length / pageSize);
 
   const headings = Object.keys(data[0] || {}).filter((k) => k !== "id");
 
@@ -126,7 +128,20 @@ const Table = (props) => {
     props.propsData === "Student List" ||
     props.propsData === "Staff List";
 
-  // Pagination buttons
+  const getRowId = (item) => {
+    if (isListPage) {
+      const profileKey = profileKeyMap[props.propsData];
+      return item[profileKey] ?? item.id;
+    }
+    return item.id;
+  };
+
+  const selection = useTableSelection({
+    rows: paginatedData,
+    getRowId,
+    resetKey: `${props.propsData}|${search}|${selectedClassId}|${data.length}`,
+  });
+
   const renderPageButtons = () => {
     const maxShow = 3;
     const buttons = [];
@@ -145,15 +160,40 @@ const Table = (props) => {
     return buttons;
   };
 
+  const handleToolbarEdit = () => {
+    const id = selection.singleSelectedId;
+    if (!id) return;
+    if (isListPage) handleEditClick(id);
+    else props.onEdit?.(id);
+    selection.clearSelection();
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    const ids = [...selection.selectedRows];
+    if (!ids.length) return;
+    setDeleting(true);
+    try {
+      if (typeof props.onBulkDelete === "function") {
+        await props.onBulkDelete(ids);
+      } else if (typeof props.onDelete === "function") {
+        for (const id of ids) {
+          // eslint-disable-next-line no-await-in-loop
+          await Promise.resolve(props.onDelete(id));
+        }
+      }
+      selection.clearSelection();
+      setBulkDeleteOpen(false);
+    } catch (err) {
+      toast.error(err?.message || "Failed to delete selected record(s)");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="sdl-wrap">
-      {/* Header */}
       <div className="sdl-header">
         <div>
-          {/* <h2 className="sdl-title">{props.propsData}</h2> */}
-          {/* <p className="sdl-sub">
-            Total <strong>{filteredData.length}</strong> records found
-          </p> */}
            <div className="sdl-search">
           <i className="bx bx-search"></i>
           <input
@@ -170,15 +210,27 @@ const Table = (props) => {
           )}
         </div>
         </div>
-        {showAddButton ? (
-          <button className="sdl-add-btn" onClick={handleClick}>
-            <i className="bx bx-plus"></i> Add
-          </button>
-        ) : (
-          <button className="sdl-add-btn" onClick={props.openModal}>
-            <i className="bx bx-plus"></i> Add
-          </button>
-        )}
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <TableSelectionToolbar
+            selectedCount={selection.selectedCount}
+            canEdit={selection.canEdit}
+            canDelete={selection.canDelete && !isListPage}
+            onEdit={handleToolbarEdit}
+            onDelete={() => setBulkDeleteOpen(true)}
+            onMessage={(msg) => toast.info(msg)}
+            deleteLabel={isListPage ? "Relieve" : "Delete"}
+            disabled={deleting}
+          />
+          {showAddButton ? (
+            <button className="sdl-add-btn" onClick={handleClick}>
+              <i className="bx bx-plus"></i> Add
+            </button>
+          ) : (
+            <button className="sdl-add-btn" onClick={props.openModal}>
+              <i className="bx bx-plus"></i> Add
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
@@ -188,40 +240,51 @@ const Table = (props) => {
               <h4 style={{ margin: 0 }}>Home</h4>
             </Link>
           </li>
-          {/* <li><a>{props.propsData}</a></li> */}
         </ul>
       </div>
 
-      {/* Table */}
       <div className="sdl-table-card">
         <table className="sdl-table">
           <thead>
             <tr>
-              <th>#</th>
+              <th className="sdl-th-check">
+                <TableSelectCheckbox
+                  checked={selection.allPageSelected}
+                  indeterminate={selection.somePageSelected}
+                  onChange={selection.toggleSelectAll}
+                  ariaLabel="Select all rows on this page"
+                  disabled={!paginatedData.length}
+                />
+              </th>
               {headings.map((h, i) => (
                 <th key={i}>{h.toUpperCase()}</th>
               ))}
-              <th>ACTION</th>
             </tr>
           </thead>
           <tbody>
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={headings.length + 2} className="sdl-empty">
+                <td colSpan={headings.length + 1} className="sdl-empty">
                   <i className="bx bx-search-alt"></i>
                   <span>No records found</span>
                 </td>
               </tr>
             ) : (
               paginatedData.map((item, rowIdx) => {
-                const profileKey = profileKeyMap[props.propsData];
                 const globalIdx = startIndex + rowIdx + 1;
-                // Pick first text column for avatar initials
+                const rowId = getRowId(item);
                 const firstVal = String(Object.values(item).find((v, i) => Object.keys(item)[i] !== "id" && v) || "?");
+                const selected = selection.isSelected(rowId);
 
                 return (
-                  <tr key={item.id || rowIdx}>
-                    <td className="sdl-num">{globalIdx}</td>
+                  <tr key={rowId || rowIdx} className={selected ? "sdl-row-selected" : undefined}>
+                    <td className="sdl-td-check">
+                      <TableSelectCheckbox
+                        checked={selected}
+                        onChange={() => selection.toggleRow(rowId)}
+                        ariaLabel={`Select row ${globalIdx}`}
+                      />
+                    </td>
                     {headings.map((key, colIdx) => {
                       const val = item[key];
                       if (key === "image") {
@@ -243,7 +306,6 @@ const Table = (props) => {
                           </td>
                         );
                       }
-                      // First real column gets avatar treatment for list pages
                       if (colIdx === 0 && isListPage) {
                         return (
                           <td key={key}>
@@ -267,57 +329,6 @@ const Table = (props) => {
                         </td>
                       );
                     })}
-                    {/* Action column */}
-                    <td>
-                      <TableActionMenu
-                        onView={isListPage ? () => handleViewClick(item) : undefined}
-                        onEdit={isListPage
-                          ? () => handleEditClick(item[profileKey])
-                          : () => props.onEdit(item["id"])}
-                        onDelete={isListPage
-                          ? () => navigate(`/releiving/${item[profileKey]}`, {
-                              state: props.propsData === "Student List" ? "Student Relieving" : "Staff Relieving",
-                            })
-                          : () => { setDeleteKey(item["id"]); setDeleteConfirmation(true); }}
-                        deleteLabel={isListPage ? "Relieve" : "Delete"}
-                      />
-
-                      {/* Delete confirmation modal */}
-                      {deleteConfirmation && deleteKey === item["id"] && (
-                        <div className="modal-overlays">
-                          <div className="modal-content" style={{ width: "280px" }}>
-                            <div className="app-container" style={{ marginRight: "-7px" }}>
-                              <p style={{
-                                textAlign: "center", color: "rgb(5,31,62)",
-                                fontWeight: "500", fontSize: "14px",
-                                display: "flex", justifyContent: "center",
-                                gap: "5px", alignItems: "center"
-                              }}>
-                                <i className="fa fa-exclamation-circle" style={{ fontSize: "20px", color: "#ff0000b3" }}></i>
-                                Are you sure you want to delete?
-                              </p>
-                              <div className="btn-style" style={{ marginTop: "20px", gap: "3px" }}>
-                                <button
-                                  className="custom-button"
-                                  style={{ width: "60px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center" }}
-                                  onClick={() => { props.onDelete(deleteKey); setDeleteConfirmation(false); }}
-                                >
-                                  Yes
-                                </button>
-                                &nbsp;&nbsp;
-                                <button
-                                  className="cancel-button"
-                                  style={{ width: "50px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center" }}
-                                  onClick={() => setDeleteConfirmation(false)}
-                                >
-                                  No
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </td>
                   </tr>
                 );
               })
@@ -326,7 +337,6 @@ const Table = (props) => {
         </table>
       </div>
 
-      {/* Pagination */}
       {filteredData.length > pageSize && (
         <div className="sdl-pagination">
           <span className="sdl-page-info">
@@ -353,13 +363,21 @@ const Table = (props) => {
             <button
               className="sdl-page-btn"
               disabled={currentPage === computedTotalPages}
-              onClick={() => handlePageClick("next")}
+              onClick={() => currentPage < computedTotalPages && handlePageClick("next")}
             >
               <i className="bx bx-chevron-right"></i>
             </button>
           </div>
         </div>
       )}
+
+      <TableDeleteConfirm
+        open={bulkDeleteOpen}
+        count={selection.selectedCount}
+        loading={deleting}
+        onCancel={() => !deleting && setBulkDeleteOpen(false)}
+        onConfirm={handleConfirmBulkDelete}
+      />
     </div>
   );
 };

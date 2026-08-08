@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../Atttendence/Attendence.css";
 import { useNavigate } from "react-router-dom";
 
@@ -36,8 +36,15 @@ export default function Staffview() {
     return matchDate && matchSearch;
   });
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated  = filtered.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const safePage = Math.min(page, totalPages);
+  const paginated  = filtered.slice((safePage-1)*PAGE_SIZE, safePage*PAGE_SIZE);
   const presentCnt = filtered.filter(r => r.status === "Present").length;
   const absentCnt  = filtered.filter(r => r.status === "Absent").length;
   const leaveCnt   = filtered.filter(r => r.status === "Leave").length;
@@ -89,7 +96,6 @@ export default function Staffview() {
         <table className="staff-att-table">
           <thead>
             <tr>
-              <th>#</th>
               <th>Staff Member</th>
               <th>Department</th>
               <th>Role</th>
@@ -97,20 +103,18 @@ export default function Staffview() {
               <th>In Time</th>
               <th>Out Time</th>
               <th style={{textAlign:"center"}}>Status</th>
-              <th style={{textAlign:"center"}}>Action</th>
             </tr>
           </thead>
           <tbody>
             {paginated.length === 0 ? (
               <tr>
-                <td colSpan={9} style={{textAlign:"center",padding:"40px",color:"#7b8099" }}>
+                <td colSpan={7} style={{textAlign:"center",padding:"40px",color:"#7b8099" }}>
                   <i className="bx bx-search-alt" style={{fontSize:32,display:"block",marginBottom:8,color:"#d1d5e8"}}></i>
                   {selDate ? "No records for selected date" : "Select a date to view records"}
                 </td>
               </tr>
             ) : paginated.map((r,i) => (
               <tr key={r.id}>
-                <td className="att-num">{(page-1)*PAGE_SIZE+i+1}</td>
                 <td>
                   <div className="view-att-student-cell">
                     <div className="att-avatar" style={{background:avatarColors[i%avatarColors.length]}}>
@@ -137,11 +141,6 @@ export default function Staffview() {
                     {r.status}
                   </span>
                 </td>
-                <td style={{textAlign:"center"}}>
-                  <button style={{width:30,height:30,borderRadius:8,border:"none",background:"#fef2f2",color:"#ef4444",cursor:"pointer",fontSize:15,display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-                    <i className="bx bx-trash"></i>
-                  </button>
-                </td>
               </tr>
             ))}
           </tbody>
@@ -152,7 +151,7 @@ export default function Staffview() {
       {totalPages > 1 && (
         <div className="att-pagination">
           <span className="att-page-info">
-            Showing {(page-1)*PAGE_SIZE+1}–{Math.min(page*PAGE_SIZE,filtered.length)} of {filtered.length}
+            Showing {(safePage-1)*PAGE_SIZE+1}–{Math.min(safePage*PAGE_SIZE,filtered.length)} of {filtered.length}
           </span>
           <div className="att-page-btns">
             <button className="att-page-btn" disabled={page===1} onClick={()=>setPage(p=>p-1)}>

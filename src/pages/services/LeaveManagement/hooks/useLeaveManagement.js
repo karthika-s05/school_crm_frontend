@@ -76,7 +76,7 @@ export function useLeaveManagement() {
   const submitLeave = useCallback(async (form) => {
     setSubmitting(true);
     const body = isStudent
-      ? { startDate: form.startDate, endDate: form.endDate, reason: form.reason }
+      ? { startDate: form.startDate, endDate: form.endDate, reason: form.reason, leaveTypeId: form.leaveTypeId }
       : {
         startDate: form.startDate,
         endDate: form.endDate,

@@ -634,6 +634,21 @@ HEADER PROFILE
   text-transform: capitalize;
 }
 
+.crm-profile-class-teacher {
+  margin-top: 6px !important;
+  color: #2d3a8c !important;
+  font-weight: 600;
+  text-transform: none !important;
+}
+
+.crm-profile-menu-link {
+  color: #334155 !important;
+}
+
+.crm-profile-menu-link:hover {
+  background: #f1f5f9 !important;
+}
+
 /* =====================================================
 PROFILE DROPDOWN
 ===================================================== */

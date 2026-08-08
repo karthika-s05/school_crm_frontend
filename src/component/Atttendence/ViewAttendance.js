@@ -78,8 +78,15 @@ export default function ViewAttendance() {
     r.admNo.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const presentCnt = filtered.filter((r) => r.status === "Present").length;
   const absentCnt = filtered.filter((r) => r.status === "Absent").length;
 
@@ -140,7 +147,6 @@ export default function ViewAttendance() {
           <table className="view-att-table">
             <thead>
               <tr>
-                <th>#</th>
                 <th>Student</th>
                 <th>Adm. No</th>
                 <th>Class</th>
@@ -151,7 +157,7 @@ export default function ViewAttendance() {
             <tbody>
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="att-num" style={{ textAlign: "center", padding: "40px", color: "#7b8099" }}>
+                  <td colSpan={5} className="att-num" style={{ textAlign: "center", padding: "40px", color: "#7b8099" }}>
                     <i className="bx bx-search-alt" style={{ fontSize: 32, display: "block", marginBottom: 8, color: "#d1d5e8" }}></i>
                     No records found
                   </td>
@@ -159,7 +165,6 @@ export default function ViewAttendance() {
               ) : (
                 paginated.map((r, i) => (
                   <tr key={r.id ?? i}>
-                    <td className="att-num">{(page - 1) * PAGE_SIZE + i + 1}</td>
                     <td>
                       <div className="view-att-student-cell">
                         <div className="att-avatar" style={{ background: avatarColors[i % avatarColors.length] }}>
@@ -189,7 +194,7 @@ export default function ViewAttendance() {
       {totalPages > 1 && (
         <div className="att-pagination">
           <span className="att-page-info">
-            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+            Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
           </span>
           <div className="att-page-btns">
             <button className="att-page-btn" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>

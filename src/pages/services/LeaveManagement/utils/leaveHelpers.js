@@ -22,6 +22,11 @@ export const EMPTY_FORM = {
   leaveTime:   "Full day",
 };
 
+export const STUDENT_LEAVE_TYPES = [
+  { id: "casual", label: "Casual Leave" },
+  { id: "sick",   label: "Sick Leave" },
+];
+
 /** Calculate number of leave days from date range + duration type */
 export const calcDays = (start, end, leaveTime) => {
   if (!start || !end) return 0;
@@ -46,6 +51,28 @@ export const fmt = (dateStr) => {
 
 const normStatus = (status) => (status || "Pending").toLowerCase();
 
+/** Prefer a real person name; never treat admission/staff/roll ids as the name. */
+export const getRowName = (row = {}) => {
+  const idLike = new Set(
+    [row.userName, row.admissionNo, row.staffId, row.rollNo, row.userId]
+      .map((value) => String(value || "").trim())
+      .filter(Boolean)
+  );
+
+  const candidates = [
+    row.studentName,
+    row.staffName,
+    row.name,
+    row.employeeName,
+    row.fullName,
+  ]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+
+  const realName = candidates.find((name) => !idLike.has(name));
+  return realName || candidates[0] || "-";
+};
+
 /** Derive stats object from a leave list */
 export const statsOf = (list) => ({
   total:    list.length,
@@ -59,9 +86,10 @@ export const filterLeaves = (list, search) => {
   if (!search.trim()) return list;
   const q = search.toLowerCase();
   return list.filter((r) => {
-    const name   = (r.studentName || r.staffName || r.userName || "").toLowerCase();
+    const name   = getRowName(r).toLowerCase();
     const reason = (r.reason || "").toLowerCase();
-    const type   = (r.leaveType || r.leaveTypeName || "").toLowerCase();
+    const rawType = r.leaveType || r.leaveTypeName || "";
+    const type   = (STUDENT_LEAVE_TYPES.find((lt) => lt.id === rawType)?.label || rawType).toLowerCase();
     const status = (r.status || "Pending").toLowerCase();
     return name.includes(q) || reason.includes(q) || type.includes(q) || status.includes(q);
   });
@@ -72,7 +100,3 @@ export const filterByStatus = (list, status) => {
   if (!status) return list;
   return list.filter((r) => (r.status || "Pending") === status);
 };
-
-/** Get display name from a leave row */
-export const getRowName = (row) =>
-  row.studentName || row.staffName || row.userName || "-";

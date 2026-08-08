@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { avatarColor, getInitials, normalizeStatus, statusMeta, STATUS } from "../constants";
 import { AttendanceSummaryPills } from "./AttendanceSummaryBar";
 import { LoadingState, EmptyState, ErrorState } from "./AttendanceStates";
@@ -52,7 +52,15 @@ const AttendanceMarkingTable = ({
     );
   }, [rows, search]);
 
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   if (loading) return <div className="av2-table-card"><LoadingState text="Loading roster…" /></div>;
   if (error) return <div className="av2-table-card"><ErrorState text={error} onRetry={onRetry} /></div>;
@@ -101,7 +109,6 @@ const AttendanceMarkingTable = ({
           <table className="av2-table">
             <thead>
               <tr>
-                <th style={{ width: 40 }}>#</th>
                 <th>Name</th>
                 <th>{subLabelHeader}</th>
                 <th style={{ width: 160 }}>Status</th>
@@ -111,7 +118,7 @@ const AttendanceMarkingTable = ({
             <tbody>
               {paged.length === 0 ? (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={4}>
                     <EmptyState text="No matches for your search" icon="bx bx-search-alt" />
                   </td>
                 </tr>
@@ -121,7 +128,6 @@ const AttendanceMarkingTable = ({
                   const meta = statusMeta(st);
                   return (
                     <tr key={r.id}>
-                      <td className="av2-muted">{(page - 1) * PAGE_SIZE + i + 1}</td>
                       <td>
                         <div className="av2-person-cell">
                           <div className="av2-avatar" style={{ background: avatarColor(i) }}>

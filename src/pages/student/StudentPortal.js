@@ -210,12 +210,11 @@ const StudentPortal = () => {
                   <div className="sp-table-wrap">
                     <table className="sp-table">
                       <thead>
-                        <tr><th>#</th><th>Date</th></tr>
+                        <tr><th>Date</th></tr>
                       </thead>
                       <tbody>
                         {absentDates.map((d, i) => (
                           <tr key={i}>
-                            <td>{i + 1}</td>
                             <td style={{ color: "#ef4444", fontWeight: 600 }}>
                               {String(d).slice(0, 10)}
                             </td>
@@ -244,14 +243,13 @@ const StudentPortal = () => {
                   <div className="sp-table-wrap">
                     <table className="sp-table">
                       <thead>
-                        <tr><th>#</th><th>Subject</th><th>Marks Obtained</th><th>Total Marks</th><th>Pass Marks</th><th>Grade</th><th>Result</th></tr>
+                        <tr><th>Subject</th><th>Marks Obtained</th><th>Total Marks</th><th>Pass Marks</th><th>Grade</th><th>Result</th></tr>
                       </thead>
                       <tbody>
                         {rows.map((m, i) => {
                           const passed = m.marksObtained >= (m.passMark || m.passMarks || 0);
                           return (
                             <tr key={i}>
-                              <td>{i + 1}</td>
                               <td><span className="sp-subject-pill">{m.subjectName || m.subject}</span></td>
                               <td style={{ fontWeight: 700, color: passed ? "#16a34a" : "#ef4444" }}>{m.marksObtained ?? "--"}</td>
                               <td>{m.totalMark || m.totalMarks || "--"}</td>
@@ -283,12 +281,11 @@ const StudentPortal = () => {
               <div className="sp-table-wrap">
                 <table className="sp-table">
                   <thead>
-                    <tr><th>#</th><th>Subject</th><th>Date</th><th>Description</th><th>My Progress</th></tr>
+                    <tr><th>Subject</th><th>Date</th><th>Description</th><th>My Progress</th></tr>
                   </thead>
                   <tbody>
                     {homework.map((hw, i) => (
                       <tr key={hw.id || i}>
-                        <td>{i + 1}</td>
                         <td><span className="sp-subject-pill">{hw.subject || hw.subjectName}</span></td>
                         <td>{hw.date}</td>
                         <td>{hw.description}</td>
@@ -315,7 +312,7 @@ const StudentPortal = () => {
               <div className="sp-table-wrap">
                 <table className="sp-table">
                   <thead>
-                    <tr><th>#</th><th>Title</th><th>Subject</th><th>Start Date</th><th>End Date</th><th>Availability</th><th>My Progress</th></tr>
+                    <tr><th>Title</th><th>Subject</th><th>Start Date</th><th>End Date</th><th>Availability</th><th>My Progress</th></tr>
                   </thead>
                   <tbody>
                     {assignments.map((a, i) => {
@@ -326,7 +323,6 @@ const StudentPortal = () => {
                       const progress = a.progressStatus || "Not Started";
                       return (
                         <tr key={a.id || i}>
-                          <td>{i + 1}</td>
                           <td style={{ fontWeight: 600 }}>{a.title}</td>
                           <td><span className="sp-subject-pill">{a.subjectName || a.subject}</span></td>
                           <td>{a.startDate}</td>
@@ -567,7 +563,7 @@ const StudentPortal = () => {
               <div className="sp-table-wrap">
                 <table className="sp-table">
                   <thead>
-                    <tr><th>#</th><th>Leave Type</th><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr>
+                    <tr><th>Leave Type</th><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr>
                   </thead>
                   <tbody>
                     {leaves.map((lv, i) => {
@@ -575,7 +571,6 @@ const StudentPortal = () => {
                       // const statusClass = status === "accepted" ? "pass" : status === "rejected" ? "fail" : "pending";
                       return (
                         <tr key={i}>
-                          <td>{i + 1}</td>
                           <td>{lv.leaveType || lv.leaveTypeName || "--"}</td>
                           <td>{lv.startDate || lv.fromDate}</td>
                           <td>{lv.endDate || lv.toDate}</td>

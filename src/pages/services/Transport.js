@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import "../List/StudentDummyList.css";
 import "./services.css";
 import "./transport.css";
-import TableActionMenu from "../../component/Table/TableActionMenu";
 import { getToken } from "../../services/auth";
 import {
   getFleetOverview,
@@ -257,8 +256,15 @@ export default function Transport() {
     const mf = feeFilter === "All" || s.feeStatus === feeFilter;
     return ms && mb && mf;
   });
-  const totalPgs = Math.ceil(filtStudents.length / PER_PAGE);
-  const paged = filtStudents.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPgs = Math.ceil(filtStudents.length / PER_PAGE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPgs) setPage(totalPgs);
+  }, [page, totalPgs]);
+
+  const safePage = Math.min(page, totalPgs);
+  const paged = filtStudents.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
   const switchTab = (i) => {
     setTab(i);
@@ -446,13 +452,6 @@ export default function Transport() {
                         </span>
                       )}
                     </div>
-                    <div className="transport-card-footer">
-                      <TableActionMenu
-                        onView={() => openView(b)}
-                        onEdit={() => openEdit(b)}
-                        onDelete={() => setDeletingId(b.id)}
-                      />
-                    </div>
                   </div>
                 ))
               )}
@@ -501,20 +500,18 @@ export default function Transport() {
                 <table className="sdl-table">
                   <thead>
                     <tr>
-                      <th>#</th>
                       <th>Student</th>
                       <th>Adm. No</th>
                       <th>Class</th>
                       <th>Bus No</th>
                       <th>Stop</th>
                       <th>Fee Status</th>
-                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paged.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="transport-table-empty">
+                        <td colSpan={6} className="transport-table-empty">
                           <div className="transport-empty-inline">
                             <i className="bx bx-search-alt"></i>
                             <span>No students found</span>
@@ -526,7 +523,6 @@ export default function Transport() {
                         const bus = buses.find((b) => b.id === s.busId);
                         return (
                           <tr key={s.id}>
-                            <td className="sdl-num">{(page - 1) * PER_PAGE + i + 1}</td>
                             <td>
                               <div className="sdl-student-cell">
                                 <div
@@ -555,17 +551,6 @@ export default function Transport() {
                                 {s.feeStatus}
                               </span>
                             </td>
-                            <td>
-                              <TableActionMenu
-                                items={[
-                                  {
-                                    label: "Toggle Fee",
-                                    icon: "bx bx-transfer",
-                                    onClick: () => toggleFee(s.id),
-                                  },
-                                ]}
-                              />
-                            </td>
                           </tr>
                         );
                       })
@@ -578,8 +563,8 @@ export default function Transport() {
             {totalPgs > 1 && (
               <div className="transport-pagination sdl-pagination">
                 <span className="sdl-page-info">
-                  Showing {(page - 1) * PER_PAGE + 1}–
-                  {Math.min(page * PER_PAGE, filtStudents.length)} of {filtStudents.length}
+                  Showing {(safePage - 1) * PER_PAGE + 1}–
+                  {Math.min(safePage * PER_PAGE, filtStudents.length)} of {filtStudents.length}
                 </span>
                 <div className="sdl-page-btns">
                   <button
@@ -679,13 +664,11 @@ export default function Transport() {
                 <table className="sdl-table">
                   <thead>
                     <tr>
-                      <th>#</th>
                       <th>Student</th>
                       <th>Class</th>
                       <th>Bus No</th>
                       <th>Annual Fee</th>
                       <th>Status</th>
-                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -699,7 +682,6 @@ export default function Transport() {
                         const bus = buses.find((b) => b.id === s.busId);
                         return (
                           <tr key={s.id}>
-                            <td className="sdl-num">{i + 1}</td>
                             <td>
                               <div className="sdl-student-cell">
                                 <div
@@ -728,15 +710,6 @@ export default function Transport() {
                                 {s.feeStatus}
                               </span>
                             </td>
-                            <td>
-                              <button
-                                type="button"
-                                className={`svc-toggle-btn${s.feeStatus === "Paid" ? " svc-toggle-unpaid" : " svc-toggle-paid"}`}
-                                onClick={() => toggleFee(s.id)}
-                              >
-                                {s.feeStatus === "Paid" ? "Mark Unpaid" : "Mark Paid"}
-                              </button>
-                            </td>
                           </tr>
                         );
                       })}
@@ -746,7 +719,7 @@ export default function Transport() {
                         (feeFilter === "All" || s.feeStatus === feeFilter)
                     ).length === 0 && (
                       <tr>
-                        <td colSpan={7} className="transport-table-empty">
+                        <td colSpan={5} className="transport-table-empty">
                           <div className="transport-empty-inline">
                             <i className="bx bx-wallet"></i>
                             <span>No fee records match your filters</span>

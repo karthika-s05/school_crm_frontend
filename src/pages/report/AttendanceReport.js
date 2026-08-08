@@ -77,8 +77,15 @@ export default function AttendanceReport() {
   const filtered = rows.filter(r =>
     Object.values(r).join(" ").toLowerCase().includes(search.toLowerCase())
   );
-  const totalPages = Math.ceil(filtered.length / PAGE);
-  const paged = filtered.slice((page - 1) * PAGE, page * PAGE);
+  const totalPages = Math.ceil(filtered.length / PAGE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE, safePage * PAGE);
 
   const presentCount = rows.filter(r => r.status === "Present" || r.status === true || r.present === true).length;
   const absentCount  = rows.filter(r => r.status === "Absent"  || r.status === false || r.absent === true).length;
@@ -163,7 +170,6 @@ export default function AttendanceReport() {
           <table className="mod-table">
             <thead>
               <tr>
-                <th>#</th>
                 {columns.map(col => (
                   <th key={col}>{col.replace(/([A-Z])/g, " $1").trim()}</th>
                 ))}
@@ -172,7 +178,6 @@ export default function AttendanceReport() {
             <tbody>
               {paged.map((row, i) => (
                 <tr key={row.id || i}>
-                  <td>{(page - 1) * PAGE + i + 1}</td>
                   {columns.map(col => {
                     const val = row[col];
                     const isStatus = col.toLowerCase() === "status";
@@ -196,7 +201,7 @@ export default function AttendanceReport() {
 
         {totalPages > 1 && (
           <div className="mod-pagination">
-            <span className="mod-page-info">Showing {(page - 1) * PAGE + 1}–{Math.min(page * PAGE, filtered.length)} of {filtered.length}</span>
+            <span className="mod-page-info">Showing {(safePage - 1) * PAGE + 1}–{Math.min(safePage * PAGE, filtered.length)} of {filtered.length}</span>
             <div className="mod-page-btns">
               <button className="mod-page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}><i className="bx bx-chevron-left"></i></button>
               {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => (

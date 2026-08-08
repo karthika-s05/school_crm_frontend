@@ -14,6 +14,7 @@ import {
 } from "../../services/api";
 import useNavNotifications from "../../hooks/useNavNotifications";
 import { emitNotificationsChanged } from "../../utils/notificationBus";
+import { formatApiDateTime, formatRelativeTime } from "../../utils/date";
 
 import Dashboard from "../../pages/dashboard";
 import Master from "../../pages/master";
@@ -49,6 +50,7 @@ import StaffWizard from "../../pages/registration/StaffWizard";
 import Studentinfo from "../../pages/List/Studentinfo";
 import Nextpage from "../../pages/List/Nextpage";
 import StudentDummyList from "../../pages/List/StudentDummyList";
+import StudentDetails from "../../pages/List/StudentDetails";
 import Transport from "../../pages/services/Transport";
 import Stationery from "../../pages/services/Stationery";
 import FeesCollection from "../../pages/services/FeesCollection";
@@ -129,10 +131,10 @@ const ADMIN_MENU_GROUPS = [
   {
     title: "Examination", icon: null,
     items: [
-      { label: "Exam Type",    path: "/admin/examtype",    state: undefined },
-      { label: "Exam Portion", path: "/admin/examportion", state: undefined },
-      { label: "Subject Mark", path: "/admin/subjectmark", state: undefined },
-      { label: "Exam Result",  path: "/admin/examresult",  state: undefined },
+      { label: "Exam Type Master", path: "/admin/examtype", state: undefined },
+      { label: "Add Exam", path: "/admin/examportion", state: undefined },
+      { label: "Enter Marks", path: "/admin/subjectmark", state: undefined },
+      { label: "Publish Results", path: "/admin/examresult", state: undefined },
     ],
   },
   {
@@ -201,10 +203,9 @@ const STAFF_MENU_GROUPS = [
   {
     title: "Examination", icon: null, section: "Academics",
     items: [
-      { label: "Exam Type", path: "/examtype", state: "Exam Type" },
-      { label: "Exam Portion", path: "/examportion", state: "Exam Portion" },
-      { label: "Subject Mark", path: "/subjectmark", state: "Subject Mark" },
-      { label: "Exam Result", path: "/examresult", state: "Exam Result" },
+      { label: "Exam Timetable", path: "/examportion", state: "Exam Portion" },
+      { label: "Enter Marks", path: "/subjectmark", state: "Subject Mark" },
+      { label: "Publish Results", path: "/examresult", state: "Exam Result" },
     ],
   },
   {
@@ -263,16 +264,6 @@ const STUDENT_MENU_GROUPS = [
     ],
   },
 ];
-
-const formatTime = (value) => {
-  if (!value) return "";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
-};
 
 const getMenuGroups = (role) => {
   if (role === "Staff") return STAFF_MENU_GROUPS;
@@ -871,7 +862,12 @@ export default function Nav() {
                           {!n.read && <span className="crm-nd-unread-dot"></span>}
                         </div>
                         <p className="crm-nd-item-desc">{n.desc}</p>
-                        <span className="crm-nd-item-time">{formatTime(n.time)}</span>
+                        <span
+                          className="crm-nd-item-time"
+                          title={formatApiDateTime(n.time)}
+                        >
+                          {formatRelativeTime(n.time)}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -900,6 +896,7 @@ export default function Nav() {
             <Route path="/admin/master"              element={<Master />} />
             <Route path="/admin/nationality"         element={<Nationality />} />
             <Route path="/admin/students"            element={<StudentDummyList />} />
+            <Route path="/admin/students/:id/view"   element={<StudentDetails />} />
             <Route path="/admin/staff"               element={<List />} />
             <Route path="/admin/student/new"         element={<StudentWizard />} />
             <Route path="/admin/student/:id"         element={<StudentWizard />} />

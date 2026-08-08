@@ -154,7 +154,7 @@ const quickActions = [
   { label: "Add Student", icon: "bx bxs-user-plus", color: "#2D3A8C", bg: "#eef0fb", path: "/admin/student/new", state: "Student Registration" },
   { label: "Add Staff", icon: "bx bxs-user-check", color: "#16a34a", bg: "#dcfce7", path: "/admin/staff/new", state: "Staff Registration" },
   { label: "Transport Fee", icon: "bx bx-rupee", color: "#E8541A", bg: "#fdf0eb", path: "/admin/transport" },
-  { label: "Create Exam", icon: "bx bxs-notepad", color: "#7c3aed", bg: "#f5f3ff", path: "/admin/examportion" },
+  { label: "Add Exam", icon: "bx bxs-notepad", color: "#7c3aed", bg: "#f5f3ff", path: "/admin/examportion" },
   { label: "Send Notice", icon: "bx bxs-send", color: "#0891b2", bg: "#e0f7fa", path: "/admin/events" },
   { label: "Generate Report", icon: "bx bxs-bar-chart-alt-2", color: "#d97706", bg: "#fef3c7", path: "/admin/reports" },
 ];

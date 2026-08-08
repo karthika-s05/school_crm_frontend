@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { avatarColor, getInitials } from "../constants";
 import StatusBadge from "./StatusBadge";
 import { LoadingState, EmptyState, ErrorState } from "./AttendanceStates";
@@ -9,14 +9,12 @@ const PAGE_SIZE = 10;
 /**
  * Reusable read-only history/records table with search + pagination.
  *
- * rows:    [{ id, name, subLabel, date, extra: {colKey: value}, status, remarks, canEdit, raw }]
+ * rows:    [{ id, name, subLabel, date, extra: {colKey: value}, status, remarks, raw }]
  * columns: extra columns between date and status: [{ key, header }]
- * onEdit:  optional (row) => void - shown only for rows with canEdit
  */
 const AttendanceHistoryTable = ({
   rows,
   columns = [],
-  onEdit,
   loading,
   error,
   onRetry,
@@ -40,8 +38,15 @@ const AttendanceHistoryTable = ({
     );
   }, [rows, search]);
 
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const showEdit = !!onEdit && rows.some((r) => r.canEdit);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   if (loading) return <div className="av2-table-card"><LoadingState text="Loading records…" /></div>;
   if (error) return <div className="av2-table-card"><ErrorState text={error} onRetry={onRetry} /></div>;
@@ -68,7 +73,6 @@ const AttendanceHistoryTable = ({
           <table className="av2-table">
             <thead>
               <tr>
-                <th style={{ width: 40 }}>#</th>
                 {showName && <th>Name</th>}
                 {showName && <th>{subLabelHeader}</th>}
                 <th>Date</th>
@@ -77,7 +81,6 @@ const AttendanceHistoryTable = ({
                 ))}
                 <th style={{ textAlign: "center" }}>Status</th>
                 <th>Remarks</th>
-                {showEdit && <th style={{ textAlign: "center" }}>Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -90,7 +93,6 @@ const AttendanceHistoryTable = ({
               ) : (
                 paged.map((r, i) => (
                   <tr key={r.id ?? i}>
-                    <td className="av2-muted">{(page - 1) * PAGE_SIZE + i + 1}</td>
                     {showName && (
                       <td>
                         <div className="av2-person-cell">
@@ -112,21 +114,6 @@ const AttendanceHistoryTable = ({
                     <td className="av2-muted" style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>
                       {r.remarks || "-"}
                     </td>
-                    {showEdit && (
-                      <td style={{ textAlign: "center" }}>
-                        {r.canEdit ? (
-                          <button
-                            type="button"
-                            className="av2-btn av2-btn-outline av2-btn-sm"
-                            onClick={() => onEdit(r)}
-                          >
-                            <i className="bx bx-edit-alt"></i> Edit
-                          </button>
-                        ) : (
-                          <span className="av2-muted">-</span>
-                        )}
-                      </td>
-                    )}
                   </tr>
                 ))
               )}

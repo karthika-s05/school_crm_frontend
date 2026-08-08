@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import "../List/StudentDummyList.css";
 import "../services/services.css";
-import TableActionMenu from "../../component/Table/TableActionMenu";
 import ServiceModal from "../services/ServiceModal";
 import {
   getExamReportData,
@@ -160,8 +159,15 @@ export default function ExamReport() {
     return ["All", ...unique.sort()];
   }, [rows]);
 
-  const totalPgs = Math.ceil(rows.length / PER_PAGE);
-  const paged = rows.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPgs = Math.ceil(rows.length / PER_PAGE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPgs) setPage(totalPgs);
+  }, [page, totalPgs]);
+
+  const safePage = Math.min(page, totalPgs);
+  const paged = rows.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
   const studentResults = viewAdm ? rows.filter((r) => r.admNo === viewAdm) : [];
   const studentName = studentResults[0]?.student || "";
@@ -420,7 +426,6 @@ export default function ExamReport() {
               <table className="sdl-table">
                 <thead>
                   <tr>
-                    <th>#</th>
                     <th>Student</th>
                     <th>Class</th>
                     <th>Subject</th>
@@ -430,13 +435,12 @@ export default function ExamReport() {
                     <th>Rank</th>
                     <th>Result</th>
                     <th>Remarks</th>
-                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paged.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="sdl-empty">
+                      <td colSpan={9} className="sdl-empty">
                         <i className="bx bx-search-alt"></i>
                         <span>No results found</span>
                       </td>
@@ -444,7 +448,6 @@ export default function ExamReport() {
                   ) : (
                     paged.map((r, i) => (
                       <tr key={`${r.id}-${r.subject}-${i}`}>
-                        <td className="sdl-num">{(page - 1) * PER_PAGE + i + 1}</td>
                         <td>
                           <div className="sdl-student-cell">
                             <div
@@ -501,12 +504,6 @@ export default function ExamReport() {
                           </span>
                         </td>
                         <td className="sdl-mobile">{r.remarks}</td>
-                        <td>
-                          <TableActionMenu
-                            onView={() => setViewAdm(r.admNo)}
-                            viewLabel="View Report"
-                          />
-                        </td>
                       </tr>
                     ))
                   )}
@@ -518,7 +515,7 @@ export default function ExamReport() {
           {!loading && totalPgs > 1 && (
             <div className="sdl-pagination">
               <span className="sdl-page-info">
-                Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, rows.length)} of{" "}
+                Showing {(safePage - 1) * PER_PAGE + 1}–{Math.min(safePage * PER_PAGE, rows.length)} of{" "}
                 {rows.length}
               </span>
               <div className="sdl-page-btns">

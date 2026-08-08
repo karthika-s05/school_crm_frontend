@@ -9,12 +9,14 @@ import {
   updateNotificationTime,
 } from "../../services/api";
 import useNavNotifications from "../../hooks/useNavNotifications";
+import { formatApiDateTime, formatRelativeTime } from "../../utils/date";
 import { emitNotificationsChanged } from "../../utils/notificationBus";
 import StudentDashboard from "../StudentDashboard/StudentDashboard";
 import StudentHomework from "../../pages/student/StudentHomework";
 import StudentAssignment from "../../pages/student/StudentAssignment";
 import StudentExamSchedule from "../../pages/student/StudentExamSchedule";
 import StudentExamResults from "../../pages/student/StudentExamResults";
+import StudentReportCard from "../../pages/student/StudentReportCard";
 import StudentMyAttendance from "../../pages/attendance/StudentMyAttendance";
 import Timetable from "../../pages/Timetable/timetable";
 import Event from "../../pages/Event/Event";
@@ -53,6 +55,7 @@ const STUDENT_MENU_GROUPS = [
     items: [
       { label: "Exam Schedule", path: "/student/exam-schedule" },
       { label: "Exam Results", path: "/student/examresult" },
+      { label: "Report Card", path: "/student/report-card" },
     ],
   },
   {
@@ -413,7 +416,12 @@ const StudentNav = () => {
                           {!n.read && <span className="crm-nd-unread-dot"></span>}
                         </div>
                         <p className="crm-nd-item-desc">{n.desc}</p>
-                        <span className="crm-nd-item-time">{n.time}</span>
+                        <span
+                          className="crm-nd-item-time"
+                          title={formatApiDateTime(n.time)}
+                        >
+                          {formatRelativeTime(n.time)}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -444,6 +452,7 @@ const StudentNav = () => {
             <Route path="/student/timetable"   element={<Timetable />} />
             <Route path="/student/exam-schedule" element={<StudentExamSchedule />} />
             <Route path="/student/examresult"  element={<StudentExamResults />} />
+            <Route path="/student/report-card" element={<StudentReportCard />} />
             <Route path="/student/events"      element={<Event />} />
             <Route path="/student/leave"       element={<LeaveManagement />} />
             <Route path="/student/profile/:id" element={<Profile />} />

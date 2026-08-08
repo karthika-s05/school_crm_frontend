@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "../List/StudentDummyList.css";
 import "../services/services.css";
-import TableActionMenu from "../../component/Table/TableActionMenu";
 import ServiceModal from "../services/ServiceModal";
 import { getAssignmentReportData, getClass, getSection, exportAssignmentReportCsv, getAssignmentReportStudentWise } from "../../services/api";
 import { getToken } from "../../services/auth";
@@ -134,8 +133,15 @@ export default function AssignmentReport() {
     }
   }, [fetchReport, metaLoading, classId, sectionId]);
 
-  const totalPgs = Math.ceil(assignments.length / PER_PAGE);
-  const paged = assignments.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPgs = Math.ceil(assignments.length / PER_PAGE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPgs) setPage(totalPgs);
+  }, [page, totalPgs]);
+
+  const safePage = Math.min(page, totalPgs);
+  const paged = assignments.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
   const upcoming = assignments.filter((a) => a.status === "Upcoming").length;
 
@@ -352,7 +358,6 @@ export default function AssignmentReport() {
           <table className="sdl-table">
             <thead>
               <tr>
-                <th>#</th>
                 <th>Assignment Title</th>
                 <th>Class</th>
                 <th>Subject</th>
@@ -361,13 +366,12 @@ export default function AssignmentReport() {
                 <th>Submitted</th>
                 <th>Pending</th>
                 <th>Status</th>
-                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {paged.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="sdl-empty">
+                  <td colSpan={8} className="sdl-empty">
                     <i className="bx bx-search-alt"></i>
                     <span>No assignments found</span>
                   </td>
@@ -375,7 +379,6 @@ export default function AssignmentReport() {
               ) : (
                 paged.map((a, i) => (
                   <tr key={a.id}>
-                    <td className="sdl-num">{(page - 1) * PER_PAGE + i + 1}</td>
                     <td>
                       <div>
                         <div className="sdl-name">{a.title}</div>
@@ -442,13 +445,6 @@ export default function AssignmentReport() {
                         {a.status}
                       </span>
                     </td>
-                    <td>
-                      <TableActionMenu
-                        onView={() => openAssignmentDetail(a)}
-                        onEdit={() => {}}
-                        onDelete={() => {}}
-                      />
-                    </td>
                   </tr>
                 ))
               )}
@@ -461,7 +457,7 @@ export default function AssignmentReport() {
       {!loading && totalPgs > 1 && (
         <div className="sdl-pagination">
           <span className="sdl-page-info">
-            Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, assignments.length)} of{" "}
+            Showing {(safePage - 1) * PER_PAGE + 1}–{Math.min(safePage * PER_PAGE, assignments.length)} of{" "}
             {assignments.length}
           </span>
           <div className="sdl-page-btns">

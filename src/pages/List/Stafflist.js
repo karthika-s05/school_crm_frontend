@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "../List/StudentDummyList.css";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "./StudentDummyList.css";
+import {
+  TableSelectCheckbox,
+  TableSelectionToolbar,
+} from "../../component/Table/TableSelection";
+import useTableSelection from "../../hooks/useTableSelection";
 import { getStafflist } from "../../services/api";
 import { getToken } from "../../services/auth";
 import ModalPortal from "../../component/modals/ModalPortal";
@@ -113,8 +120,21 @@ export default function StaffList() {
   const activeFilterCount = (filterRole ? 1 : 0) + (filterDept ? 1 : 0);
   const draftFilterCount  = (draftRole ? 1 : 0) + (draftDept ? 1 : 0);
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated  = filtered.slice((page-1)*ITEMS_PER_PAGE, page*ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+
+  // Fall back if the current page no longer holds records.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const safePage = Math.min(page, totalPages);
+  const paginated  = filtered.slice((safePage-1)*ITEMS_PER_PAGE, safePage*ITEMS_PER_PAGE);
+
+  const selection = useTableSelection({
+    rows: paginated,
+    getRowId: (row) => row.staffId,
+    resetKey: `${staff.length}|${search}|${filterRole}|${filterDept}`,
+  });
 
   const activeCount   = staff.filter(s => s.status === "Active").length;
   const teacherCount  = staff.filter(s => s.role === "Teacher" || s.role === "HOD").length;
@@ -124,8 +144,23 @@ export default function StaffList() {
     ? AV_COLORS[(staff.findIndex(s => s.staffId === selectedStaff.staffId) + 1) % AV_COLORS.length]
     : AV_COLORS[0];
 
+  const handleToolbarEdit = () => {
+    const staffId = selection.singleSelectedId;
+    if (!staffId) return;
+    navigate(`/admin/staff/${staffId}`);
+  };
+
+  const handleToolbarRelieve = () => {
+    if (selection.selectedCount !== 1) {
+      toast.info("Please select only one staff member to relieve.");
+      return;
+    }
+    navigate(`/releiving/${selection.singleSelectedId}`, { state: "Staff Relieving" });
+  };
+
   return (
     <div className="sdl-wrap">
+      <ToastContainer position="bottom-right" autoClose={2500} style={{ zIndex: 99999, fontSize: 14 }} />
 
       <div className="sdl-header">
         <div className="sdl-search">
@@ -140,7 +175,16 @@ export default function StaffList() {
             <i className="bx bx-x sdl-search-clear" onClick={() => { setSearch(""); setPage(1); }} />
           )}
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <TableSelectionToolbar
+            selectedCount={selection.selectedCount}
+            canEdit={selection.canEdit}
+            canDelete={selection.canEdit}
+            onEdit={handleToolbarEdit}
+            onDelete={handleToolbarRelieve}
+            onMessage={(msg) => toast.info(msg)}
+            deleteLabel="Relieve"
+          />
           <button className="sdl-filter-toggle-btn" onClick={openFilter}>
             <i className="bx bx-filter-alt"></i> Filter
             {activeFilterCount > 0 && <span className="sdl-filter-badge">{activeFilterCount}</span>}
@@ -190,26 +234,41 @@ export default function StaffList() {
           <table className="sdl-table">
             <thead>
               <tr>
-                <th>#</th>
+                <th className="sdl-th-check">
+                  <TableSelectCheckbox
+                    checked={selection.allPageSelected}
+                    indeterminate={selection.somePageSelected}
+                    onChange={selection.toggleSelectAll}
+                    ariaLabel="Select all staff on this page"
+                    disabled={!paginated.length}
+                  />
+                </th>
                 <th>Staff Member</th>
                 <th>Staff ID</th>
                 <th>Department</th>
                 <th>Role</th>
                 <th>Status</th>
-                <th>View Details</th>
               </tr>
             </thead>
             <tbody>
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="sdl-empty">
+                  <td colSpan={6} className="sdl-empty">
                     <i className="bx bx-search-alt"></i>
                     <span>No staff found</span>
                   </td>
                 </tr>
-              ) : paginated.map((s, i) => (
-                <tr key={s.id}>
-                  <td className="sdl-num">{(page-1)*ITEMS_PER_PAGE+i+1}</td>
+              ) : paginated.map((s, i) => {
+                const selected = selection.isSelected(s.staffId);
+                return (
+                <tr key={s.id} className={selected ? "sdl-row-selected" : undefined}>
+                  <td className="sdl-td-check">
+                    <TableSelectCheckbox
+                      checked={selected}
+                      onChange={() => selection.toggleRow(s.staffId)}
+                      ariaLabel={`Select ${s.name}`}
+                    />
+                  </td>
                   <td>
                     <div className="sdl-student-cell">
                       <img className="sdl-avatar" alt={s.name} src={s.image} />
@@ -232,16 +291,9 @@ export default function StaffList() {
                   <td>
                     <span className={`sdl-status ${(s.status||"active").toLowerCase()}`}>{s.status}</span>
                   </td>
-                  <td>
-                    <button
-                      className="sdl-btn-details"
-                      onClick={() => setSelectedStaff(s)}
-                    >
-                      <i className="bx bx-show"></i> View Details
-                    </button>
-                  </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         )}
@@ -309,7 +361,7 @@ export default function StaffList() {
       {!loading && totalPages > 1 && (
         <div className="sdl-pagination">
           <span className="sdl-page-info">
-            Showing {(page-1)*ITEMS_PER_PAGE+1}–{Math.min(page*ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+            Showing {(safePage-1)*ITEMS_PER_PAGE+1}–{Math.min(safePage*ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
           </span>
           <div className="sdl-page-btns">
             <button className="sdl-page-btn" disabled={page===1} onClick={() => setPage(p=>p-1)}>

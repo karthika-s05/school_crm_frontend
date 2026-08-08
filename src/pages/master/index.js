@@ -114,12 +114,17 @@ const Master = () => {
     setEditData(null);
     setFormData({});
   };
+  /** Re-fetches the active master list. */
+  const refreshList = () => setRefreshKey((k) => k + 1);
+
   function showMessage(response, duration = 3000) {
     setMessage(response.message);
     setIsSuccessVisible(true);
+    // The message text repeats between saves, so the list is refreshed from an
+    // always-changing key instead of relying on the message value changing.
+    refreshList();
     setTimeout(() => {
       setIsSuccessVisible(false);
-      setMessage(response.message);
     }, duration);
   }
 
@@ -227,6 +232,7 @@ const Master = () => {
             } else if (responseValue === "success") {
               toast.success(response.message);
             }
+            showMessage(response);
             setLoad(false);
           } catch (err) {
             console.log(err);
@@ -1565,7 +1571,7 @@ const Master = () => {
     return () => {
       console.log("Component unmounted or effect is being cleaned up");
     };
-  }, [propsData, message, refreshKey]);
+  }, [propsData, refreshKey]);
 
   useEffect(() => {
     setIsModalOpen(false);
