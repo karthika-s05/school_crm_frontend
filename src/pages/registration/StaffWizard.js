@@ -203,13 +203,13 @@ export default function StaffWizard() {
         setDd(p => ({ ...p, cityId: res.map(v => ({ id: v.id, value: v.name })) }));
       } catch {}
     };
-    load(getNationality, 0, "nationalityId");
-    load(getReligion, 0, "religionId");
-    load(getCommunity, 0, "communityId");
-    load(getBloodGroup, 0, "bloodGroupId");
+    load(getNationality, 0, "nationality");
+    load(getReligion, 0, "religion");
+    load(getCommunity, 0, "community");
+    load(getBloodGroup, 0, "bloodGroup");
     loadState();
     loadCity();
-  }, [form.nationalityId, form.stateId]);
+  }, [form.nationality, form.state]);
 
   useEffect(() => {
     if (!isEdit || !token) return;

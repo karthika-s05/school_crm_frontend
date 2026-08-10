@@ -31,6 +31,7 @@ import AttendanceReportDashboard from "../../pages/attendance/AttendanceReportDa
 import HomeworkReport from "../../pages/report/HomeworkReport";
 import ReportsOverview from "../../pages/report/ReportsOverview";
 import Profile from "../../pages/profile/profile";
+import Settings from "../../pages/settings/Settings";
 import "../../assets/illustrations/schoolTheme.css";
 import { SchoolAmbience } from "../../assets/illustrations/SchoolIllustrations";
 import {
@@ -542,7 +543,7 @@ const StaffNav = () => {
             <Route path="/staff/reports/attendance" element={<AttendanceReportDashboard />} />
             <Route path="/staff/reports/homework" element={<HomeworkReport />} />
             <Route path="/staff/profile/:id" element={<Profile />} />
-            <Route path="/staff/settings" element={<StaffSettingsPage />} />
+            <Route path="/staff/settings" element={<Settings />} />
           </Routes>
         </div>
       </main>
@@ -550,11 +551,6 @@ const StaffNav = () => {
   );
 };
 
-const StaffSettingsPage = () => (
-  <div style={{ padding: "28px 32px" }}>
-    <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Settings</h2>
-    <p style={{ color: "#64748b" }}>Staff preferences and configuration.</p>
-  </div>
-);
+
 
 export default StaffNav;

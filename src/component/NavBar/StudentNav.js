@@ -23,6 +23,7 @@ import Event from "../../pages/Event/Event";
 import Profile from "../../pages/profile/profile";
 import LeaveManagement from "../../pages/services/LeaveManagement";
 import NotificationCenter from "../../pages/notifications/NotificationCenter";
+import Settings from "../../pages/settings/Settings";
 import "../../assets/illustrations/schoolTheme.css";
 import { SchoolAmbience } from "../../assets/illustrations/SchoolIllustrations";
 import {
@@ -456,7 +457,7 @@ const StudentNav = () => {
             <Route path="/student/events"      element={<Event />} />
             <Route path="/student/leave"       element={<LeaveManagement />} />
             <Route path="/student/profile/:id" element={<Profile />} />
-            <Route path="/student/settings"    element={<StudentSettingsPage />} />
+            <Route path="/student/settings"    element={<Settings />} />
           </Routes>
         </div>
       </main>
@@ -464,11 +465,6 @@ const StudentNav = () => {
   );
 };
 
-const StudentSettingsPage = () => (
-  <div style={{ padding: "28px 32px" }}>
-    <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Settings</h2>
-    <p style={{ color: "#64748b" }}>Student preferences and configuration.</p>
-  </div>
-);
+
 
 export default StudentNav;

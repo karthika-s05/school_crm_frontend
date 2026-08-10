@@ -55,6 +55,7 @@ import Transport from "../../pages/services/Transport";
 import Stationery from "../../pages/services/Stationery";
 import FeesCollection from "../../pages/services/FeesCollection";
 import StudentPortal from "../../pages/student/StudentPortal";
+import Settings from "../../pages/settings/Settings";
 import "../../assets/illustrations/schoolTheme.css";
 import { SchoolAmbience, SchoolBellIcon } from "../../assets/illustrations/SchoolIllustrations";
 import { SchoolMenuIcon, SchoolSubMenuIcon, IconChevronDown, IconSidebarCollapse, IconSidebarExpand, IconLogout, IconSettings, HeaderStationeryDeco } from "../../assets/illustrations/SchoolMenuIcons";
@@ -927,7 +928,7 @@ export default function Nav() {
             <Route path="/admin/reports/homework"    element={<HomeworkReport />} />
             <Route path="/admin/leave"               element={<LeaveManagement />} />
             <Route path="/admin/events"              element={<Event />} />
-            <Route path="/admin/settings"            element={<SettingsPage />} />
+            <Route path="/admin/settings"            element={<Settings />} />
             <Route path="/releiving/:id"             element={<Registration />} />
             <Route path="/admin/class&section"       element={<Master/>} />
             <Route path="/admin/classTeacher"        element={<Master/>}/>
@@ -939,9 +940,4 @@ export default function Nav() {
   );
 }
 
-const SettingsPage = () => (
-  <div style={{ padding: "28px 32px" }}>
-    <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Settings</h2>
-    <p style={{ color: "#64748b" }}>School configuration and preferences.</p>
-  </div>
-);
+
